@@ -1,24 +1,29 @@
 <template>
     <div>
-        <h2>商品列表</h2>
+        <el-row class="titleBar">
+            <el-col :span="24" class="title-col">
+                <h2>商品列表</h2>
+            </el-col>
+        </el-row>
 
-        <!-- 查詢輸入框 -->
-        <div style="margin-bottom: 1rem; text-align: center;">
-            <el-input v-model="searchQuery" placeholder="搜尋商品名稱或編號" clearable style="width: 300px" />
+        <!-- 查詢 + 按鈕區 -->
+        <div class="top-bar">
+            <el-input v-model="searchQuery" placeholder="搜尋商品名稱或編號" clearable class="search-input" />
+
+            <div class="button-group">
+                <el-button type="primary" @click="toggleEditMode">
+                    {{ editMode ? "編輯完成" : "編輯" }}
+                </el-button>
+                <el-button type="success" @click="showAddDialog = true">
+                    新增商品
+                </el-button>
+            </div>
         </div>
 
-        <!-- 編輯模式 & 新增商品按鈕 -->
-        <div style="margin-bottom: 1rem; text-align: center; display: flex; justify-content: center; gap: 10px;">
-            <el-button type="primary" @click="toggleEditMode">
-                {{ editMode ? "編輯完成" : "編輯" }}
-            </el-button>
-            <el-button type="success" @click="showAddDialog = true">
-                新增商品
-            </el-button>
-        </div>
 
         <!-- 商品列表表格 -->
-        <el-table :data="filteredProducts" style="width: 100%" stripe border>
+        <el-table :data="filteredProducts" style="width: 100%" border :class="tableThemeClass"
+            :header-cell-style="{ background: `var(--table-header-bg)`, color: `var(--table-header-text)` }">
             <el-table-column prop="code" label="商品編號" width="140">
                 <template #default="{ row }">
                     <el-input v-if="editMode" v-model="editableProducts[row.id]!.code" />
@@ -101,6 +106,14 @@ import { ref, computed, onMounted } from "vue";
 import { db } from "@/firebase";
 import { ref as dbRef, onValue, update, push } from "firebase/database";
 import Scanner from "@/components/Scanner.vue"; // ✅ 掃描元件
+import { useThemeStore } from "@/stores/theme"; // ✅ 引入 Pinia 主題 store
+
+const themeStore = useThemeStore(); // ✅ 使用主題 store
+
+// 根據主題動態套用表格樣式
+const tableThemeClass = computed(() => {
+    return themeStore.isDarkTheme ? "table-dark" : "table-light";
+});
 
 interface Product {
     id: string;
@@ -207,3 +220,30 @@ function addProduct() {
 
 onMounted(fetchProducts);
 </script>
+<style scoped>
+.titleBar {
+    margin: 0 0 10px 0;
+}
+
+.title-col {
+    text-align: left;
+}
+
+.top-bar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 1rem;
+}
+
+.search-input {
+    flex: 1;
+    min-width: 150px;
+    max-width: 300px;
+}
+
+.button-group {
+    display: flex;
+}
+</style>

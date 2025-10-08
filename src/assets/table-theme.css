@@ -1,0 +1,60 @@
+/* ========== 💡 表格主題通用樣式 ========== */
+
+/* 🌞 亮色主題 */
+.light-theme {
+  --table-bg: #ffffff;
+  --table-border-color: #dddddd;
+  --table-hover-bg: #f9f9f9;
+  --table-striped-bg: #fafafa;
+  --table-text: #333;
+}
+
+/* 🌙 暗色主題 */
+.dark-theme {
+  --table-bg: #4e4a4a;
+  --table-border-color: #444444;
+  --table-hover-bg: #383838;
+  --table-striped-bg: #333333;
+  --table-text: #eee;
+}
+
+/* ✅ 表格外觀 */
+.el-table {
+  background-color: var(--table-bg);
+  color: var(--table-text);
+  border-color: var(--table-border-color);
+  transition:
+    background-color 0.3s ease,
+    color 0.3s ease,
+    border-color 0.3s ease;
+}
+
+/* ✅ Header 樣式 */
+.el-table__header-wrapper th {
+  background-color: var(--table-header-bg) !important;
+  color: var(--table-header-text) !important;
+  border-color: var(--table-border-color);
+}
+
+/* ✅ Body 樣式 */
+.el-table__body-wrapper tr {
+  background-color: var(--table-bg);
+  color: var(--table-text);
+  border-color: var(--table-border-color);
+}
+
+/* ✅ 偶數行條紋 */
+.el-table--striped .el-table__body tr.el-table__row--striped {
+  background-color: var(--table-striped-bg);
+}
+
+/* ✅ Hover 效果 */
+.el-table__body tr:hover > td {
+  background-color: var(--table-hover-bg) !important;
+}
+
+/* ✅ 邊框 */
+.el-table__inner-wrapper::before,
+.el-table__inner-wrapper::after {
+  background-color: var(--table-border-color);
+}

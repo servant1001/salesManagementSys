@@ -2,10 +2,13 @@
 import { ref } from 'vue'
 import { RouterLink, RouterView } from 'vue-router'
 import { ElIcon } from 'element-plus'
-import { Menu, Close } from '@element-plus/icons-vue'
+import { Menu, Close, Moon, Sunny } from '@element-plus/icons-vue'
+import { useThemeStore } from '@/stores/theme'
 
-const isCollapsed = ref(false) // 桌機收合
-const isMobileMenuVisible = ref(false) // 手機滑出
+const themeStore = useThemeStore()
+
+const isCollapsed = ref(false)
+const isMobileMenuVisible = ref(false)
 </script>
 
 <template>
@@ -21,7 +24,7 @@ const isMobileMenuVisible = ref(false) // 手機滑出
     <aside :class="['sidebar', { collapsed: isCollapsed, active: isMobileMenuVisible }]">
       <div class="logo">
         <img alt="Vue logo" src="@/assets/logo.png" width="60" />
-        <h2 v-if="!isCollapsed">AURA銷售系統®</h2>
+        <h3 style="font-weight: 500;" v-if="!isCollapsed">AURA銷售系統®</h3>
       </div>
 
       <nav class="menu">
@@ -30,6 +33,11 @@ const isMobileMenuVisible = ref(false) // 手機滑出
         <RouterLink to="/products" title="商品列表">📦 <span v-if="!isCollapsed">商品列表</span></RouterLink>
         <RouterLink to="/checkout" title="結帳">📦 <span v-if="!isCollapsed">結帳</span></RouterLink>
       </nav>
+
+      <!-- 主題切換 Switch -->
+      <el-switch v-model="themeStore.isDarkTheme" active-color="#409EFF" inactive-color="#f56c6c"
+        :active-action-icon="Moon" :inactive-action-icon="Sunny" class="theme-switch">
+      </el-switch>
 
       <!-- 桌機收合按鈕 -->
       <button class="collapse-btn" @click="isCollapsed = !isCollapsed">
@@ -45,27 +53,22 @@ const isMobileMenuVisible = ref(false) // 手機滑出
     </main>
   </div>
 </template>
-
 <style scoped>
 .layout {
   display: flex;
   min-height: 100vh;
-  background-color: #1e1e2f;
-  /* 暗色背景 */
-  color: #eee;
-  /* 文字偏亮 */
+  background-color: var(--bg-color);
+  color: var(--text-color);
 }
 
 /* 側邊欄 */
 .sidebar {
   width: 220px;
-  background-color: #2c2c3e;
-  /* 暗色系側邊欄 */
-  color: #eee;
+  background-color: var(--sidebar-color);
+  color: var(--text-color);
   display: flex;
   flex-direction: column;
   padding: 1rem;
-  position: relative;
   transition: width 0.3s ease, transform 0.3s ease;
   z-index: 999;
 }
@@ -87,9 +90,17 @@ const isMobileMenuVisible = ref(false) // 手機滑出
   margin-bottom: 2rem;
 }
 
+/* Logo 預設大小 */
 .logo img {
-  width: 150px;
+  width: 130px;
   border-radius: 8px;
+  transition: width 0.3s ease;
+}
+
+/* 收合側邊欄時縮小 */
+.sidebar.collapsed .logo img {
+  width: 50px;
+  /* 收合後小圖示 */
 }
 
 .menu {
@@ -100,8 +111,7 @@ const isMobileMenuVisible = ref(false) // 手機滑出
 }
 
 .menu a {
-  color: #ccc;
-  /* 偏亮文字 */
+  color: var(--text-color);
   text-decoration: none;
   padding: 0.6rem 1rem;
   border-radius: 8px;
@@ -113,22 +123,34 @@ const isMobileMenuVisible = ref(false) // 手機滑出
 }
 
 .menu a.router-link-exact-active {
-  background-color: #444566;
-  /* 暗色選中背景 */
-  color: #fff;
+  background-color: var(--link-active);
+  color: var(--text-color);
 }
 
 .menu a:hover {
-  background-color: #3b3b55;
-  /* 暗色 hover */
-  color: #fff;
+  background-color: var(--link-hover);
+  color: var(--text-color);
 }
+
+/* 主題切換按鈕 */
+.theme-switch {
+  margin-bottom: 1rem;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+/* 讓文字與 icon 在收合側邊欄時隱藏 */
+.sidebar.collapsed .theme-switch .el-switch__label {
+  display: none;
+}
+
 
 /* 收合按鈕（桌機版） */
 .collapse-btn {
   background: none;
   border: none;
-  color: #eee;
+  color: var(--text-color);
   cursor: pointer;
   font-size: 1.2rem;
   margin-top: auto;
@@ -146,7 +168,14 @@ const isMobileMenuVisible = ref(false) // 手機滑出
 /* 手機漢堡按鈕 */
 .mobile-menu-btn {
   display: none;
-  color: #eee;
+  background-color: var(--btn-bg);
+  /* 暗亮主題切換背景 */
+  padding: 0.3rem 0.5rem;
+  border-radius: 6px;
+}
+
+.mobile-menu-btn:hover {
+  background-color: var(--btn-hover);
 }
 
 /* 主內容區 */
@@ -154,10 +183,8 @@ const isMobileMenuVisible = ref(false) // 手機滑出
   flex: 1;
   padding: 2rem;
   overflow-y: auto;
-  transition: filter 0.3s;
-  background-color: #1e1e2f;
-  /* 主內容區暗色 */
-  color: #eee;
+  background-color: var(--bg-color);
+  color: var(--text-color);
 }
 
 /* 手機版 */
@@ -175,6 +202,7 @@ const isMobileMenuVisible = ref(false) // 手機滑出
     border: none;
     font-size: 1.5rem;
     z-index: 1000;
+    color: var(--text-color);
   }
 
   .sidebar {

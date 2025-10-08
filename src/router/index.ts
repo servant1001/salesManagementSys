@@ -3,6 +3,7 @@ import HomeView from '../views/HomeView.vue'
 import AddProduct from "@/components/AddProduct.vue";
 import ProductList from "@/components/ProductList.vue";
 import Checkout from "@/components/Checkout.vue";
+import Sales from '@/components/Sales.vue';
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -23,6 +24,7 @@ const router = createRouter({
     { path: "/add", component: AddProduct },
     { path: "/products", component: ProductList },
     { path: "/checkout", component: Checkout },
+    { path: "/sales", component: Sales },
   ],
 })
 

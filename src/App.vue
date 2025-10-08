@@ -2,7 +2,7 @@
 import { ref } from 'vue'
 import { RouterLink, RouterView } from 'vue-router'
 import { ElIcon } from 'element-plus'
-import { Menu, Close, Moon, Sunny } from '@element-plus/icons-vue'
+import { Menu, Close, Moon, Sunny, House, ShoppingCart, CreditCard, Document } from '@element-plus/icons-vue'
 import { useThemeStore } from '@/stores/theme'
 
 const themeStore = useThemeStore()
@@ -28,10 +28,33 @@ const isMobileMenuVisible = ref(false)
       </div>
 
       <nav class="menu">
-        <RouterLink to="/" title="首頁">🏠 <span v-if="!isCollapsed">首頁</span></RouterLink>
-        <!-- <RouterLink to="/add" title="新增商品">➕ <span v-if="!isCollapsed">新增商品</span></RouterLink> -->
-        <RouterLink to="/products" title="商品列表">📦 <span v-if="!isCollapsed">商品列表</span></RouterLink>
-        <RouterLink to="/checkout" title="結帳">📦 <span v-if="!isCollapsed">結帳</span></RouterLink>
+        <RouterLink to="/" title="首頁">
+          <el-icon>
+            <House />
+          </el-icon>
+          <span v-if="!isCollapsed">首頁</span>
+        </RouterLink>
+
+        <RouterLink to="/products" title="商品列表">
+          <el-icon>
+            <ShoppingCart />
+          </el-icon>
+          <span v-if="!isCollapsed">商品列表</span>
+        </RouterLink>
+
+        <RouterLink to="/checkout" title="結帳">
+          <el-icon>
+            <CreditCard />
+          </el-icon>
+          <span v-if="!isCollapsed">結帳</span>
+        </RouterLink>
+
+        <RouterLink to="/sales" title="銷售紀錄">
+          <el-icon>
+            <Document />
+          </el-icon>
+          <span v-if="!isCollapsed">銷售紀錄</span>
+        </RouterLink>
       </nav>
 
       <!-- 主題切換 Switch -->

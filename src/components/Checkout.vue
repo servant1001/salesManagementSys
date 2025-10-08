@@ -1,6 +1,10 @@
 <template>
     <div class="checkout-page">
-        <h2>結帳</h2>
+        <el-row class="titleBar">
+            <el-col :span="24" class="title-col">
+                <h2>結帳</h2>
+            </el-col>
+        </el-row>
 
         <Scanner @onScan="handleScan" />
 
@@ -14,12 +18,9 @@
             <el-table-column label="小計" width="120">
                 <template #default="{ row }">{{ row.price * row.quantity }} 元</template>
             </el-table-column>
-            <!-- 刪除欄位 -->
             <el-table-column label="操作" width="100">
                 <template #default="{ $index }">
-                    <el-button type="danger" size="mini" @click="removeItem($index)">
-                        刪除
-                    </el-button>
+                    <el-button type="danger" size="mini" @click="removeItem($index)">刪除</el-button>
                 </template>
             </el-table-column>
         </el-table>
@@ -28,6 +29,15 @@
             總金額：{{ total }} 元
         </div>
         <div v-else style="margin-top: 10px;">尚未掃描任何商品</div>
+
+        <!-- 「全部清空」按鈕 -->
+        <el-button type="warning" style="margin-top: 20px;" :disabled="cart.length === 0" @click="clearCart">
+            全部清空
+        </el-button>
+
+        <el-button type="success" style="margin-top: 20px;" :disabled="cart.length === 0" @click="confirmCheckout">
+            確認結帳
+        </el-button>
     </div>
 </template>
 
@@ -36,7 +46,7 @@ import { reactive, computed } from "vue";
 import Scanner from "@/components/Scanner.vue";
 import { ElMessage } from "element-plus";
 import { db } from "@/firebase";
-import { ref as dbRef, get, child } from "firebase/database";
+import { ref as dbRef, get, child, push, set } from "firebase/database";
 
 interface CartItem {
     barcode: string;
@@ -125,13 +135,60 @@ async function handleScan(scannedCode: string) {
 function removeItem(index: number) {
     cart.splice(index, 1);
 }
+
+// 清空購物車
+function clearCart() {
+    cart.splice(0, cart.length);
+    ElMessage({
+        message: "購物車已全部清空",
+        type: "info",
+        duration: 1000
+    });
+}
+
+
+// 確認結帳
+async function confirmCheckout() {
+    if (!cart.length) return;
+
+    const salesRef = dbRef(db, "sales");
+    const newSaleRef = push(salesRef); // 生成唯一 key
+    const saleData = {
+        timestamp: Date.now(),
+        items: cart.map(item => ({
+            barcode: item.barcode,
+            name: item.name,
+            price: item.price,
+            quantity: item.quantity
+        })),
+        total: total.value
+    };
+
+    await set(newSaleRef, saleData);
+
+    ElMessage({
+        message: "結帳完成！",
+        type: "success",
+        duration: 1500
+    });
+
+    cart.splice(0, cart.length); // 清空購物車
+}
 </script>
-
-
 <style scoped>
-.checkout-page {
-    padding: 1rem;
-    max-width: 480px;
-    margin: 0 auto;
+.titleBar {
+    margin: 0 0 10px 0;
+}
+
+.title-col {
+    text-align: center;
+    /* 水平置中 */
+}
+
+.title-col h2 {
+    margin: 0;
+    /* 去掉多餘 margin */
+    font-weight: 600;
+    /* 可選：字體粗細 */
 }
 </style>

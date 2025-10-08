@@ -46,7 +46,7 @@ import { reactive, computed } from "vue";
 import Scanner from "@/components/Scanner.vue";
 import { ElMessage } from "element-plus";
 import { db } from "@/firebase";
-import { ref as dbRef, get, child, push, set } from "firebase/database";
+import { ref as dbRef, get, child, push, set, update } from "firebase/database";
 
 interface CartItem {
     barcode: string;
@@ -85,51 +85,52 @@ async function handleScan(scannedCode: string) {
     recentScans.add(scannedCode);
     setTimeout(() => recentScans.delete(scannedCode), SCAN_COOLDOWN);
 
-    // --------- 以下是原本查 DB 與加入購物車邏輯 ---------
+    // 取得商品資料
     const dbRoot = dbRef(db);
     const snapshot = await get(child(dbRoot, "products"));
 
-    if (snapshot.exists()) {
-        const productsData = snapshot.val();
+    if (!snapshot.exists()) {
+        ElMessage({ message: "資料庫中沒有商品資料", type: "warning", duration: 1500 });
+        return;
+    }
 
-        const productEntry = Object.entries(productsData).find(
-            ([key, value]: [string, any]) => (value as Product).code === scannedCode
-        );
+    const productsData = snapshot.val() as Record<string, any>;
 
-        if (productEntry) {
-            const [barcode, data] = productEntry;
-            const product = data as Product;
+    const productEntry = Object.entries(productsData).find(
+        ([id, data]) => (data as Product).code === scannedCode
+    );
 
-            cart.push({
-                barcode,
-                name: product.name,
-                price: product.price,
-                quantity: 1
-            });
+    if (!productEntry) {
+        ElMessage({ message: `找不到代碼 ${scannedCode} 的商品`, type: "warning", duration: 1500 });
+        return;
+    }
 
-            ElMessage({
-                message: `已掃描: ${product.name} / ${product.price}元`,
-                type: "success",
-                duration: 1000
-            });
+    const [barcode, data] = productEntry;
+    const product = data as Product;
 
-            beepSound.currentTime = 0;
-            beepSound.play();
-        } else {
-            ElMessage({
-                message: `找不到代碼 ${scannedCode} 的商品`,
-                type: "warning",
-                duration: 1500
-            });
-        }
+    // ✅ 檢查購物車是否已存在
+    const existingItem = cart.find(item => item.barcode === barcode);
+    if (existingItem) {
+        existingItem.quantity += 1; // 數量加 1
     } else {
-        ElMessage({
-            message: "資料庫中沒有商品資料",
-            type: "warning",
-            duration: 1500
+        cart.push({
+            barcode,
+            name: product.name,
+            price: product.price,
+            quantity: 1
         });
     }
+
+    ElMessage({
+        message: `已掃描: ${product.name} / ${product.price}元`,
+        type: "success",
+        duration: 1000
+    });
+
+    beepSound.currentTime = 0;
+    beepSound.play();
 }
+
 
 // 刪除某筆資料
 function removeItem(index: number) {
@@ -152,7 +153,33 @@ async function confirmCheckout() {
     if (!cart.length) return;
 
     const salesRef = dbRef(db, "sales");
-    const newSaleRef = push(salesRef); // 生成唯一 key
+    const productsRef = dbRef(db, "products"); // 商品資料庫參考
+
+    // 1️⃣ 先取得最新商品資料
+    const snapshot = await get(productsRef);
+    if (!snapshot.exists()) {
+        ElMessage({ message: "資料庫中沒有商品資料", type: "warning" });
+        return;
+    }
+    const productsData = snapshot.val() as Record<string, any>;
+
+    // 2️⃣ 準備更新庫存
+    const updates: Record<string, any> = {};
+    for (const item of cart) {
+        // 找到對應商品
+        const productEntry = Object.entries(productsData).find(
+            ([id, data]) => id === item.barcode || data.code === item.barcode
+        );
+        if (!productEntry) continue;
+        const [id, data] = productEntry;
+        const currentStock = data.stock ?? 0;
+        const newStock = Math.max(currentStock - item.quantity, 0); // 避免庫存變負數
+        updates[`${id}/stock`] = newStock;
+        updates[`${id}/updated`] = Date.now(); // 更新時間
+    }
+
+    // 3️⃣ 同時更新商品庫存與新增銷售紀錄
+    const newSaleRef = push(salesRef);
     const saleData = {
         timestamp: Date.now(),
         items: cart.map(item => ({
@@ -164,15 +191,19 @@ async function confirmCheckout() {
         total: total.value
     };
 
-    await set(newSaleRef, saleData);
+    try {
+        // 使用 update 同步更新多個節點
+        await Promise.all([
+            update(productsRef, updates),   // 更新庫存
+            set(newSaleRef, saleData)      // 新增銷售紀錄
+        ]);
 
-    ElMessage({
-        message: "結帳完成！",
-        type: "success",
-        duration: 1500
-    });
-
-    cart.splice(0, cart.length); // 清空購物車
+        ElMessage({ message: "結帳完成，庫存已更新！", type: "success", duration: 1500 });
+        cart.splice(0, cart.length); // 清空購物車
+    } catch (error) {
+        console.error(error);
+        ElMessage({ message: "結帳失敗，請重試", type: "error", duration: 1500 });
+    }
 }
 </script>
 <style scoped>

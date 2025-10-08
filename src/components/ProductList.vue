@@ -25,44 +25,44 @@
         <el-table :data="filteredProducts" style="width: 100%" border :class="tableThemeClass"
             :header-cell-style="{ background: `var(--table-header-bg)`, color: `var(--table-header-text)` }">
 
-            <el-table-column prop="name" label="商品名稱" width="140">
+            <el-table-column prop="name" label="商品名稱" min-width="140">
                 <template #default="{ row }">
                     <el-input v-if="editMode" v-model="editableProducts[row.id]!.name" />
                     <span v-else>{{ row.name }}</span>
                 </template>
             </el-table-column>
 
-            <el-table-column prop="price" label="定價" width="60">
+            <el-table-column prop="price" label="定價" min-width="60">
                 <template #default="{ row }">
                     <el-input v-if="editMode" type="number" min="0" v-model.number="editableProducts[row.id]!.price" />
                     <span v-else>{{ row.price }}</span>
                 </template>
             </el-table-column>
 
-            <el-table-column prop="cost" label="成本" width="60">
+            <el-table-column prop="cost" label="成本" min-width="60">
                 <template #default="{ row }">
                     <el-input v-if="editMode" type="number" min="0" v-model.number="editableProducts[row.id]!.cost" />
                     <span v-else>{{ row.cost }}</span>
                 </template>
             </el-table-column>
 
-            <el-table-column prop="stock" label="庫存數量" width="100">
+            <el-table-column prop="stock" label="庫存數量" min-width="100">
                 <template #default="{ row }">
-                    <el-input-number v-if="editMode" :min="0" style="width: 100px;"
+                    <el-input-number v-if="editMode" :min="0" style="min-width: 100px;"
                         v-model.number="editableProducts[row.id]!.stock" />
                     <span v-else>{{ row.stock }}</span>
                 </template>
             </el-table-column>
 
-            <el-table-column prop="code" label="商品編號" width="140">
+            <el-table-column prop="code" label="商品編號" min-width="140">
                 <template #default="{ row }">
                     <el-input v-if="editMode" v-model="editableProducts[row.id]!.code" />
                     <span v-else>{{ row.code }}</span>
                 </template>
             </el-table-column>
 
-            <el-table-column prop="created" label="新增時間" width="190" :formatter="formatDate" />
-            <el-table-column prop="updated" label="更新時間" width="190" :formatter="formatDate" />
+            <el-table-column prop="created" label="新增時間" min-width="190" :formatter="formatDate" />
+            <el-table-column prop="updated" label="更新時間" min-width="190" :formatter="formatDate" />
         </el-table>
 
         <div v-if="!filteredProducts.length" style="margin-top: 1rem">暫無商品資料</div>

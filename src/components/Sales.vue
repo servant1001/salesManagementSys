@@ -27,15 +27,22 @@
         <div v-else>尚無銷售紀錄</div>
 
         <!-- 彈窗顯示商品明細 -->
-        <el-dialog title="商品明細" v-model="dialogVisible" width="400px" :before-close="() => (dialogVisible = false)">
-            <ul>
-                <li v-for="(item, idx) in selectedItems" :key="idx">
-                    {{ item.name }} × {{ item.quantity }} = {{ item.price * item.quantity }} 元
-                </li>
-            </ul>
-            <span slot="footer" class="dialog-footer">
-                <el-button @click="dialogVisible = false">關閉</el-button>
-            </span>
+        <el-dialog title="商品明細" v-model="dialogVisible" width="90%" :before-close="() => (dialogVisible = false)">
+            <el-table :data="selectedItems" border style="width: 100%;" size="small">
+                <el-table-column prop="name" label="名稱" />
+                <el-table-column prop="price" label="單價" width="100">
+                    <template #default="{ row }">{{ row.price }} 元</template>
+                </el-table-column>
+                <el-table-column prop="quantity" label="數量" width="80" />
+                <el-table-column label="小計" width="120">
+                    <template #default="{ row }">{{ row.price * row.quantity }} 元</template>
+                </el-table-column>
+            </el-table>
+
+            <!-- 顯示總金額 -->
+            <div style="text-align: right; margin-top: 10px; font-weight: bold; font-size: 1.1rem;">
+                總金額：{{selectedItems.reduce((sum, item) => sum + item.price * item.quantity, 0)}} 元
+            </div>
         </el-dialog>
     </div>
 </template>

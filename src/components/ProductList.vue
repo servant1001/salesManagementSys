@@ -227,7 +227,7 @@ onMounted(fetchProducts);
 }
 
 .title-col {
-    text-align: center;
+    text-align: left;
     /* 水平置中 */
 }
 

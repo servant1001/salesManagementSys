@@ -31,3 +31,10 @@ body.light-theme {
   --table-header-bg: #f0f0f0;
   --table-header-text: #333;
 }
+
+@media (max-width: 468px) {
+  .title-col {
+    text-align: center !important;
+    /* 水平置中 */
+  }
+}

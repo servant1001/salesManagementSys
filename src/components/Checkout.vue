@@ -11,16 +11,30 @@
         <h3 style="margin-top: 20px;">已掃描商品列表</h3>
         <el-table v-if="cart.length" :data="cart" border style="width: 100%; margin-top: 10px;">
             <el-table-column prop="name" label="商品名稱" />
-            <el-table-column prop="price" label="單價" width="100">
-                <template #default="{ row }">{{ row.price }} 元</template>
+            <el-table-column label="單價" width="100">
+                <template #default="{ row }">
+                    <el-input v-if="row.editing" v-model.number="row.price" size="small" />
+                    <span v-else>{{ row.price }} 元</span>
+                </template>
             </el-table-column>
-            <el-table-column prop="quantity" label="數量" width="80" />
+            <el-table-column label="數量" width="110">
+                <template #default="{ row }">
+                    <el-input-number v-if="row.editing" v-model.number="row.quantity" size="small" style="width: 80px;"
+                        min="0" />
+                    <span v-else>{{ row.quantity }}</span>
+                </template>
+            </el-table-column>
             <el-table-column label="小計" width="120">
                 <template #default="{ row }">{{ row.price * row.quantity }} 元</template>
             </el-table-column>
-            <el-table-column label="操作" width="100">
-                <template #default="{ $index }">
-                    <el-button type="danger" size="mini" @click="removeItem($index)">刪除</el-button>
+            <el-table-column label="操作" width="150">
+                <template #default="{ row, $index }">
+                    <el-button type="primary" size="mini" @click="toggleEdit(row)">
+                        {{ row.editing ? "完成" : "編輯" }}
+                    </el-button>
+                    <el-button type="danger" size="mini" style="margin-left: 5px" @click="removeItem($index)">
+                        刪除
+                    </el-button>
                 </template>
             </el-table-column>
         </el-table>
@@ -53,6 +67,7 @@ interface CartItem {
     name: string;
     price: number;
     quantity: number;
+    editing?: boolean; // 編輯狀態
 }
 
 const cart = reactive<CartItem[]>([]);
@@ -81,25 +96,19 @@ async function handleScan(scannedCode: string) {
         return;
     }
 
-    // 加入 recentScans
     recentScans.add(scannedCode);
     setTimeout(() => recentScans.delete(scannedCode), SCAN_COOLDOWN);
 
-    // 取得商品資料
     const dbRoot = dbRef(db);
     const snapshot = await get(child(dbRoot, "products"));
-
     if (!snapshot.exists()) {
         ElMessage({ message: "資料庫中沒有商品資料", type: "warning", duration: 1500 });
         return;
     }
-
     const productsData = snapshot.val() as Record<string, any>;
-
     const productEntry = Object.entries(productsData).find(
         ([id, data]) => (data as Product).code === scannedCode
     );
-
     if (!productEntry) {
         ElMessage({ message: `找不到代碼 ${scannedCode} 的商品`, type: "warning", duration: 1500 });
         return;
@@ -108,7 +117,6 @@ async function handleScan(scannedCode: string) {
     const [barcode, data] = productEntry;
     const product = data as Product;
 
-    // ✅ 檢查購物車是否已存在
     const existingItem = cart.find(item => item.barcode === barcode);
     if (existingItem) {
         existingItem.quantity += 1; // 數量加 1
@@ -117,7 +125,8 @@ async function handleScan(scannedCode: string) {
             barcode,
             name: product.name,
             price: product.price,
-            quantity: 1
+            quantity: 1,
+            editing: false
         });
     }
 
@@ -147,6 +156,10 @@ function clearCart() {
     });
 }
 
+// 切換編輯
+function toggleEdit(item: CartItem) {
+    item.editing = !item.editing;
+}
 
 // 確認結帳
 async function confirmCheckout() {
@@ -155,7 +168,6 @@ async function confirmCheckout() {
     const salesRef = dbRef(db, "sales");
     const productsRef = dbRef(db, "products"); // 商品資料庫參考
 
-    // 1️⃣ 先取得最新商品資料
     const snapshot = await get(productsRef);
     if (!snapshot.exists()) {
         ElMessage({ message: "資料庫中沒有商品資料", type: "warning" });
@@ -163,10 +175,8 @@ async function confirmCheckout() {
     }
     const productsData = snapshot.val() as Record<string, any>;
 
-    // 2️⃣ 準備更新庫存
     const updates: Record<string, any> = {};
     for (const item of cart) {
-        // 找到對應商品
         const productEntry = Object.entries(productsData).find(
             ([id, data]) => id === item.barcode || data.code === item.barcode
         );
@@ -178,7 +188,6 @@ async function confirmCheckout() {
         updates[`${id}/updated`] = Date.now(); // 更新時間
     }
 
-    // 3️⃣ 同時更新商品庫存與新增銷售紀錄
     const newSaleRef = push(salesRef);
     const saleData = {
         timestamp: Date.now(),
@@ -192,12 +201,10 @@ async function confirmCheckout() {
     };
 
     try {
-        // 使用 update 同步更新多個節點
         await Promise.all([
             update(productsRef, updates),   // 更新庫存
             set(newSaleRef, saleData)      // 新增銷售紀錄
         ]);
-
         ElMessage({ message: "結帳完成，庫存已更新！", type: "success", duration: 1500 });
         cart.splice(0, cart.length); // 清空購物車
     } catch (error) {
@@ -212,7 +219,7 @@ async function confirmCheckout() {
 }
 
 .title-col {
-    text-align: center;
+    text-align: left;
     /* 水平置中 */
 }
 

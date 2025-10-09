@@ -82,7 +82,7 @@ const beepSound = new Audio("/scanner-beep.mp3"); // 放在 public/beep.mp3
 // 記錄最近掃描的 code
 const recentScans = new Set<string>();
 
-const SCAN_COOLDOWN = 1000; // 1秒內重複掃描忽略
+const SCAN_COOLDOWN = 2000; // 2秒內重複掃描忽略
 
 interface Product {
     code: string;
@@ -91,13 +91,13 @@ interface Product {
 }
 
 async function handleScan(scannedCode: string) {
-    if (recentScans.has(scannedCode)) {
-        // 短時間內已掃過，不重複處理
-        return;
-    }
+    // if (recentScans.has(scannedCode)) {
+    //     // 短時間內已掃過，不重複處理
+    //     return;
+    // }
 
-    recentScans.add(scannedCode);
-    setTimeout(() => recentScans.delete(scannedCode), SCAN_COOLDOWN);
+    // recentScans.add(scannedCode);
+    // setTimeout(() => recentScans.delete(scannedCode), SCAN_COOLDOWN);
 
     const dbRoot = dbRef(db);
     const snapshot = await get(child(dbRoot, "products"));

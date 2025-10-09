@@ -1,8 +1,8 @@
 <template>
     <div>
-        <el-select v-model="selectedCameraId" placeholder="選擇鏡頭" @change="switchCamera"
-            style="width: 250px; margin-bottom: 10px;">
-            <el-option v-for="camera in cameras" :key="camera.deviceId" :label="camera.label"
+        <el-select v-model="selectedCameraId" placeholder="選擇鏡頭" style="width: 200px; margin-right: 10px;"
+            @change="switchCamera">
+            <el-option v-for="camera in cameras" :key="camera.deviceId" :label="camera.label || camera.deviceId"
                 :value="camera.deviceId"></el-option>
         </el-select>
 
@@ -10,98 +10,88 @@
             {{ scanning ? "停止掃描" : "開始掃描" }}
         </el-button>
 
-        <video id="video" autoplay muted playsinline
-            style="width: 320px; height: 240px; margin-top: 10px; border: 1px solid #ccc;"></video>
+        <video ref="video" width="320" height="240" style="border:1px solid #ccc; border-radius: 8px; margin-top: 10px;"
+            v-show="scanning"></video>
+
+        <!-- 掃描提示 -->
+        <div v-if="scanMessage" style="margin-top: 10px; color: green; font-weight: bold;">
+            {{ scanMessage }}
+        </div>
     </div>
 </template>
 
 <script setup lang="ts">
 import { ref, onMounted, onBeforeUnmount } from "vue";
-import { BrowserMultiFormatReader } from "@zxing/browser";
-import type { IScannerControls } from "@zxing/browser";
-import { ElMessage } from "element-plus";
+import { BrowserMultiFormatReader } from "@zxing/library";
 
+const video = ref<HTMLVideoElement | null>(null);
 const scanning = ref(false);
-const cameras = ref<{ deviceId: string; label: string }[]>([]);
+const codeReader = new BrowserMultiFormatReader();
+const cameras = ref<MediaDeviceInfo[]>([]);
 const selectedCameraId = ref<string | null>(null);
 
-let codeReader: BrowserMultiFormatReader | null = null;
-let controls: IScannerControls | null = null;
+const scanMessage = ref<string | null>(null); // 掃描成功訊息
+let lastScanTime = 0;
+const scanCooldown = 2000; // 2秒冷卻
 
-const emit = defineEmits(["onScan"]);
+const emit = defineEmits(["onScan"]); // 向父元件傳遞掃描結果
 
-// 取得攝像頭列表
+// 取得可用攝像頭
 async function getCameras() {
     try {
         const devices = await navigator.mediaDevices.enumerateDevices();
-        const videoDevices = devices.filter((d) => d.kind === "videoinput");
-        cameras.value = videoDevices.map((d) => ({
-            deviceId: d.deviceId,
-            label: d.label || `Camera ${d.deviceId}`,
-        }));
-        if (videoDevices.length > 0 && videoDevices[0]?.deviceId) {
-            selectedCameraId.value = videoDevices[0].deviceId;
+        cameras.value = devices.filter(d => d.kind === "videoinput");
+        if (cameras.value.length > 0) {
+            selectedCameraId.value = cameras.value[0]?.deviceId ?? null;
         }
     } catch (err) {
-        console.error("取得攝影機失敗", err);
-        ElMessage.error("取得攝影機失敗");
+        console.error("取得攝像頭失敗:", err);
     }
 }
 
-// 開始掃描
-async function startScanner(deviceId: string) {
-    if (!deviceId) return;
-    const videoElem = document.getElementById("video") as HTMLVideoElement;
-    codeReader = new BrowserMultiFormatReader();
+function toggleScanner() {
+    if (!scanning.value) startScanner();
+    else stopScanner();
+}
 
-    try {
-        scanning.value = true;
+function startScanner() {
+    if (!video.value) return;
+    scanning.value = true;
 
-        controls = await codeReader.decodeFromVideoDevice(
-            deviceId,
-            videoElem,
-            (result: any, err: any) => {
-                if (result) {
-                    console.log("掃描成功:", result.text);
-                    emit("onScan", result.text);
-                    ElMessage.success(`掃描成功: ${result.text}`);
-                }
-                if (err) {
-                    // 忽略 NotFoundException，避免頻繁報錯
-                    if (err.name !== "NotFoundException") console.warn("掃描錯誤:", err);
+    codeReader.decodeFromVideoDevice(
+        selectedCameraId.value,
+        video.value,
+        (resultObj, err) => {
+            if (resultObj) {
+                const now = Date.now();
+                if (now - lastScanTime >= scanCooldown) {
+                    lastScanTime = now;
+                    const text = resultObj.getText();
+                    emit("onScan", text);
+
+                    // 顯示掃描成功提示
+                    scanMessage.value = `掃描成功: ${text}`;
+                    setTimeout(() => scanMessage.value = null, 2000); // 2秒後消失
                 }
             }
-        );
-    } catch (err) {
-        console.error("掃描啟動失敗:", err);
-        ElMessage.error("掃描啟動失敗");
-        scanning.value = false;
-    }
+            if (err && err.name !== "NotFoundException") {
+                console.error(err);
+            }
+        }
+    );
 }
 
-// 停止掃描
 function stopScanner() {
     scanning.value = false;
-    if (controls) {
-        controls.stop();
-        controls = null;
-    }
-    codeReader = null;
-    ElMessage.info("掃描已停止");
+    codeReader.reset();
 }
 
 // 切換鏡頭
-function switchCamera(deviceId: string) {
-    if (scanning.value && deviceId) {
+function switchCamera() {
+    if (scanning.value) {
         stopScanner();
-        setTimeout(() => startScanner(deviceId), 300); // 確保攝像頭釋放後再啟動
+        startScanner();
     }
-}
-
-// 開關掃描
-function toggleScanner() {
-    if (!scanning.value && selectedCameraId.value) startScanner(selectedCameraId.value);
-    else stopScanner();
 }
 
 onMounted(() => getCameras());

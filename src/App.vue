@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { onMounted, ref } from 'vue'
 import { RouterLink, RouterView } from 'vue-router'
 import { ElIcon } from 'element-plus'
 import { Menu, Close, Moon, Sunny, House, ShoppingCart, CreditCard, Document } from '@element-plus/icons-vue'
@@ -9,6 +9,10 @@ const themeStore = useThemeStore()
 
 const isCollapsed = ref(false)
 const isMobileMenuVisible = ref(false)
+
+onMounted(() => {
+  document.title = "AURA銷售系統®";
+})
 </script>
 
 <template>

@@ -5,7 +5,6 @@
             <el-option v-for="camera in cameras" :key="camera.deviceId" :label="camera.label || camera.deviceId"
                 :value="camera.deviceId"></el-option>
         </el-select>
-
         <el-button type="primary" @click="toggleScanner">
             {{ scanning ? "停止掃描" : "開始掃描" }}
         </el-button>
@@ -41,14 +40,17 @@ async function getCameras() {
     try {
         const devices = await navigator.mediaDevices.enumerateDevices();
         cameras.value = devices.filter(d => d.kind === "videoinput");
-        if (cameras.value.length > 0) {
+
+        const lastCameraId = localStorage.getItem("lastCameraId");
+        if (lastCameraId && cameras.value.some(c => c.deviceId === lastCameraId)) {
+            selectedCameraId.value = lastCameraId;
+        } else if (cameras.value.length > 0) {
             selectedCameraId.value = cameras.value[0]?.deviceId ?? null;
         }
     } catch (err) {
         console.error("取得攝像頭失敗:", err);
     }
 }
-
 function toggleScanner() {
     if (!scanning.value) startScanner();
     else stopScanner();
@@ -91,6 +93,10 @@ function switchCamera() {
     if (scanning.value) {
         stopScanner();
         startScanner();
+    }
+    // 儲存選擇到 localStorage 下次直接默認前一次選擇的鏡頭
+    if (selectedCameraId.value) {
+        localStorage.setItem("lastCameraId", selectedCameraId.value);
     }
 }
 

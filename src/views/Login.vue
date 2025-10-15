@@ -1,19 +1,31 @@
 <template>
-    <div class="login-container">
-        <h2>登入帳號</h2>
+    <div class="login-page">
+        <div class="login-container">
+            <!-- Logo -->
+            <div class="logo-container">
+                <img src="@/assets/logo.png" alt="Logo" class="logo" />
+            </div>
 
-        <el-input v-model="email" placeholder="Email" clearable />
-        <el-input v-model="password" type="password" placeholder="密碼" clearable />
+            <h2 class="login-title">登入帳號</h2>
 
-        <el-button type="primary" @click="handleLogin" :loading="loading">登入</el-button>
-        <el-button type="danger" @click="handleGoogleLogin" :loading="loading">使用 Google 登入</el-button>
+            <el-input v-model="email" placeholder="Email" clearable />
+            <el-input v-model="password" type="password" placeholder="密碼" clearable />
 
-        <p class="link">
-            還沒有帳號？
-            <RouterLink to="/register" class="register-link">點此註冊</RouterLink>
-        </p>
+            <el-button class="full-width-btn" type="primary" @click="handleLogin" :loading="loading">
+                登入
+            </el-button>
+            <el-button class="full-width-btn" style="margin: 0;" type="danger" @click="handleGoogleLogin"
+                :loading="loading">
+                使用 Google 登入
+            </el-button>
 
-        <p v-if="error" class="error">{{ error }}</p>
+            <p class="link">
+                還沒有帳號？
+                <RouterLink to="/register" class="register-link">點此註冊</RouterLink>
+            </p>
+
+            <p v-if="error" class="error">{{ error }}</p>
+        </div>
     </div>
 </template>
 
@@ -21,11 +33,7 @@
 import { ref } from 'vue'
 import { useRouter, RouterLink } from 'vue-router'
 import { ElMessage } from 'element-plus'
-import {
-    signInWithEmailAndPassword,
-    GoogleAuthProvider,
-    signInWithPopup,
-} from 'firebase/auth'
+import { signInWithEmailAndPassword, GoogleAuthProvider, signInWithPopup } from 'firebase/auth'
 import { auth } from '@/firebase'
 
 const router = useRouter()
@@ -38,7 +46,6 @@ const handleLogin = async () => {
     error.value = ''
     loading.value = true
     try {
-        // 直接登入，捕捉錯誤碼
         await signInWithEmailAndPassword(auth, email.value.trim(), password.value)
         ElMessage.success('登入成功！')
         router.push('/')
@@ -62,11 +69,7 @@ const handleGoogleLogin = async () => {
         const provider = new GoogleAuthProvider()
         const result = await signInWithPopup(auth, provider)
         const user = result.user
-
-        // 使用 Google 名稱當帳號
         const account = user.displayName
-        console.log('Google 帳號:', account)
-
         ElMessage.success(`Google 登入成功，帳號: ${account}`)
         router.push('/')
     } catch (err: any) {
@@ -78,15 +81,51 @@ const handleGoogleLogin = async () => {
 </script>
 
 <style scoped>
+/* ✅ 外層背景容器 */
+.login-page {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    background: url('@/assets/aura_bg.png') no-repeat center center;
+    background-size: cover;
+    background-attachment: scroll;
+}
+
+/* ✅ 登入框本體 */
 .login-container {
-    max-width: 400px;
-    margin: 5rem auto;
+    width: 400px;
+    max-width: 90%;
     padding: 2rem;
-    background-color: var(--sidebar-color);
+    background-color: rgba(0, 0, 0, 0.6);
     border-radius: 10px;
     display: flex;
     flex-direction: column;
+    align-items: center;
     gap: 1rem;
+    box-sizing: border-box;
+    text-align: center;
+}
+
+.logo-container {
+    display: flex;
+    justify-content: center;
+}
+
+.logo {
+    width: 150px;
+    height: 150px;
+    object-fit: contain;
+}
+
+.login-title {
+    color: #fff;
+    text-align: center;
+    margin: 0;
+}
+
+.full-width-btn {
+    width: 100%;
 }
 
 .error {
@@ -97,11 +136,27 @@ const handleGoogleLogin = async () => {
 .link {
     text-align: center;
     font-size: 0.9rem;
+    color: #fff;
 }
 
 .register-link {
     color: #409EFF;
     text-decoration: underline;
     cursor: pointer;
+}
+
+/* ✅ 手機版仍能置中 */
+@media (max-width: 768px) {
+    .login-page {
+        min-height: 100dvh;
+        align-items: center;
+        justify-content: center;
+        padding: 1rem;
+    }
+
+    .login-container {
+        width: 100%;
+        max-width: 380px;
+    }
 }
 </style>

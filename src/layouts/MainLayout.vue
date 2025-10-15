@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, ref } from "vue";
+import { onMounted, ref, onUnmounted } from "vue";
 import { useRouter, RouterLink, RouterView } from "vue-router";
 import { ElIcon, ElButton, ElSwitch } from "element-plus";
 import { Menu, Close, Moon, Sunny, House, ShoppingCart, CreditCard, Document, User } from "@element-plus/icons-vue";
@@ -13,7 +13,6 @@ const router = useRouter();
 const isCollapsed = ref(false);
 const isMobileMenuVisible = ref(false);
 
-// 登出 + 自動跳轉 + 手機版側邊欄收起
 const handleLogout = async () => {
     try {
         await logout();
@@ -24,8 +23,27 @@ const handleLogout = async () => {
     }
 };
 
+const windowWidth = ref(window.innerWidth);
+
+const updateWidth = () => {
+    windowWidth.value = window.innerWidth;
+};
+
+// 計算手機 viewport 高度
+const setVh = () => {
+    const vh = window.innerHeight * 0.01;
+    document.documentElement.style.setProperty('--vh', `${vh}px`);
+};
+
 onMounted(() => {
-    console.log("當前用戶:", user.value);
+    window.addEventListener("resize", updateWidth);
+    setVh();
+    window.addEventListener('resize', setVh);
+});
+
+onUnmounted(() => {
+    window.removeEventListener("resize", updateWidth);
+    window.removeEventListener('resize', setVh);
 });
 </script>
 
@@ -40,63 +58,90 @@ onMounted(() => {
 
         <!-- 側邊欄 -->
         <aside :class="['sidebar', { collapsed: isCollapsed, active: isMobileMenuVisible }]">
-            <div class="logo">
-                <img alt="Vue logo" src="@/assets/logo.png" />
-                <h3 v-if="!isCollapsed" style="font-weight: 500">AURA銷售系統®</h3>
-            </div>
-
-            <nav class="menu">
-                <RouterLink to="/" title="首頁">
-                    <el-icon>
-                        <House />
-                    </el-icon>
-                    <span v-if="!isCollapsed">首頁</span>
-                </RouterLink>
-                <RouterLink to="/products" title="商品列表">
-                    <el-icon>
-                        <ShoppingCart />
-                    </el-icon>
-                    <span v-if="!isCollapsed">商品列表</span>
-                </RouterLink>
-                <RouterLink to="/checkout" title="結帳">
-                    <el-icon>
-                        <CreditCard />
-                    </el-icon>
-                    <span v-if="!isCollapsed">結帳</span>
-                </RouterLink>
-                <RouterLink to="/sales" title="銷售紀錄">
-                    <el-icon>
-                        <Document />
-                    </el-icon>
-                    <span v-if="!isCollapsed">銷售紀錄</span>
-                </RouterLink>
-                <RouterLink to="/users" title="用戶管理">
-                    <el-icon>
-                        <User />
-                    </el-icon>
-                    <span v-if="!isCollapsed">用戶管理</span>
-                </RouterLink>
-            </nav>
-
-            <el-switch v-model="themeStore.isDarkTheme" active-color="#409EFF" inactive-color="#f56c6c"
-                :active-action-icon="Moon" :inactive-action-icon="Sunny" class="theme-switch" />
-
-            <!-- 側邊欄底部：用戶頭貼 + 名稱 + 登出 -->
-            <div class="sidebar-footer">
-                <div class="user-info">
-                    <el-icon class="avatar">
-                        <User />
-                    </el-icon>
-                    <span v-if="!isCollapsed">{{ user?.displayName }}</span>
+            <!-- 上半部滾動區 -->
+            <div class="sidebar-content">
+                <div class="logo">
+                    <img alt="Vue logo" src="@/assets/logo.png" />
+                    <h3 v-if="!isCollapsed" style="font-weight: 500">AURA銷售系統®</h3>
                 </div>
-                <el-button class="logout-btn" type="danger" @click="handleLogout">登出</el-button>
+
+                <nav class="menu">
+                    <RouterLink to="/" title="首頁">
+                        <el-icon>
+                            <House />
+                        </el-icon>
+                        <span v-if="!isCollapsed">首頁</span>
+                    </RouterLink>
+                    <RouterLink to="/products" title="商品列表">
+                        <el-icon>
+                            <ShoppingCart />
+                        </el-icon>
+                        <span v-if="!isCollapsed">商品列表</span>
+                    </RouterLink>
+                    <RouterLink to="/checkout" title="結帳">
+                        <el-icon>
+                            <CreditCard />
+                        </el-icon>
+                        <span v-if="!isCollapsed">結帳</span>
+                    </RouterLink>
+                    <RouterLink to="/sales" title="銷售紀錄">
+                        <el-icon>
+                            <Document />
+                        </el-icon>
+                        <span v-if="!isCollapsed">銷售紀錄</span>
+                    </RouterLink>
+                    <RouterLink to="/users" title="用戶管理">
+                        <el-icon>
+                            <User />
+                        </el-icon>
+                        <span v-if="!isCollapsed">用戶管理</span>
+                    </RouterLink>
+                    <RouterLink to="/users" title="用戶管理">
+                        <el-icon>
+                            <User />
+                        </el-icon>
+                        <span v-if="!isCollapsed">用戶管理</span>
+                    </RouterLink>
+                    <RouterLink to="/users" title="用戶管理">
+                        <el-icon>
+                            <User />
+                        </el-icon>
+                        <span v-if="!isCollapsed">用戶管理</span>
+                    </RouterLink>
+                    <RouterLink to="/users" title="用戶管理">
+                        <el-icon>
+                            <User />
+                        </el-icon>
+                        <span v-if="!isCollapsed">用戶管理</span>
+                    </RouterLink>
+                </nav>
+
+                <div class="bottom-section">
+                    <el-switch v-model="themeStore.isDarkTheme" active-color="#409EFF" inactive-color="#f56c6c"
+                        :active-action-icon="Moon" :inactive-action-icon="Sunny" class="theme-switch" />
+                    <div class="user-info">
+                        <el-icon class="avatar">
+                            <User />
+                        </el-icon>
+                        <span v-if="!isCollapsed">{{ user?.displayName }}</span>
+                    </div>
+                    <el-button class="logout-btn" type="danger" @click="handleLogout">登出</el-button>
+                </div>
+
+
             </div>
 
-            <button class="collapse-btn" @click="isCollapsed = !isCollapsed">
-                <el-icon>
-                    <component :is="isCollapsed ? Menu : Close" />
-                </el-icon>
-            </button>
+            <!-- 底部固定區 -->
+            <div class="sidebar-footer">
+
+
+                <!-- 收合按鈕 -->
+                <button v-if="windowWidth > 768" class="collapse-btn" @click="isCollapsed = !isCollapsed">
+                    <el-icon>
+                        <component :is="isCollapsed ? Menu : Close" />
+                    </el-icon>
+                </button>
+            </div>
         </aside>
 
         <!-- 主內容 -->
@@ -123,6 +168,16 @@ onMounted(() => {
     padding: 1rem;
     transition: width 0.3s ease, transform 0.3s ease;
     z-index: 999;
+}
+
+.sidebar-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+    /* 改成 auto */
+    -webkit-overflow-scrolling: touch;
+    /* iOS 手機滑動順暢 */
 }
 
 .sidebar.collapsed {
@@ -176,6 +231,15 @@ onMounted(() => {
 
 .menu a:hover {
     background-color: var(--link-hover);
+}
+
+.bottom-section {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
+    margin-top: 1rem;
+    width: 100%;
 }
 
 .theme-switch {
@@ -255,7 +319,7 @@ onMounted(() => {
 
 .main {
     flex: 1;
-    padding: 2rem;
+    padding: 1rem;
     overflow-y: auto;
     background-color: var(--bg-color);
 }
@@ -281,7 +345,8 @@ onMounted(() => {
         position: fixed;
         top: 0;
         left: 0;
-        height: 100vh;
+        height: calc(var(--vh, 1vh) * 100);
+        /* 動態高度 */
         transform: translateX(-100%);
         flex-direction: column;
         width: 220px;
@@ -289,7 +354,6 @@ onMounted(() => {
     }
 
     .main {
-        padding: 1rem;
         width: 100%;
     }
 }

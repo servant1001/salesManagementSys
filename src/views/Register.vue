@@ -1,35 +1,42 @@
 <template>
-    <div class="register-container">
-        <h2>註冊帳號</h2>
+    <div class="register-page">
+        <div class="register-container">
+            <!-- Logo -->
+            <div class="logo-container">
+                <img src="@/assets/logo.png" alt="Logo" class="logo" />
+            </div>
 
-        <!-- 帳號必填 -->
-        <el-input v-model="account" placeholder="帳號 (必填)" clearable @blur="touched.account = true" />
-        <small v-if="touched.account && !account.trim()" class="error">帳號為必填</small>
+            <h2 class="register-title">註冊帳號</h2>
 
-        <!-- Email 必填 -->
-        <el-input v-model="email" placeholder="Email (必填)" clearable @blur="touched.email = true" />
-        <small v-if="touched.email && !isEmailValid(email)" class="error">Email 格式不正確</small>
+            <!-- Email 必填 -->
+            <el-input v-model="email" placeholder="Email (必填)" clearable @blur="touched.email = true" />
+            <small v-if="touched.email && !isEmailValid(email)" class="error">Email 格式不正確</small>
 
-        <!-- 密碼必填 -->
-        <el-input v-model="password" type="password" placeholder="密碼 (必填，至少 6 個字)" clearable
-            @blur="touched.password = true" />
-        <small v-if="touched.password && password.length < 6" class="error">密碼至少 6 個字元</small>
+            <!-- 帳號必填 -->
+            <el-input v-model="account" placeholder="帳號 (必填)" clearable @blur="touched.account = true" />
+            <small v-if="touched.account && !account.trim()" class="error">帳號為必填</small>
 
-        <!-- 確認密碼 -->
-        <el-input v-model="confirmPassword" type="password" placeholder="確認密碼" clearable
-            @blur="touched.confirmPassword = true" />
-        <small v-if="touched.confirmPassword && confirmPassword !== password" class="error">密碼與確認密碼不一致</small>
+            <!-- 密碼必填 -->
+            <el-input v-model="password" type="password" placeholder="密碼 (必填，至少 6 個字)" clearable
+                @blur="touched.password = true" />
+            <small v-if="touched.password && password.length < 6" class="error">密碼至少 6 個字元</small>
 
-        <el-button type="primary" @click="handleRegister" :loading="loading">
-            註冊
-        </el-button>
+            <!-- 確認密碼 -->
+            <el-input v-model="confirmPassword" type="password" placeholder="確認密碼" clearable
+                @blur="touched.confirmPassword = true" />
+            <small v-if="touched.confirmPassword && confirmPassword !== password" class="error">密碼與確認密碼不一致</small>
 
-        <p class="link">
-            已有帳號？
-            <RouterLink to="/login" class="login-link">點此登入</RouterLink>
-        </p>
+            <el-button type="primary" @click="handleRegister" :loading="loading">
+                註冊
+            </el-button>
 
-        <p v-if="error" class="error">{{ error }}</p>
+            <p class="link">
+                已有帳號？
+                <RouterLink to="/login" class="login-link">點此登入</RouterLink>
+            </p>
+
+            <p v-if="error" class="error">{{ error }}</p>
+        </div>
     </div>
 </template>
 
@@ -105,15 +112,47 @@ const handleRegister = async () => {
 </script>
 
 <style scoped>
+/* ✅ 外層背景容器 */
+.register-page {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    background: url('@/assets/aura_bg.png') no-repeat center center;
+    background-size: cover;
+    background-attachment: scroll;
+}
+
 .register-container {
-    max-width: 400px;
-    margin: 5rem auto;
+    width: 400px;
+    max-width: 90%;
     padding: 2rem;
-    background-color: var(--sidebar-color);
+    background-color: rgba(0, 0, 0, 0.6);
     border-radius: 10px;
     display: flex;
     flex-direction: column;
+    align-items: center;
     gap: 1rem;
+    box-sizing: border-box;
+    text-align: center;
+}
+
+.logo-container {
+    display: flex;
+    justify-content: center;
+    /* margin-bottom: 1rem; */
+}
+
+.logo {
+    width: 150px;
+    height: 150px;
+    object-fit: contain;
+}
+
+.register-title {
+    color: #fff;
+    text-align: center;
+    margin: 0;
 }
 
 .error {
@@ -124,6 +163,7 @@ const handleRegister = async () => {
 .link {
     text-align: center;
     font-size: 0.9rem;
+    color: #fff;
 }
 
 .login-link {

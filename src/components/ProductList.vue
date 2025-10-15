@@ -36,7 +36,11 @@
 
             <el-table-column prop="name" label="商品名稱" min-width="140" />
             <el-table-column prop="price" label="定價" min-width="60" />
-            <el-table-column prop="sellingPrice" label="售價" min-width="60" />
+            <el-table-column prop="sellingPrice" label="售價" min-width="60">
+                <template #default="{ row }">
+                    <span style="font-weight: bold;">{{ row.sellingPrice }} 元</span>
+                </template>
+            </el-table-column>
             <el-table-column prop="cost" label="成本" min-width="60" />
             <el-table-column prop="stock" label="庫存數量" min-width="100" />
             <el-table-column prop="code" label="商品編號" min-width="140" />

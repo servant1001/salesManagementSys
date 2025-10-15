@@ -38,7 +38,8 @@
 
             <el-table-column prop="estimatedProfit" label="預估毛利" width="100">
                 <template #default="{ row }">
-                    <span :style="{ color: (row.sellingPrice - row.cost) >= 0 ? 'green' : 'red' }">
+                    <span
+                        :style="{ color: (row.sellingPrice - row.cost) >= 0 ? '#00fc2a' : '#fc0000', fontWeight: 'bold' }">
                         {{ (row.sellingPrice - row.cost).toFixed(0) }} 元
                     </span>
                 </template>

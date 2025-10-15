@@ -7,31 +7,28 @@
         </el-row>
 
         <el-row class="filterBar" style="margin-bottom: 10px; align-items: center; gap: 10px;">
-            <el-col :span="8">
+            <el-col :span="6">
                 <el-input v-model="searchKeyword" placeholder="搜尋商品名稱" clearable @input="filterSales" />
             </el-col>
             <el-col :span="6">
                 <el-date-picker v-model="selectedMonth" type="month" placeholder="選擇年月" format="YYYY-MM"
-                    value-format="YYYY-MM" clearable @change="filterSales" />
+                    value-format="YYYY-MM" clearable @change="() => loadSalesByMonth(selectedMonth)" />
             </el-col>
         </el-row>
 
-        <el-row class="statsBar" style="margin-bottom: 10px; font-weight: bold; font-size: 1.1rem; gap: 20px;">
-            <el-col>
-                總銷售額：{{ totalFilteredSales }} 元
-            </el-col>
-            <el-col>
-                總毛利：{{ totalFilteredProfit }} 元
-            </el-col>
-        </el-row>
-
-        <el-row class="todayStats" style="margin-bottom: 10px; font-weight: bold; font-size: 1.1rem; gap: 20px;">
-            <el-col>
-                今日銷售額：{{ todaySales }} 元
-            </el-col>
-            <el-col>
-                今日毛利：{{ todayProfit }} 元
-            </el-col>
+        <el-row class="statsBar" style="
+            display: flex;
+            flex-wrap: wrap;       /* 手機板可換行 */
+            gap: 20px;             /* 欄位間距 */
+            margin-bottom: 10px;
+            font-weight: bold;
+            font-size: 1.1rem;
+            justify-content: flex-start; /* 整個 row 靠左 */
+        ">
+            <div>總銷售額：{{ totalFilteredSales }} 元</div>
+            <div>總毛利：{{ totalFilteredProfit }} 元</div>
+            <div>今日銷售額：{{ todaySales }} 元</div>
+            <div>今日毛利：{{ todayProfit }} 元</div>
         </el-row>
 
         <el-table v-if="filteredSales.length" :data="filteredSales" border style="width:100%">
@@ -41,6 +38,14 @@
 
             <el-table-column prop="total" label="總金額" width="80">
                 <template #default="{ row }">{{ row.total }} 元</template>
+            </el-table-column>
+
+            <el-table-column prop="totalProfit" label="總毛利" width="80">
+                <template #default="{ row }">
+                    <span :style="{ color: (row.totalProfit ?? 0) >= 0 ? '#00fc2a' : '#fc0000', fontWeight: 'bold' }">
+                        {{ row.totalProfit ?? 0 }} 元
+                    </span>
+                </template>
             </el-table-column>
 
             <el-table-column prop="operator" label="操作人員" width="100" />
@@ -90,7 +95,7 @@
                 </el-table-column>
                 <el-table-column prop="estimatedProfit" label="預估毛利" width="120">
                     <template #default="{ row }">
-                        <span :style="{ color: (row.sellingPrice - row.cost) >= 0 ? 'green' : 'red' }">
+                        <span :style="{ color: (row.sellingPrice - row.cost) >= 0 ? '#00fc2a' : '#fc0000' }">
                             {{ (row.sellingPrice - row.cost).toFixed(0) }} 元
                         </span>
                     </template>
@@ -103,7 +108,7 @@
 <script setup lang="ts">
 import { ref, onMounted, computed } from "vue";
 import { db } from "@/firebase";
-import { ref as dbRef, get, child } from "firebase/database";
+import { query, orderByChild, startAt, endAt, get, child, ref as dbRef } from "firebase/database";
 
 interface SaleItem {
     barcode: string;
@@ -134,7 +139,15 @@ const selectedProfit = ref(0);
 const dialogVisible = ref(false);
 
 const searchKeyword = ref("");
-const selectedMonth = ref<string | null>(null); // YYYY-MM
+// 取得當前年月 YYYY-MM
+function getCurrentYearMonth(): string {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = (now.getMonth() + 1).toString().padStart(2, "0"); // 補 0
+    return `${year}-${month}`;
+}
+
+const selectedMonth = ref<string>(getCurrentYearMonth());
 
 function formatDate(ts: number) {
     return new Date(ts).toLocaleString();
@@ -171,14 +184,47 @@ function filterSales() {
     });
 }
 
-async function loadSales() {
-    const snapshot = await get(child(dbRef(db), "sales"));
+async function loadSalesByMonth(selectedMonth: string | null) {
+    const salesRef = child(dbRef(db), "sales");
+    let salesQuery;
+
+    if (selectedMonth) {
+        console.log(selectedMonth)
+        const parts = selectedMonth.split("-");
+        const year = Number(parts[0]);
+        const month = Number(parts[1]);
+
+        // 型別安全檢查
+        if (isNaN(year) || isNaN(month)) {
+            console.warn("選擇的月份格式不正確:", selectedMonth);
+            return;
+        }
+
+        // 計算當月起迄 timestamp
+        const monthStart = new Date(year, month - 1, 1).getTime();
+        const monthEnd = new Date(year, month, 0, 23, 59, 59, 999).getTime();
+
+        salesQuery = query(
+            salesRef,
+            orderByChild("timestamp"),
+            startAt(monthStart),
+            endAt(monthEnd)
+        );
+    } else {
+        // 如果沒選月份，抓全部
+        salesQuery = query(salesRef, orderByChild("timestamp"));
+    }
+
+    const snapshot = await get(salesQuery);
     if (snapshot.exists()) {
         const data = snapshot.val();
         sales.value = (Object.values(data) as Sale[]).sort(
             (a, b) => b.timestamp - a.timestamp
         );
-        filteredSales.value = [...sales.value]; // 初始顯示全部
+        filterSales(); // 前端依關鍵字再篩選一次
+    } else {
+        sales.value = [];
+        filteredSales.value = [];
     }
 }
 
@@ -214,7 +260,8 @@ const todayProfit = computed(() => {
         .reduce((sum, sale) => sum + (sale.totalProfit ?? 0), 0);
 });
 
-onMounted(loadSales);
+onMounted(() => loadSalesByMonth(selectedMonth.value));
+
 </script>
 
 <style scoped>

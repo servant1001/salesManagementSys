@@ -6,7 +6,35 @@
             </el-col>
         </el-row>
 
-        <el-table v-if="sales.length" :data="sales" border style="width:100%">
+        <el-row class="filterBar" style="margin-bottom: 10px; align-items: center; gap: 10px;">
+            <el-col :span="8">
+                <el-input v-model="searchKeyword" placeholder="搜尋商品名稱" clearable @input="filterSales" />
+            </el-col>
+            <el-col :span="6">
+                <el-date-picker v-model="selectedMonth" type="month" placeholder="選擇年月" format="YYYY-MM"
+                    value-format="YYYY-MM" clearable @change="filterSales" />
+            </el-col>
+        </el-row>
+
+        <el-row class="statsBar" style="margin-bottom: 10px; font-weight: bold; font-size: 1.1rem; gap: 20px;">
+            <el-col>
+                總銷售額：{{ totalFilteredSales }} 元
+            </el-col>
+            <el-col>
+                總毛利：{{ totalFilteredProfit }} 元
+            </el-col>
+        </el-row>
+
+        <el-row class="todayStats" style="margin-bottom: 10px; font-weight: bold; font-size: 1.1rem; gap: 20px;">
+            <el-col>
+                今日銷售額：{{ todaySales }} 元
+            </el-col>
+            <el-col>
+                今日毛利：{{ todayProfit }} 元
+            </el-col>
+        </el-row>
+
+        <el-table v-if="filteredSales.length" :data="filteredSales" border style="width:100%">
             <el-table-column prop="timestamp" label="時間" width="170">
                 <template #default="{ row }">{{ formatDate(row.timestamp) }}</template>
             </el-table-column>
@@ -67,15 +95,13 @@
                         </span>
                     </template>
                 </el-table-column>
-                <el-table-column prop="supplierName" label="廠商名稱" width="120" />
-                <el-table-column prop="supplierCode" label="廠商編號" width="120" />
             </el-table>
         </el-dialog>
     </div>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from "vue";
+import { ref, onMounted, computed } from "vue";
 import { db } from "@/firebase";
 import { ref as dbRef, get, child } from "firebase/database";
 
@@ -99,23 +125,50 @@ interface Sale {
 }
 
 const sales = ref<Sale[]>([]);
+const filteredSales = ref<Sale[]>([]);
+
 const selectedItems = ref<SaleItem[]>([]);
 const selectedOperator = ref("");
 const selectedTotal = ref(0);
 const selectedProfit = ref(0);
 const dialogVisible = ref(false);
 
+const searchKeyword = ref("");
+const selectedMonth = ref<string | null>(null); // YYYY-MM
+
 function formatDate(ts: number) {
     return new Date(ts).toLocaleString();
 }
 
-// ✅ 修改這裡：傳入 operator 和 total
 function showDetails(rowItems: SaleItem[], operator: string, total: number, totalProfit: number) {
     selectedItems.value = rowItems;
     selectedOperator.value = operator;
     selectedTotal.value = total;
     selectedProfit.value = totalProfit || 0;
     dialogVisible.value = true;
+}
+
+// 篩選函式：商品名稱 + 年月
+function filterSales() {
+    filteredSales.value = sales.value.filter(sale => {
+        // 年月過濾
+        let monthMatch = true;
+        if (selectedMonth.value) {
+            const [year, month] = selectedMonth.value.split("-").map(Number);
+            const saleDate = new Date(sale.timestamp);
+            monthMatch =
+                saleDate.getFullYear() === year && saleDate.getMonth() + 1 === month;
+        }
+
+        // 商品名稱模糊搜尋
+        const keywordMatch = searchKeyword.value
+            ? sale.items.some(item =>
+                item.name.toLowerCase().includes(searchKeyword.value.toLowerCase())
+            )
+            : true;
+
+        return monthMatch && keywordMatch;
+    });
 }
 
 async function loadSales() {
@@ -125,8 +178,41 @@ async function loadSales() {
         sales.value = (Object.values(data) as Sale[]).sort(
             (a, b) => b.timestamp - a.timestamp
         );
+        filteredSales.value = [...sales.value]; // 初始顯示全部
     }
 }
+
+// 總銷售額（根據篩選結果）
+const totalFilteredSales = computed(() =>
+    filteredSales.value.reduce((sum, sale) => sum + sale.total, 0)
+);
+
+// 總毛利（根據篩選結果）
+const totalFilteredProfit = computed(() =>
+    filteredSales.value.reduce((sum, sale) => sum + (sale.totalProfit ?? 0), 0)
+);
+
+// 計算今天零時零分零秒
+function getTodayStart(): number {
+    const now = new Date();
+    return new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+}
+
+// 今日銷售額
+const todaySales = computed(() => {
+    const start = getTodayStart();
+    return sales.value
+        .filter(sale => sale.timestamp >= start)
+        .reduce((sum, sale) => sum + sale.total, 0);
+});
+
+// 今日毛利
+const todayProfit = computed(() => {
+    const start = getTodayStart();
+    return sales.value
+        .filter(sale => sale.timestamp >= start)
+        .reduce((sum, sale) => sum + (sale.totalProfit ?? 0), 0);
+});
 
 onMounted(loadSales);
 </script>

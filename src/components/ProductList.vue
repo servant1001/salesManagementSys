@@ -36,6 +36,7 @@
 
             <el-table-column prop="name" label="商品名稱" min-width="140" />
             <el-table-column prop="price" label="定價" min-width="60" />
+            <el-table-column prop="sellingPrice" label="售價" min-width="60" />
             <el-table-column prop="cost" label="成本" min-width="60" />
             <el-table-column prop="stock" label="庫存數量" min-width="100" />
             <el-table-column prop="code" label="商品編號" min-width="140" />
@@ -65,6 +66,10 @@
 
                 <el-form-item label="定價" prop="price">
                     <el-input type="number" min="0" v-model.number="newProduct.price" />
+                </el-form-item>
+
+                <el-form-item label="售價" prop="sellingPrice">
+                    <el-input type="number" min="0" v-model.number="newProduct.sellingPrice" />
                 </el-form-item>
 
                 <el-form-item label="成本" prop="cost">
@@ -104,6 +109,10 @@
 
                 <el-form-item label="定價">
                     <el-input type="number" min="0" v-model.number="editProduct.price" />
+                </el-form-item>
+
+                <el-form-item label="售價" prop="sellingPrice">
+                    <el-input type="number" min="0" v-model.number="editProduct.sellingPrice" />
                 </el-form-item>
 
                 <el-form-item label="成本">
@@ -155,6 +164,7 @@ interface Product {
     code: string;
     name: string;
     price: number;
+    sellingPrice: number;
     cost: number;
     stock: number;
     supplierName: string;
@@ -178,6 +188,7 @@ const newProduct = ref<Omit<Product, "id" | "createdBy" | "updatedBy">>({
     code: "",
     name: "",
     price: 0,
+    sellingPrice: 0,
     cost: 0,
     stock: 0,
     supplierName: "",
@@ -190,10 +201,11 @@ const rules = {
     code: [{ required: true, message: "請輸入商品編號", trigger: "blur" }],
     name: [{ required: true, message: "請輸入商品名稱", trigger: "blur" }],
     price: [{ required: true, message: "請輸入定價", trigger: "blur" }],
+    sellingPrice: [{ required: true, message: "請輸入售價", trigger: "blur" }],
     cost: [{ required: true, message: "請輸入成本", trigger: "blur" }],
     stock: [{ required: true, message: "請輸入庫存", trigger: "change" }],
-    supplierName: [{ required: true, message: "請輸入廠商名稱", trigger: "blur" }],
-    supplierCode: [{ required: true, message: "請輸入廠商編號", trigger: "blur" }],
+    // supplierName: [{ required: true, message: "請輸入廠商名稱", trigger: "blur" }],
+    // supplierCode: [{ required: true, message: "請輸入廠商編號", trigger: "blur" }],
 };
 
 // 編輯彈窗
@@ -256,6 +268,7 @@ function saveEditProduct() {
         name: editProduct.value.name || "",
         code: editProduct.value.code || "",
         price: editProduct.value.price ?? 0,
+        sellingPrice: editProduct.value.sellingPrice ?? 0,
         cost: editProduct.value.cost ?? 0,
         stock: editProduct.value.stock ?? 0,
         supplierName: editProduct.value.supplierName || "",
@@ -318,6 +331,7 @@ function addProduct() {
                 code: "",
                 name: "",
                 price: 0,
+                sellingPrice: 0,
                 cost: 0,
                 stock: 0,
                 supplierName: "",

@@ -11,10 +11,10 @@
         <h3 style="margin-top: 20px;">已掃描商品列表</h3>
         <el-table v-if="cart.length" :data="cart" border style="width: 100%; margin-top: 10px;">
             <el-table-column prop="name" label="商品名稱" />
-            <el-table-column label="單價" width="100">
+            <el-table-column label="售價" width="100">
                 <template #default="{ row }">
-                    <el-input v-if="row.editing" v-model.number="row.price" size="small" />
-                    <span v-else>{{ row.price }} 元</span>
+                    <el-input v-if="row.editing" v-model.number="row.sellingPrice" size="small" />
+                    <span v-else>{{ row.sellingPrice }} 元</span>
                 </template>
             </el-table-column>
             <el-table-column label="數量" width="110">
@@ -25,9 +25,29 @@
                 </template>
             </el-table-column>
             <el-table-column label="小計" width="120">
-                <template #default="{ row }">{{ row.price * row.quantity }} 元</template>
+                <template #default="{ row }">{{ row.sellingPrice * row.quantity }} 元</template>
             </el-table-column>
-            <el-table-column label="操作" width="150">
+
+            <el-table-column prop="price" label="定價" width="100">
+                <template #default="{ row }">{{ row.price }} 元</template>
+            </el-table-column>
+
+            <el-table-column prop="cost" label="成本" width="80">
+                <template #default="{ row }">{{ row.cost }} 元</template>
+            </el-table-column>
+
+            <el-table-column prop="estimatedProfit" label="預估毛利" width="100">
+                <template #default="{ row }">
+                    <span :style="{ color: (row.sellingPrice - row.cost) >= 0 ? 'green' : 'red' }">
+                        {{ (row.sellingPrice - row.cost).toFixed(0) }} 元
+                    </span>
+                </template>
+            </el-table-column>
+
+            <el-table-column prop="supplierName" label="廠商名稱" width="120" />
+
+            <el-table-column prop="supplierCode" label="廠商編號" width="120" />
+            <el-table-column label="操作" width="180">
                 <template #default="{ row, $index }">
                     <el-button type="primary" size="mini" @click="toggleEdit(row)">
                         {{ row.editing ? "完成" : "編輯" }}
@@ -61,43 +81,41 @@ import Scanner from "@/components/Scanner.vue";
 import { ElMessage } from "element-plus";
 import { db } from "@/firebase";
 import { ref as dbRef, get, child, push, set, update } from "firebase/database";
+import { useAuth } from "@/composables/useAuth";
+
+const { user } = useAuth();
 
 interface CartItem {
     barcode: string;
     name: string;
     price: number;
+    sellingPrice: number;
+    cost: number;
+    supplierName?: string;
+    supplierCode?: string;
     quantity: number;
     editing?: boolean; // 編輯狀態
+    estimatedProfit?: number; // 預估毛利
 }
 
 const cart = reactive<CartItem[]>([]);
 
 const total = computed(() =>
-    cart.reduce((sum, item) => sum + item.price * item.quantity, 0)
+    cart.reduce((sum, item) => sum + item.sellingPrice * item.quantity, 0)
 );
 
 // 提示音 (可自定義)
 const beepSound = new Audio("/scanner-beep.mp3"); // 放在 public/beep.mp3
 
-// 記錄最近掃描的 code
-const recentScans = new Set<string>();
-
-const SCAN_COOLDOWN = 2000; // 2秒內重複掃描忽略
-
 interface Product {
     code: string;
     name: string;
     price: number;
+    sellingPrice?: number;
+    cost: number;
 }
 
 async function handleScan(scannedCode: string) {
-    // if (recentScans.has(scannedCode)) {
-    //     // 短時間內已掃過，不重複處理
-    //     return;
-    // }
-
-    // recentScans.add(scannedCode);
-    // setTimeout(() => recentScans.delete(scannedCode), SCAN_COOLDOWN);
 
     const dbRoot = dbRef(db);
     const snapshot = await get(child(dbRoot, "products"));
@@ -121,17 +139,25 @@ async function handleScan(scannedCode: string) {
     if (existingItem) {
         existingItem.quantity += 1; // 數量加 1
     } else {
+        const cost = product.cost ?? 0;
+        const sellingPrice = product.sellingPrice ?? product.price ?? 0; // 使用售價，若無則用定價
+
         cart.push({
             barcode,
             name: product.name,
             price: product.price,
+            sellingPrice: sellingPrice,
+            cost: cost,
+            supplierName: (data as any).supplierName ?? "",
+            supplierCode: (data as any).supplierCode ?? "",
             quantity: 1,
-            editing: false
+            editing: false,
+            estimatedProfit: sellingPrice - cost
         });
     }
 
     ElMessage({
-        message: `已掃描: ${product.name} / ${product.price}元`,
+        message: `已掃描: ${product.name} / ${product.sellingPrice}元`,
         type: "success",
         duration: 1000
     });
@@ -189,15 +215,26 @@ async function confirmCheckout() {
     }
 
     const newSaleRef = push(salesRef);
+    const totalProfit = cart.reduce(
+        (sum, item) => sum + (item.sellingPrice - item.cost) * item.quantity,
+        0
+    );
     const saleData = {
         timestamp: Date.now(),
+        operator: user.value?.displayName || user.value?.email || "",
         items: cart.map(item => ({
             barcode: item.barcode,
             name: item.name,
             price: item.price,
-            quantity: item.quantity
+            sellingPrice: item.sellingPrice,
+            cost: item.cost,
+            supplierName: item.supplierName,
+            supplierCode: item.supplierCode,
+            quantity: item.quantity,
+            estimatedProfit: item.estimatedProfit
         })),
-        total: total.value
+        total: total.value,
+        totalProfit: totalProfit
     };
 
     try {

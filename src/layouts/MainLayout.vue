@@ -90,30 +90,6 @@ onUnmounted(() => {
                         </el-icon>
                         <span v-if="!isCollapsed">銷售紀錄</span>
                     </RouterLink>
-                    <RouterLink to="/users" title="用戶管理">
-                        <el-icon>
-                            <User />
-                        </el-icon>
-                        <span v-if="!isCollapsed">用戶管理</span>
-                    </RouterLink>
-                    <RouterLink to="/users" title="用戶管理">
-                        <el-icon>
-                            <User />
-                        </el-icon>
-                        <span v-if="!isCollapsed">用戶管理</span>
-                    </RouterLink>
-                    <RouterLink to="/users" title="用戶管理">
-                        <el-icon>
-                            <User />
-                        </el-icon>
-                        <span v-if="!isCollapsed">用戶管理</span>
-                    </RouterLink>
-                    <RouterLink to="/users" title="用戶管理">
-                        <el-icon>
-                            <User />
-                        </el-icon>
-                        <span v-if="!isCollapsed">用戶管理</span>
-                    </RouterLink>
                 </nav>
 
                 <div class="bottom-section">

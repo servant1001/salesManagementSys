@@ -34,7 +34,20 @@
                 </template>
             </el-table-column>
 
-            <el-table-column prop="name" label="商品名稱" min-width="140" />
+            <el-table-column prop="name" label="商品名稱" min-width="140">
+                <template #default="{ row }">
+                    <template v-if="row.website">
+                        <a :href="row.website" target="_blank" rel="noopener noreferrer"
+                            style="color: #409eff; font-weight: 500; text-decoration: underline;">
+                            {{ row.name }}
+                        </a>
+                    </template>
+                    <template v-else>
+                        {{ row.name }}
+                    </template>
+                </template>
+            </el-table-column>
+
             <el-table-column prop="price" label="定價" min-width="60" />
             <el-table-column prop="sellingPrice" label="售價" min-width="60">
                 <template #default="{ row }">
@@ -46,6 +59,13 @@
             <el-table-column prop="code" label="商品編號" min-width="140" />
             <el-table-column prop="supplierName" label="廠商名稱" min-width="120" />
             <el-table-column prop="supplierCode" label="廠商編號" min-width="120" />
+            <el-table-column prop="website" label="網站" min-width="100">
+                <template #default="{ row }">
+                    <a v-if="row.website" :href="row.website" target="_blank" rel="noopener noreferrer"
+                        style="color: #409eff; text-decoration: underline;">連結</a>
+                </template>
+            </el-table-column>
+            <el-table-column prop="note" label="備註" min-width="120" />
             <el-table-column prop="createdBy" label="創建者" min-width="100" />
             <el-table-column prop="updatedBy" label="更新者" min-width="100" />
             <el-table-column prop="created" label="新增時間" min-width="190" :formatter="formatDate" />
@@ -89,7 +109,20 @@
                 </el-form-item>
 
                 <el-form-item label="廠商編號" prop="supplierCode">
-                    <el-input v-model="newProduct.supplierCode" />
+                    <div style="display: flex; gap: 10px;">
+                        <el-input v-model="newProduct.supplierCode" placeholder="請輸入廠商編號" />
+                        <el-button type="primary" @click="findVendorByCode">查詢</el-button>
+                    </div>
+                </el-form-item>
+
+                <!-- 🆕 網站 -->
+                <el-form-item label="網站">
+                    <el-input v-model="newProduct.website" placeholder="請輸入網站連結 (例如：https://example.com)" />
+                </el-form-item>
+
+                <!-- 🆕 備註 -->
+                <el-form-item label="備註">
+                    <el-input v-model="newProduct.note" placeholder="請輸入備註" type="textarea" rows="2" />
                 </el-form-item>
             </el-form>
 
@@ -134,6 +167,14 @@
                 <el-form-item label="廠商編號">
                     <el-input v-model="editProduct.supplierCode" />
                 </el-form-item>
+
+                <el-form-item label="網站">
+                    <el-input v-model="editProduct.website" placeholder="請輸入網站連結" />
+                </el-form-item>
+
+                <el-form-item label="備註">
+                    <el-input v-model="editProduct.note" type="textarea" rows="2" />
+                </el-form-item>
             </el-form>
 
             <template #footer>
@@ -153,7 +194,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from "vue";
 import { db } from "@/firebase";
-import { ref as dbRef, onValue, update, push, remove } from "firebase/database";
+import { ref as dbRef, onValue, update, push, remove, get, child } from "firebase/database";
 import { ElMessage, ElMessageBox } from "element-plus";
 import Scanner from "@/components/Scanner.vue";
 import { useThemeStore } from "@/stores/theme";
@@ -173,6 +214,8 @@ interface Product {
     stock: number;
     supplierName: string;
     supplierCode: string;
+    website?: string;
+    note?: string;
     created: number;
     updated?: number;
     createdBy?: string;
@@ -197,6 +240,8 @@ const newProduct = ref<Omit<Product, "id" | "createdBy" | "updatedBy">>({
     stock: 0,
     supplierName: "",
     supplierCode: "",
+    website: "",
+    note: "",
     created: Date.now(),
 });
 
@@ -277,6 +322,8 @@ function saveEditProduct() {
         stock: editProduct.value.stock ?? 0,
         supplierName: editProduct.value.supplierName || "",
         supplierCode: editProduct.value.supplierCode || "",
+        website: editProduct.value.website || "",
+        note: editProduct.value.note || "",
         updated: now,
         updatedBy: currentUser,
     };
@@ -340,11 +387,53 @@ function addProduct() {
                 stock: 0,
                 supplierName: "",
                 supplierCode: "",
+                website: "",
+                note: "",
                 created: Date.now(),
             };
         })
         .catch(console.error);
 }
+
+interface Vendor {
+    vendorId: string;
+    vendorName: string;
+    createdBy?: string;
+    updatedBy?: string;
+    createdAt?: number;
+    updatedAt?: number;
+}
+
+// 查詢廠商名稱
+async function findVendorByCode() {
+    const code = newProduct.value.supplierCode.trim();
+    if (!code) {
+        ElMessage.warning("請先輸入廠商編號");
+        return;
+    }
+
+    const vendorsRef = dbRef(db);
+    const snapshot = await get(child(vendorsRef, "vendors"));
+
+    if (!snapshot.exists()) {
+        ElMessage.error("目前沒有任何廠商資料");
+        return;
+    }
+
+    const vendors = snapshot.val() as Record<string, Vendor>; // ✅ 明確型別
+    const matched = Object.values(vendors).find(
+        (v) => v.vendorId?.toLowerCase() === code.toLowerCase()
+    );
+
+    if (matched) {
+        newProduct.value.supplierName = matched.vendorName;
+        ElMessage.success(`已找到廠商：${matched.vendorName}`);
+    } else {
+        newProduct.value.supplierName = "";
+        ElMessage.warning("找不到對應的廠商");
+    }
+}
+
 
 onMounted(fetchProducts);
 </script>

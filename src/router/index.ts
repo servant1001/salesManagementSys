@@ -9,6 +9,7 @@ import AddProduct from "@/components/AddProduct.vue";
 import ProductList from "@/components/ProductList.vue";
 import Checkout from "@/components/Checkout.vue";
 import Sales from '@/components/Sales.vue';
+import Vendors from "@/views/Vendors.vue";
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -24,6 +25,7 @@ const router = createRouter({
         { path: "products", name: "Products", component: ProductList },
         { path: "checkout", name: "Checkout", component: Checkout },
         { path: "sales", name: "Sales", component: Sales },
+        { path: "vendors", name: "Vendors", component: Vendors },
       ],
       meta: { requiresAuth: true },
     },

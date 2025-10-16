@@ -2,7 +2,7 @@
 import { onMounted, ref, onUnmounted } from "vue";
 import { useRouter, RouterLink, RouterView } from "vue-router";
 import { ElIcon, ElButton, ElSwitch } from "element-plus";
-import { Menu, Close, Moon, Sunny, House, ShoppingCart, CreditCard, Document, User } from "@element-plus/icons-vue";
+import { Menu, Close, Moon, Sunny, House, ShoppingCart, CreditCard, Document, User, OfficeBuilding } from "@element-plus/icons-vue";
 import { useThemeStore } from "@/stores/theme";
 import { useAuth } from "@/composables/useAuth";
 
@@ -89,6 +89,12 @@ onUnmounted(() => {
                             <Document />
                         </el-icon>
                         <span v-if="!isCollapsed">銷售紀錄</span>
+                    </RouterLink>
+                    <RouterLink to="/vendors" title="廠商列表">
+                        <el-icon>
+                            <OfficeBuilding />
+                        </el-icon>
+                        <span v-if="!isCollapsed">廠商列表</span>
                     </RouterLink>
                 </nav>
 

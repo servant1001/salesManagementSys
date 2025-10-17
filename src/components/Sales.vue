@@ -44,12 +44,8 @@
 
         <el-table v-if="filteredSales.length" :data="filteredSales" border style="width:100%">
             <!-- ✅ 操作欄（只有在編輯模式時顯示） -->
-            <el-table-column v-if="showActions" fixed="left" label="操作" width="150">
+            <el-table-column v-if="showActions" fixed="left" label="操作" width="80">
                 <template #default="{ row }">
-                    <el-button size="small" type="primary"
-                        @click="editingRow === row ? saveEdit(row) : editingRow = row">
-                        {{ editingRow === row ? '儲存' : '編輯' }}
-                    </el-button>
                     <el-button size="small" type="danger" @click="deleteSale(row)">刪除</el-button>
                 </template>
             </el-table-column>
@@ -268,27 +264,6 @@ function getDeviceInfoShort(): string {
     return `${browser} / ${platform}`;
 }
 
-// ✅ 儲存編輯
-async function saveEdit(row: Sale) {
-    if (!row.id) {
-        ElMessage.error('找不到紀錄 ID，無法儲存');
-        return;
-    }
-
-    // 更新 Firebase
-    await update(dbRef(db, `sales/${row.id}`), {
-        total: row.total,
-        totalProfit: row.totalProfit,
-        updater: user.value?.displayName + "(" + getDeviceInfoShort() + ")", // 新增更新者欄位
-        // 若要更新 items 或其他欄位，也可以加上
-    });
-
-    ElMessage.success('編輯已儲存');
-    editingRow.value = null;
-    await loadSalesByMonth(selectedMonth.value);
-}
-
-
 // ✅ 刪除銷售紀錄
 async function deleteSale(sale: Sale) {
     try {
@@ -323,14 +298,6 @@ const selectedMonth = ref<string>(getCurrentYearMonth());
 function formatDate(ts: number) {
     return new Date(ts).toLocaleString();
 }
-
-// function showDetails(rowItems: SaleItem[], operator: string, total: number, totalProfit: number) {
-//     selectedItems.value = rowItems;
-//     selectedOperator.value = operator;
-//     selectedTotal.value = total;
-//     selectedProfit.value = totalProfit || 0;
-//     dialogVisible.value = true;
-// }
 
 // 篩選函式：商品名稱 + 年月
 function filterSales() {

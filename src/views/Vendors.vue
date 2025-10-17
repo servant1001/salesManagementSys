@@ -7,7 +7,7 @@
             </el-col>
         </el-row>
 
-        <!-- 搜尋 + 新增 -->
+        <!-- 搜尋 + 新增 + 編輯模式切換 -->
         <el-row class="filterBar" style="
             display: flex;
             align-items: center;
@@ -18,11 +18,24 @@
             <el-input v-model="searchKeyword" placeholder="搜尋廠商名稱" clearable @input="filterVendors"
                 style="width: 250px;" />
             <el-button type="primary" @click="openDialog()">新增廠商</el-button>
+
+            <!-- ✅ 改成按鈕控制 -->
+            <el-button style="margin: 0;" :type="showActions ? 'warning' : 'info'" @click="toggleEditMode">
+                {{ showActions ? '退出編輯模式' : '進入編輯模式' }}
+            </el-button>
         </el-row>
 
         <!-- 廠商列表 -->
         <el-table :data="filteredVendors" border style="width: 100%;">
-            <el-table-column prop="vendorId" label="廠商編號" min-width="100" />
+            <!-- ✅ 操作欄放最左邊 -->
+            <el-table-column v-if="showActions" fixed="left" label="操作" min-width="90">
+                <template #default="{ row }">
+                    <el-button type="primary" size="small" @click="openDialog(row)">修改</el-button>
+                    <el-button type="danger" size="small" @click="deleteVendor(row.id)">刪除</el-button>
+                </template>
+            </el-table-column>
+
+            <el-table-column prop="vendorId" label="廠商編號" sortable min-width="100" />
             <el-table-column prop="vendorName" label="廠商名稱" min-width="150" />
             <el-table-column prop="contact" label="聯絡人" min-width="120" />
             <el-table-column prop="website" label="網站" min-width="150">
@@ -38,12 +51,6 @@
             </el-table-column>
             <el-table-column prop="updatedAt" label="更新時間" min-width="150">
                 <template #default="{ row }">{{ formatDate(row.updatedAt) }}</template>
-            </el-table-column>
-            <el-table-column label="操作" min-width="180">
-                <template #default="{ row }">
-                    <el-button type="primary" size="mini" @click="openDialog(row)">修改</el-button>
-                    <el-button type="danger" size="mini" @click="deleteVendor(row.id)">刪除</el-button>
-                </template>
             </el-table-column>
         </el-table>
 
@@ -85,6 +92,7 @@ import { ref as dbRef, get, child, push, set, update, remove } from "firebase/da
 import { ElMessageBox, ElMessage } from "element-plus";
 import { useAuth } from "@/composables/useAuth";
 const { user } = useAuth();
+
 interface Vendor {
     id?: string;
     vendorId: string;
@@ -105,7 +113,8 @@ const dialogVisible = ref(false);
 const dialogMode = ref<"add" | "edit">("add");
 const formRef = ref();
 const form = ref<Partial<Vendor>>({});
-const currentUser = user.value?.displayName; // TODO: 換成實際登入帳號
+const currentUser = user.value?.displayName;
+const showActions = ref(false); // ✅ 初始為非編輯模式
 
 function formatDate(ts: number) {
     return new Date(ts).toLocaleString();
@@ -115,10 +124,19 @@ async function loadVendors() {
     const snapshot = await get(child(dbRef(db), "vendors"));
     if (snapshot.exists()) {
         const data = snapshot.val();
-        vendors.value = Object.entries(data).map(([id, val]: [string, any]) => ({
-            id,
-            ...val,
-        }));
+
+        vendors.value = Object.entries(data)
+            .map(([id, val]: [string, any]) => ({
+                id,
+                ...val,
+            }))
+            // ✅ 排序：以 vendorId（轉成數字或字串）由小到大排列
+            .sort((a, b) => {
+                const idA = isNaN(Number(a.vendorId)) ? a.vendorId : Number(a.vendorId);
+                const idB = isNaN(Number(b.vendorId)) ? b.vendorId : Number(b.vendorId);
+                return idA > idB ? 1 : idA < idB ? -1 : 0;
+            });
+
         filterVendors();
     } else {
         vendors.value = [];
@@ -126,12 +144,17 @@ async function loadVendors() {
     }
 }
 
+
 function filterVendors() {
     filteredVendors.value = vendors.value.filter(v =>
         searchKeyword.value
             ? v.vendorName.toLowerCase().includes(searchKeyword.value.toLowerCase())
             : true
     );
+}
+
+function toggleEditMode() {
+    showActions.value = !showActions.value;
 }
 
 function openDialog(vendor?: Vendor) {

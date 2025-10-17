@@ -11,8 +11,13 @@
                 <el-input v-model="searchKeyword" placeholder="搜尋商品名稱" clearable @input="filterSales" />
             </el-col>
             <el-col :span="6">
-                <el-date-picker v-model="selectedMonth" type="month" placeholder="選擇年月" format="YYYY-MM"
-                    value-format="YYYY-MM" clearable @change="() => loadSalesByMonth(selectedMonth)" />
+                <div class="toolbar">
+                    <el-date-picker v-model="selectedMonth" type="month" placeholder="選擇年月" format="YYYY-MM"
+                        value-format="YYYY-MM" clearable @change="() => loadSalesByMonth(selectedMonth)" />
+                    <el-button :type="showActions ? 'warning' : 'info'" @click="toggleEditMode">
+                        {{ showActions ? '退出編輯模式' : '進入編輯模式' }}
+                    </el-button>
+                </div>
             </el-col>
         </el-row>
 
@@ -32,83 +37,152 @@
         </el-row>
 
         <el-table v-if="filteredSales.length" :data="filteredSales" border style="width:100%">
+            <!-- ✅ 操作欄（只有在編輯模式時顯示） -->
+            <el-table-column v-if="showActions" fixed="left" label="操作" width="150">
+                <template #default="{ row }">
+                    <el-button size="small" type="primary"
+                        @click="editingRow === row ? saveEdit(row) : editingRow = row">
+                        {{ editingRow === row ? '儲存' : '編輯' }}
+                    </el-button>
+                    <el-button size="small" type="danger" @click="deleteSale(row)">刪除</el-button>
+                </template>
+            </el-table-column>
+
             <el-table-column prop="timestamp" label="時間" width="170">
                 <template #default="{ row }">{{ formatDate(row.timestamp) }}</template>
             </el-table-column>
 
             <el-table-column prop="total" label="總金額" width="80">
-                <template #default="{ row }">{{ row.total }} 元</template>
+                <template #default="{ row }">
+                    <div v-if="editingRow === row">
+                        <el-input-number v-model="row.total" :min="0" size="small" />
+                    </div>
+                    <div v-else>
+                        {{ row.total }} 元
+                    </div>
+                </template>
             </el-table-column>
 
             <el-table-column prop="totalProfit" label="總毛利" width="80">
                 <template #default="{ row }">
-                    <span :style="{ color: (row.totalProfit ?? 0) >= 0 ? '#00fc2a' : '#fc0000', fontWeight: 'bold' }">
-                        {{ row.totalProfit ?? 0 }} 元
-                    </span>
+                    <div v-if="editingRow === row">
+                        <el-input-number v-model="row.totalProfit" size="small" />
+                    </div>
+                    <div v-else>
+                        <span
+                            :style="{ color: (row.totalProfit ?? 0) >= 0 ? '#00fc2a' : '#fc0000', fontWeight: 'bold' }">
+                            {{ row.totalProfit ?? 0 }} 元
+                        </span>
+                    </div>
                 </template>
             </el-table-column>
 
             <el-table-column prop="operator" label="操作人員" width="100" />
-
-            <el-table-column label="商品明細">
+            <el-table-column label="商品明細" width="120">
                 <template #default="{ row }">
                     <el-button type="primary" size="mini"
-                        @click="showDetails(row.items, row.operator, row.total, row.totalProfit)">
+                        @click="showDetails(row.items, row.operator, row.total, row.totalProfit, row.id)">
                         查看明細
                     </el-button>
                 </template>
             </el-table-column>
+            <el-table-column prop="updater" label="修改者" />
         </el-table>
 
         <div v-else>尚無銷售紀錄</div>
 
         <!-- 彈窗顯示商品明細 -->
-        <el-dialog title="商品明細" v-model="dialogVisible" width="90%" :before-close="() => (dialogVisible = false)">
+        <el-dialog title="商品明細" v-model="dialogVisible" width="90%" @close="onDetailDialogClose">
             <!-- 操作人員與總金額 -->
-            <div style="
-                display: flex;
-                justify-content: space-between;
-                align-items: center;
-                margin-bottom: 10px;
-                font-weight: bold;
-                font-size: 1.05rem;
-            ">
+            <div
+                style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; font-weight: bold; font-size: 1.05rem;">
                 <span>總銷售/毛利：{{ selectedTotal }}元/{{ selectedProfit }}元</span>
                 <span>人員：{{ selectedOperator }}</span>
+                <el-button size="small" :type="showDetailActions ? 'warning' : 'info'"
+                    @click="showDetailActions = !showDetailActions">
+                    {{ showDetailActions ? '退出編輯模式' : '進入編輯模式' }}
+                </el-button>
             </div>
 
-            <el-table :data="selectedItems" border style="width: 100%;" size="small">
-                <el-table-column prop="name" label="名稱" />
 
-                <el-table-column prop="sellingPrice" label="售價" width="100">
-                    <template #default="{ row }">{{ row.sellingPrice }} 元</template>
+            <el-table :data="selectedItems" border style="width: 100%;" size="small">
+                <el-table-column v-if="showDetailActions" label="操作" width="150">
+                    <template #default="{ row }">
+                        <!-- 編輯模式 -->
+                        <div v-if="editingDetailRow === row">
+                            <el-button size="mini" type="primary" @click="saveDetailEdit(row)">
+                                儲存
+                            </el-button>
+                            <el-button size="mini" type="warning" @click="editingDetailRow = null">
+                                取消
+                            </el-button>
+                        </div>
+
+                        <!-- 非編輯模式 -->
+                        <div v-else>
+                            <el-button size="mini" type="primary" @click="editingDetailRow = row">
+                                編輯
+                            </el-button>
+                            <el-button size="mini" type="danger" @click="deleteDetailItem(row)">
+                                刪除
+                            </el-button>
+                        </div>
+                    </template>
                 </el-table-column>
-                <el-table-column prop="quantity" label="數量" width="80" />
+
+                <el-table-column prop="name" label="名稱" />
+                <el-table-column prop="sellingPrice" label="售價" width="100">
+                    <template #default="{ row }">
+                        <div v-if="editingDetailRow === row">
+                            <el-input-number v-model="row.sellingPrice" :min="0" size="small" />
+                        </div>
+                        <div v-else>{{ row.sellingPrice }} 元</div>
+                    </template>
+                </el-table-column>
+
+                <el-table-column prop="quantity" label="數量" width="80">
+                    <template #default="{ row }">
+                        <div v-if="editingDetailRow === row">
+                            <el-input-number v-model="row.quantity" :min="0" size="small" />
+                        </div>
+                        <div v-else>{{ row.quantity }}</div>
+                    </template>
+                </el-table-column>
+
                 <el-table-column label="小計" width="120">
                     <template #default="{ row }">{{ row.sellingPrice * row.quantity }} 元</template>
                 </el-table-column>
-                <el-table-column prop="price" label="定價" width="100">
-                    <template #default="{ row }">{{ row.price }} 元</template>
-                </el-table-column>
-                <el-table-column prop="cost" label="成本" width="100">
-                    <template #default="{ row }">{{ row.cost }} 元</template>
-                </el-table-column>
-                <el-table-column prop="estimatedProfit" label="預估毛利" width="120">
+
+                <el-table-column prop="price" label="定價" width="100" />
+                <el-table-column prop="cost" label="成本" width="100" />
+                <el-table-column prop="estimatedProfit" label="毛利(單個)" width="120">
                     <template #default="{ row }">
                         <span :style="{ color: (row.sellingPrice - row.cost) >= 0 ? '#00fc2a' : '#fc0000' }">
                             {{ (row.sellingPrice - row.cost).toFixed(0) }} 元
                         </span>
                     </template>
                 </el-table-column>
+                <el-table-column label="預估總毛利" width="120">
+                    <template #default="{ row }">
+                        <span
+                            :style="{ color: (row.sellingPrice - row.cost) >= 0 ? '#00fc2a' : '#fc0000', fontWeight: 'bold' }">
+                            {{ ((row.sellingPrice - row.cost) * row.quantity).toFixed(0) }} 元
+                        </span>
+                    </template>
+                </el-table-column>
             </el-table>
         </el-dialog>
+
     </div>
 </template>
 
 <script setup lang="ts">
 import { ref, onMounted, computed } from "vue";
 import { db } from "@/firebase";
-import { query, orderByChild, startAt, endAt, get, child, ref as dbRef } from "firebase/database";
+import { query, orderByChild, startAt, endAt, get, child, ref as dbRef, remove, update } from "firebase/database";
+import { ElMessage, ElMessageBox } from "element-plus";
+import { useAuth } from "@/composables/useAuth";
+const { user } = useAuth();
 
 interface SaleItem {
     barcode: string;
@@ -122,6 +196,7 @@ interface SaleItem {
 }
 
 interface Sale {
+    id?: string;
     timestamp: number;
     total: number;
     totalProfit?: number;
@@ -139,6 +214,72 @@ const selectedProfit = ref(0);
 const dialogVisible = ref(false);
 
 const searchKeyword = ref("");
+
+const showActions = ref(false); // ✅ 控制編輯模式
+
+const editingRow = ref<Sale | null>(null); // 正在編輯的行
+// ✅ 切換編輯模式
+function toggleEditMode() {
+    showActions.value = !showActions.value;
+}
+
+// 取得設備資訊
+function getDeviceInfoShort(): string {
+    const ua = navigator.userAgent;
+    const platform = navigator.platform;
+
+    // 簡單判斷 Chrome / Firefox / Edge / Safari
+    let browser = "未知瀏覽器";
+    if (ua.includes("Chrome")) browser = "Chrome";
+    else if (ua.includes("Firefox")) browser = "Firefox";
+    else if (ua.includes("Edg")) browser = "Edge";
+    else if (ua.includes("Safari")) browser = "Safari";
+
+    return `${browser} / ${platform}`;
+}
+
+// ✅ 儲存編輯
+async function saveEdit(row: Sale) {
+    if (!row.id) {
+        ElMessage.error('找不到紀錄 ID，無法儲存');
+        return;
+    }
+
+    // 更新 Firebase
+    await update(dbRef(db, `sales/${row.id}`), {
+        total: row.total,
+        totalProfit: row.totalProfit,
+        updater: user.value?.displayName + "(" + getDeviceInfoShort() + ")", // 新增更新者欄位
+        // 若要更新 items 或其他欄位，也可以加上
+    });
+
+    ElMessage.success('編輯已儲存');
+    editingRow.value = null;
+    await loadSalesByMonth(selectedMonth.value);
+}
+
+
+// ✅ 刪除銷售紀錄
+async function deleteSale(sale: Sale) {
+    try {
+        await ElMessageBox.confirm("確定要刪除這筆銷售紀錄嗎？", "刪除確認", {
+            confirmButtonText: "確定刪除",
+            cancelButtonText: "取消",
+            type: "warning",
+        });
+
+        if (sale.id) {
+            await remove(child(dbRef(db), `sales/${sale.id}`));
+            ElMessage.success("刪除成功");
+            await loadSalesByMonth(selectedMonth.value);
+        } else {
+            ElMessage.error("找不到紀錄 ID，無法刪除");
+        }
+    } catch {
+        ElMessage.info("已取消刪除");
+    }
+}
+
 // 取得當前年月 YYYY-MM
 function getCurrentYearMonth(): string {
     const now = new Date();
@@ -153,13 +294,13 @@ function formatDate(ts: number) {
     return new Date(ts).toLocaleString();
 }
 
-function showDetails(rowItems: SaleItem[], operator: string, total: number, totalProfit: number) {
-    selectedItems.value = rowItems;
-    selectedOperator.value = operator;
-    selectedTotal.value = total;
-    selectedProfit.value = totalProfit || 0;
-    dialogVisible.value = true;
-}
+// function showDetails(rowItems: SaleItem[], operator: string, total: number, totalProfit: number) {
+//     selectedItems.value = rowItems;
+//     selectedOperator.value = operator;
+//     selectedTotal.value = total;
+//     selectedProfit.value = totalProfit || 0;
+//     dialogVisible.value = true;
+// }
 
 // 篩選函式：商品名稱 + 年月
 function filterSales() {
@@ -218,10 +359,12 @@ async function loadSalesByMonth(selectedMonth: string | null) {
     const snapshot = await get(salesQuery);
     if (snapshot.exists()) {
         const data = snapshot.val();
-        sales.value = (Object.values(data) as Sale[]).sort(
-            (a, b) => b.timestamp - a.timestamp
-        );
-        filterSales(); // 前端依關鍵字再篩選一次
+        sales.value = Object.entries(data).map(([key, val]) => ({
+            id: key,   // <- 這裡存 key
+            ...(val as Sale)
+        })).sort((a, b) => b.timestamp - a.timestamp) as Sale[];
+
+        filterSales();
     } else {
         sales.value = [];
         filteredSales.value = [];
@@ -260,6 +403,109 @@ const todayProfit = computed(() => {
         .reduce((sum, sale) => sum + (sale.totalProfit ?? 0), 0);
 });
 
+
+// ----明細編輯相關----
+const showDetailActions = ref(false); // 彈窗編輯模式開關
+const editingDetailRow = ref<SaleItem | null>(null);
+let currentEditingSaleId: string | null = null; // 記錄彈窗對應的 sale.id
+
+function showDetails(rowItems: SaleItem[], operator: string, total: number, totalProfit: number, saleId?: string) {
+    selectedItems.value = rowItems.map(item => ({ ...item })); // 複製一份，避免直接綁定
+    selectedOperator.value = operator;
+    selectedTotal.value = total;
+    selectedProfit.value = totalProfit || 0;
+    dialogVisible.value = true;
+    currentEditingSaleId = saleId || null;
+}
+
+// 儲存明細編輯
+async function saveDetailEdit(item: SaleItem) {
+    if (!currentEditingSaleId) {
+        ElMessage.error("找不到紀錄 ID，無法儲存");
+        return;
+    }
+
+    // 更新 selectedItems
+    const index = selectedItems.value.findIndex(i => i.barcode === item.barcode);
+    if (index !== -1) selectedItems.value[index] = { ...item };
+
+    // 計算新的總額、毛利
+    const newTotal = selectedItems.value.reduce((sum, i) => sum + (i.sellingPrice * i.quantity), 0);
+    const newProfit = selectedItems.value.reduce((sum, i) => sum + ((i.sellingPrice - (i.cost ?? 0)) * i.quantity), 0);
+
+    // 更新 Firebase
+    await update(dbRef(db, `sales/${currentEditingSaleId}`), {
+        items: selectedItems.value,
+        total: newTotal,
+        totalProfit: newProfit,
+        updater: user.value?.displayName + "(" + getDeviceInfoShort() + ")"
+    });
+
+    // 更新彈窗顯示
+    selectedTotal.value = newTotal;
+    selectedProfit.value = newProfit;
+
+    // 更新主表格
+    await loadSalesByMonth(selectedMonth.value);
+
+    ElMessage.success('明細已儲存');
+    editingDetailRow.value = null;
+}
+
+// 刪除明細商品（帶確認提示）
+function deleteDetailItem(row: SaleItem) {
+    ElMessageBox.confirm(
+        '確定要刪除這個商品明細嗎？',
+        '刪除確認',
+        {
+            confirmButtonText: '確定',
+            cancelButtonText: '取消',
+            type: 'warning',
+        }
+    )
+        .then(() => {
+            const index = selectedItems.value.indexOf(row);
+            if (index !== -1) {
+                selectedItems.value.splice(index, 1);
+                ElMessage.success('明細已刪除');
+
+                // 同步更新 Firebase
+                updateDetailItemsInFirebase();
+            }
+        })
+        .catch(() => {
+            ElMessage.info('已取消刪除');
+        });
+}
+
+// 同步明細到 Firebase
+async function updateDetailItemsInFirebase() {
+    // 使用在 showDetails 中設定的 currentEditingSaleId 作為 saleId
+    const saleId = currentEditingSaleId;
+    if (!saleId) return;
+
+    // 計算總金額與毛利
+    const total = selectedItems.value.reduce((sum, item) => sum + (item.sellingPrice * item.quantity), 0);
+    const totalProfit = selectedItems.value.reduce((sum, item) => sum + ((item.sellingPrice - (item.cost ?? 0)) * item.quantity), 0);
+
+    await update(dbRef(db, `sales/${saleId}`), {
+        items: selectedItems.value,
+        total,
+        totalProfit,
+        updater: user.value?.displayName + "(" + getDeviceInfoShort() + ")",
+    });
+
+    // 更新主表格
+    await loadSalesByMonth(selectedMonth.value);
+}
+
+function onDetailDialogClose() {
+    dialogVisible.value = false;
+    showDetailActions.value = false; // 退出編輯模式
+    editingDetailRow.value = null;   // 清除正在編輯的行
+}
+
+
 onMounted(() => loadSalesByMonth(selectedMonth.value));
 
 </script>
@@ -276,5 +522,11 @@ onMounted(() => loadSalesByMonth(selectedMonth.value));
 .title-col h2 {
     margin: 0;
     font-weight: 600;
+}
+
+.toolbar {
+    display: flex;
+    align-items: center;
+    gap: 12px;
 }
 </style>

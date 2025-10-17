@@ -25,10 +25,11 @@
             :header-cell-style="{ background: `var(--table-header-bg)`, color: `var(--table-header-text)` }">
 
             <!-- 操作欄整欄隨編輯模式顯示 -->
-            <el-table-column v-if="editMode" label="操作" fixed="left" width="150">
+            <el-table-column v-if="editMode" label="操作" width="210">
                 <template #default="{ row }">
                     <div style="display: flex; gap: 8px;">
                         <el-button type="primary" size="small" @click="openEditDialog(row)">編輯</el-button>
+                        <el-button type="warning" size="small" @click="copyProduct(row)">複製</el-button>
                         <el-button type="danger" size="small" @click="deleteProduct(row)">刪除</el-button>
                     </div>
                 </template>
@@ -307,33 +308,54 @@ function openEditDialog(product: Product) {
 }
 
 // 單筆更新
-function saveEditProduct() {
+async function saveEditProduct() {
     if (!editProduct.value) return;
     const now = Date.now();
     const currentUser = getCurrentUserDisplayName();
-    const productRef = dbRef(db, `products/${editProduct.value.id}`);
 
-    const updateData = {
-        name: editProduct.value.name || "",
-        code: editProduct.value.code || "",
-        price: editProduct.value.price ?? 0,
-        sellingPrice: editProduct.value.sellingPrice ?? 0,
-        cost: editProduct.value.cost ?? 0,
-        stock: editProduct.value.stock ?? 0,
-        supplierName: editProduct.value.supplierName || "",
-        supplierCode: editProduct.value.supplierCode || "",
-        website: editProduct.value.website || "",
-        note: editProduct.value.note || "",
-        updated: now,
-        updatedBy: currentUser,
-    };
+    // 新增或複製商品
+    if (!editProduct.value.id) {
+        const codeExists = await checkProductCodeExists(editProduct.value.code);
+        if (codeExists) {
+            ElMessage.warning("商品編號已存在，請使用不同的編號");
+            return;
+        }
 
-    update(productRef, updateData)
-        .then(() => {
-            showEditDialog.value = false;
-            editProduct.value = null;
-        })
-        .catch(console.error);
+        const productsRef = dbRef(db, "products");
+        const newRef = push(productsRef);
+        const id = newRef.key!;
+        update(newRef, { ...editProduct.value, id, created: now, createdBy: currentUser })
+            .then(() => {
+                ElMessage.success(`已新增商品：${editProduct.value?.name}`);
+                showEditDialog.value = false;
+                editProduct.value = null;
+            })
+            .catch(console.error);
+
+    } else {
+        // 更新商品
+        const productRef = dbRef(db, `products/${editProduct.value.id}`);
+        const updateData = {
+            name: editProduct.value.name || "",
+            code: editProduct.value.code || "",
+            price: editProduct.value.price ?? 0,
+            sellingPrice: editProduct.value.sellingPrice ?? 0,
+            cost: editProduct.value.cost ?? 0,
+            stock: editProduct.value.stock ?? 0,
+            supplierName: editProduct.value.supplierName || "",
+            supplierCode: editProduct.value.supplierCode || "",
+            website: editProduct.value.website || "",
+            note: editProduct.value.note || "",
+            updated: now,
+            updatedBy: currentUser,
+        };
+        update(productRef, updateData)
+            .then(() => {
+                showEditDialog.value = false;
+                editProduct.value = null;
+            })
+            .catch(console.error);
+    }
 }
 
 // 刪除前確認
@@ -358,6 +380,8 @@ function deleteProduct(product: Product) {
         .catch(() => { });
 }
 
+
+
 // 新增商品（必填驗證）
 function submitAddProduct() {
     addForm.value.validate((valid: boolean) => {
@@ -367,6 +391,29 @@ function submitAddProduct() {
         }
         addProduct();
     });
+}
+
+async function checkProductCodeExists(code: string): Promise<boolean> {
+    const productsRef = dbRef(db, "products");
+    const snapshot = await get(productsRef);
+    if (!snapshot.exists()) return false;
+
+    const productsData = snapshot.val() as Record<string, Product>;
+    return Object.values(productsData).some((p) => p.code === code);
+}
+
+
+function copyProduct(product: Product) {
+    // 複製原商品資料，但 id 先不帶，名稱加上 "(複製)"
+    editProduct.value = {
+        ...product,
+        id: undefined, // 新增時 Firebase 會自動生成 id
+        name: `${product.name} (複製)`,
+        created: Date.now(),
+        createdBy: getCurrentUserDisplayName(),
+    } as unknown as Product;
+
+    showEditDialog.value = true; // 顯示編輯彈窗
 }
 
 function addProduct() {

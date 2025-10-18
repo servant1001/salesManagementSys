@@ -27,7 +27,7 @@
             <!-- 操作欄整欄隨編輯模式顯示 -->
             <el-table-column v-if="editMode" label="操作" width="210">
                 <template #default="{ row }">
-                    <div style="display: flex; gap: 8px;">
+                    <div style="display: flex;">
                         <el-button type="primary" size="small" @click="openEditDialog(row)">編輯</el-button>
                         <el-button type="warning" size="small" @click="copyProduct(row)">複製</el-button>
                         <el-button type="danger" size="small" @click="deleteProduct(row)">刪除</el-button>
@@ -49,13 +49,13 @@
                 </template>
             </el-table-column>
 
-            <el-table-column prop="price" label="定價" min-width="60" />
-            <el-table-column prop="sellingPrice" label="售價" min-width="60">
+            <el-table-column prop="price" label="定價" min-width="70" />
+            <el-table-column prop="sellingPrice" label="售價" min-width="70">
                 <template #default="{ row }">
                     <span style="font-weight: bold;">{{ row.sellingPrice }} 元</span>
                 </template>
             </el-table-column>
-            <el-table-column prop="cost" label="成本" min-width="60" />
+            <el-table-column prop="cost" label="成本" min-width="70" />
             <el-table-column prop="stock" label="庫存數量" min-width="100" />
             <el-table-column prop="code" label="商品編號" min-width="140" />
             <el-table-column prop="supplierName" label="廠商名稱" min-width="120" />

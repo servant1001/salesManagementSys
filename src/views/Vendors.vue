@@ -28,7 +28,7 @@
         <!-- 廠商列表 -->
         <el-table :data="filteredVendors" border style="width: 100%;">
             <!-- ✅ 操作欄放最左邊 -->
-            <el-table-column v-if="showActions" fixed="left" label="操作" min-width="90">
+            <el-table-column v-if="showActions" fixed="left" label="操作" min-width="140">
                 <template #default="{ row }">
                     <el-button type="primary" size="small" @click="openDialog(row)">修改</el-button>
                     <el-button type="danger" size="small" @click="deleteVendor(row.id)">刪除</el-button>

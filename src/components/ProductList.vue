@@ -12,7 +12,7 @@
 
             <div class="button-group">
                 <el-button type="primary" @click="toggleEditMode">
-                    {{ editMode ? "完成編輯模式" : "編輯" }}
+                    {{ editMode ? "退出編輯模式" : "進入編輯模式" }}
                 </el-button>
                 <el-button type="success" @click="showAddDialog = true">
                     新增商品
@@ -20,12 +20,24 @@
                 <el-button type="warning" @click="showBatchDialog = true">
                     批量新增商品
                 </el-button>
+                <el-button type="danger" @click="deleteSelectedProducts">
+                    刪除勾選商品
+                </el-button>
             </div>
         </div>
 
         <!-- 商品列表表格 -->
         <el-table :data="filteredProducts" style="width: 100%" border :class="tableThemeClass"
-            :header-cell-style="{ background: `var(--table-header-bg)`, color: `var(--table-header-text)` }">
+            :header-cell-style="{ background: `var(--table-header-bg)`, color: `var(--table-header-text)` }"
+            @selection-change="handleSelectionChange" ref="productTable">
+
+            <!-- checkbox欄位 -->
+            <el-table-column v-if="editMode" type="selection" width="55" align="center">
+            </el-table-column>
+
+            <!-- 序號欄位 -->
+            <el-table-column type="index" label="#" width="50" align="center">
+            </el-table-column>
 
             <!-- 操作欄整欄隨編輯模式顯示 -->
             <el-table-column v-if="editMode" label="操作" width="210">
@@ -75,6 +87,7 @@
             <el-table-column prop="created" label="新增時間" min-width="190" :formatter="formatDate" />
             <el-table-column prop="updated" label="更新時間" min-width="190" :formatter="formatDate" />
         </el-table>
+
 
         <div v-if="!filteredProducts.length" style="margin-top: 1rem">暫無商品資料</div>
 
@@ -711,6 +724,50 @@ async function submitBatchProducts() {
     });
 }
 
+// 用於存放已勾選的商品
+const selectedProducts = ref<Product[]>([]);
+const productTable = ref<any>(null);
+
+// 監聽勾選變化
+function handleSelectionChange(val: Product[]) {
+    selectedProducts.value = val;
+}
+
+// 批次刪除勾選商品
+function deleteSelectedProducts() {
+    if (!selectedProducts.value.length) {
+        ElMessage.warning("請先勾選要刪除的商品");
+        return;
+    }
+
+    ElMessageBox.confirm(
+        `確定要刪除 ${selectedProducts.value.length} 筆商品嗎？此操作無法復原。`,
+        "刪除確認",
+        {
+            confirmButtonText: "刪除",
+            cancelButtonText: "取消",
+            type: "warning",
+        }
+    )
+        .then(async () => {
+            try {
+                const updates: Record<string, null> = {};
+                selectedProducts.value.forEach((p) => {
+                    if (p.id) updates[p.id] = null; // Firebase 刪除
+                });
+
+                await update(dbRef(db, "products"), updates);
+                ElMessage.success("已刪除選中的商品");
+                selectedProducts.value = [];
+                // 清除表格勾選
+                productTable.value.clearSelection();
+            } catch (err) {
+                console.error(err);
+                ElMessage.error("刪除失敗");
+            }
+        })
+        .catch(() => { });
+}
 
 onMounted(fetchProducts);
 </script>

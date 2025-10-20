@@ -10,6 +10,19 @@
         <div class="top-bar">
             <el-input v-model="searchQuery" placeholder="搜尋商品名稱或編號" clearable class="search-input" />
 
+            <el-select v-model="selectedVendor" placeholder="選擇廠商" clearable style="width: 180px;">
+                <el-option
+                    label="全部"
+                    :value="null"
+                />
+                <el-option
+                    v-for="vendor in vendorList"
+                    :key="vendor.vendorId"
+                    :label="vendor.vendorName"
+                    :value="vendor.vendorId"
+                />
+            </el-select>
+
             <div class="button-group">
                 <el-button type="primary" @click="toggleEditMode">
                     {{ editMode ? "退出編輯模式" : "進入編輯模式" }}
@@ -322,7 +335,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from "vue";
+import { ref, computed, onMounted, watch } from "vue";
 import { db } from "@/firebase";
 import { ref as dbRef, onValue, update, push, remove, get, child } from "firebase/database";
 import { ElMessage, ElMessageBox } from "element-plus";
@@ -437,10 +450,22 @@ function fetchProducts() {
 
 const sortedProductsArray = computed(() => Object.values(products.value).sort((a, b) => b.created - a.created));
 const filteredProducts = computed(() => {
-    if (!searchQuery.value) return sortedProductsArray.value;
-    return sortedProductsArray.value.filter((p) =>
-        [p.name, p.code].some((f) => f?.toLowerCase().includes(searchQuery.value.toLowerCase()))
-    );
+    let list = sortedProductsArray.value;
+
+    // 文字搜尋
+    if (searchQuery.value) {
+        const query = searchQuery.value.toLowerCase();
+        list = list.filter(p =>
+            [p.name, p.code].some(f => f?.toLowerCase().includes(query))
+        );
+    }
+
+    // 廠商過濾
+    if (selectedVendor.value) {
+        list = list.filter(p => p.supplierCode === selectedVendor.value);
+    }
+
+    return list;
 });
 
 function formatDate(row: Product, column?: any) {
@@ -889,8 +914,31 @@ const sortedFilteredProducts = computed(() => {
   });
 });
 
+const selectedVendor = ref<string | null>(null); // 選擇的廠商編號
+const vendorList = ref<Vendor[]>([]); // 廠商列表
 
-onMounted(fetchProducts);
+// 取得廠商列表
+async function fetchVendors() {
+    const vendorsRef = dbRef(db, "vendors");
+    const snapshot = await get(vendorsRef);
+    if (snapshot.exists()) {
+        const data = snapshot.val() as Record<string, Vendor>;
+        vendorList.value = Object.values(data);
+    } else {
+        vendorList.value = [];
+    }
+}
+
+watch(selectedVendor, () => {
+  // 每次切換廠商，排序重置為商品編號由小到大
+  sortState.value = { prop: "code", order: "ascending" };
+});
+
+// 在 onMounted 中呼叫
+onMounted(() => {
+    fetchProducts();
+    fetchVendors();
+});
 </script>
 
 <style scoped>

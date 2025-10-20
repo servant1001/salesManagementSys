@@ -257,7 +257,10 @@
                 </el-form-item>
 
                 <el-form-item label="庫存" prop="stock">
-                    <el-input-number :min="0" v-model.number="batchBase.stock" />
+                    <div style="display: flex; gap: 10px; align-items: center;">
+                        <el-input-number :min="0" v-model.number="batchBase.stock" />
+                        <el-button type="primary" size="small" @click="syncBatchStock">同步到下方列表</el-button>
+                    </div>
                 </el-form-item>
 
                 <el-form-item label="廠商名稱">
@@ -312,8 +315,15 @@
                     </template>
                 </el-table-column>
 
+                <!-- 庫存欄位 -->
+                <el-table-column prop="stock" label="庫存" width="130">
+                    <template #default="{ row }">
+                        <el-input-number style="width: 100px" v-model.number="row.stock" :min="0" />
+                    </template>
+                </el-table-column>
+
                 <!-- 操作 -->
-                <el-table-column label="操作" width="100">
+                <el-table-column label="操作">
                     <template #default="{ $index }">
                         <el-button type="danger" size="small" @click="removeBatchRow($index)">刪除</el-button>
                     </template>
@@ -674,7 +684,7 @@ const batchBase = ref({
     website: "",
     note: "",
 });
-const batchList = ref<{ gtin: string; code: string; name: string }[]>([]);
+const batchList = ref<{ gtin: string; code: string; name: string, stock: number }[]>([]);
 
 const batchForm = ref<any>(null);
 
@@ -687,7 +697,7 @@ const batchRules = {
 
 
 function addBatchRow() {
-    batchList.value.push({ gtin: "", code: "", name: "" });
+    batchList.value.push({ gtin: "", code: "", name: "", stock: batchBase.value.stock ?? 0 });
 }
 
 function removeBatchRow(index: number) {
@@ -783,7 +793,7 @@ async function submitBatchProducts() {
                 price: batchBase.value.price,
                 sellingPrice: batchBase.value.sellingPrice,
                 cost: batchBase.value.cost,
-                stock: batchBase.value.stock,
+                stock: item.stock,
                 supplierName: batchBase.value.supplierName,
                 supplierCode: batchBase.value.supplierCode,
                 website: batchBase.value.website,
@@ -933,6 +943,19 @@ watch(selectedVendor, () => {
   // 每次切換廠商，排序重置為商品編號由小到大
   sortState.value = { prop: "code", order: "ascending" };
 });
+
+function syncBatchStock() {
+    if (!batchList.value.length) {
+        ElMessage.warning("列表中沒有任何商品，無法同步庫存");
+        return;
+    }
+
+    const stockValue = batchBase.value.stock ?? 0;
+    batchList.value.forEach(item => {
+        item.stock = stockValue;
+    });
+    ElMessage.success(`已將庫存同步為 ${stockValue}`);
+}
 
 // 在 onMounted 中呼叫
 onMounted(() => {

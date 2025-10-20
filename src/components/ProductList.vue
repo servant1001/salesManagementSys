@@ -17,6 +17,9 @@
                 <el-button type="success" @click="showAddDialog = true">
                     新增商品
                 </el-button>
+                <el-button type="warning" @click="showBatchDialog = true">
+                    批量新增商品
+                </el-button>
             </div>
         </div>
 
@@ -184,6 +187,76 @@
             </template>
         </el-dialog>
 
+        <!-- 🧩 批量新增商品彈窗 -->
+        <el-dialog title="批量新增商品" v-model="showBatchDialog" :width="'90%'" class="batch-add-dialog">
+            <el-form :model="batchBase" :rules="batchRules" ref="batchForm" label-width="120px"
+                style="margin-bottom: 20px;">
+                <el-form-item label="定價" prop="price">
+                    <el-input type="number" min="0" v-model.number="batchBase.price" />
+                </el-form-item>
+
+                <el-form-item label="售價" prop="sellingPrice">
+                    <el-input type="number" min="0" v-model.number="batchBase.sellingPrice" />
+                </el-form-item>
+
+                <el-form-item label="成本" prop="cost">
+                    <el-input type="number" min="0" v-model.number="batchBase.cost" />
+                </el-form-item>
+
+                <el-form-item label="庫存" prop="stock">
+                    <el-input-number :min="0" v-model.number="batchBase.stock" />
+                </el-form-item>
+
+                <el-form-item label="廠商名稱">
+                    <el-input v-model="batchBase.supplierName" />
+                </el-form-item>
+
+                <el-form-item label="廠商編號">
+                    <div style="display: flex; gap: 10px;">
+                        <el-input v-model="batchBase.supplierCode" placeholder="請輸入廠商編號" />
+                        <el-button type="primary" @click="findVendorByCodeBatch">查詢</el-button>
+                    </div>
+                </el-form-item>
+
+                <el-form-item label="網站">
+                    <el-input v-model="batchBase.website" placeholder="請輸入網站連結" />
+                </el-form-item>
+
+                <el-form-item label="備註">
+                    <el-input v-model="batchBase.note" type="textarea" rows="2" />
+                </el-form-item>
+            </el-form>
+
+            <h4 style="margin-bottom: 10px;">商品清單</h4>
+            <div style="margin-bottom: 10px; display: flex; justify-content: flex-end;">
+                <el-button type="primary" @click="addBatchRow">新增一列</el-button>
+            </div>
+
+            <el-table :data="batchList" border style="width: 100%">
+                <el-table-column type="index" label="#" width="50" />
+                <el-table-column prop="code" label="商品編號" width="200">
+                    <template #default="{ row }">
+                        <el-input v-model="row.code" placeholder="商品編號" />
+                    </template>
+                </el-table-column>
+                <el-table-column prop="name" label="商品名稱">
+                    <template #default="{ row }">
+                        <el-input v-model="row.name" placeholder="商品名稱" />
+                    </template>
+                </el-table-column>
+                <el-table-column label="操作" width="100">
+                    <template #default="{ $index }">
+                        <el-button type="danger" size="small" @click="removeBatchRow($index)">刪除</el-button>
+                    </template>
+                </el-table-column>
+            </el-table>
+
+            <template #footer>
+                <el-button @click="showBatchDialog = false">取消</el-button>
+                <el-button type="primary" @click="submitBatchProducts">提交</el-button>
+            </template>
+        </el-dialog>
+
 
         <!-- 掃描器彈窗 -->
         <el-dialog title="掃描條碼" v-model="showScannerDialog" width="400px" destroy-on-close>
@@ -268,8 +341,8 @@ function handleScanResult(result: string) {
     showScannerDialog.value = false;
 }
 
-function getCurrentUserDisplayName() {
-    return user.value?.displayName;
+function getCurrentUserDisplayName(): string | undefined {
+    return user.value?.displayName ?? undefined;
 }
 
 function fetchProducts() {
@@ -383,12 +456,22 @@ function deleteProduct(product: Product) {
 
 
 // 新增商品（必填驗證）
-function submitAddProduct() {
-    addForm.value.validate((valid: boolean) => {
+// 新增商品（必填驗證 + 編號檢查）
+async function submitAddProduct() {
+    addForm.value.validate(async (valid: boolean) => {
         if (!valid) {
             ElMessage.warning("請完整填寫所有欄位");
             return;
         }
+
+        // 🔍 檢查商品編號是否已存在
+        const codeExists = await checkProductCodeExists(newProduct.value.code);
+        if (codeExists) {
+            ElMessage.error(`商品編號「${newProduct.value.code}」已存在，請修改後再新增`);
+            return;
+        }
+
+        // 新增商品
         addProduct();
     });
 }
@@ -481,6 +564,153 @@ async function findVendorByCode() {
     }
 }
 
+// 🧩 批量新增商品
+const showBatchDialog = ref(false);
+const batchBase = ref({
+    price: 0,
+    sellingPrice: 0,
+    cost: 0,
+    stock: 0,
+    supplierName: "",
+    supplierCode: "",
+    website: "",
+    note: "",
+});
+const batchList = ref<{ code: string; name: string }[]>([]);
+
+const batchForm = ref<any>(null);
+
+const batchRules = {
+    price: [{ required: true, message: "請輸入定價", trigger: "blur" }],
+    sellingPrice: [{ required: true, message: "請輸入售價", trigger: "blur" }],
+    cost: [{ required: true, message: "請輸入成本", trigger: "blur" }],
+    stock: [{ required: true, message: "請輸入庫存", trigger: "change" }],
+};
+
+
+function addBatchRow() {
+    batchList.value.push({ code: "", name: "" });
+}
+
+function removeBatchRow(index: number) {
+    batchList.value.splice(index, 1);
+}
+
+async function findVendorByCodeBatch() {
+    const code = batchBase.value.supplierCode.trim();
+    if (!code) {
+        ElMessage.warning("請先輸入廠商編號");
+        return;
+    }
+
+    const vendorsRef = dbRef(db);
+    const snapshot = await get(child(vendorsRef, "vendors"));
+    if (!snapshot.exists()) {
+        ElMessage.error("目前沒有任何廠商資料");
+        return;
+    }
+
+    const vendors = snapshot.val() as Record<string, Vendor>;
+    const matched = Object.values(vendors).find(
+        (v) => v.vendorId?.toLowerCase() === code.toLowerCase()
+    );
+
+    if (matched) {
+        batchBase.value.supplierName = matched.vendorName;
+        ElMessage.success(`已找到廠商：${matched.vendorName}`);
+    } else {
+        batchBase.value.supplierName = "";
+        ElMessage.warning("找不到對應的廠商");
+    }
+}
+
+async function submitBatchProducts() {
+    batchForm.value.validate(async (valid: boolean) => {
+        if (!valid) {
+            ElMessage.warning("請完整填寫批量新增的基本欄位");
+            return;
+        }
+
+        if (!batchList.value.length) {
+            ElMessage.warning("請至少新增一筆商品");
+            return;
+        }
+
+        const currentUser = getCurrentUserDisplayName();
+        const productsRef = dbRef(db, "products");
+        const now = Date.now();
+
+        // 先抓現有商品資料以檢查重複
+        const snapshot = await get(productsRef);
+        const existingProducts = snapshot.exists() ? (snapshot.val() as Record<string, Product>) : {};
+        const existingCodes = new Set(Object.values(existingProducts).map(p => p.code));
+
+        // 找出所有輸入中重複的編號
+        const duplicateCodes: string[] = [];
+        for (const item of batchList.value) {
+            if (!item.code || !item.name) continue;
+            if (existingCodes.has(item.code)) {
+                duplicateCodes.push(item.code);
+            }
+        }
+
+        // 🚫 若有重複，不送出
+        if (duplicateCodes.length > 0) {
+            ElMessage.error(`以下商品編號已存在，請修改後再提交：${duplicateCodes.join(", ")}`);
+            return;
+        }
+
+        // 檢查是否至少有一筆完整商品
+        const validList = batchList.value.filter(item => item.code && item.name);
+        if (!validList.length) {
+            ElMessage.warning("請至少填寫一筆完整商品（編號與名稱）");
+            return;
+        }
+
+        // 組合資料
+        const updates: Record<string, Product> = {};
+        for (const item of validList) {
+            const newRef = push(productsRef);
+            const id = newRef.key!;
+            updates[id] = {
+                id,
+                code: item.code,
+                name: item.name,
+                price: batchBase.value.price,
+                sellingPrice: batchBase.value.sellingPrice,
+                cost: batchBase.value.cost,
+                stock: batchBase.value.stock,
+                supplierName: batchBase.value.supplierName,
+                supplierCode: batchBase.value.supplierCode,
+                website: batchBase.value.website,
+                note: batchBase.value.note,
+                created: now,
+                createdBy: currentUser,
+            };
+        }
+
+        try {
+            await update(productsRef, updates);
+            ElMessage.success(`成功新增 ${validList.length} 筆商品`);
+            showBatchDialog.value = false;
+            batchList.value = [];
+            batchBase.value = {
+                price: 0,
+                sellingPrice: 0,
+                cost: 0,
+                stock: 0,
+                supplierName: "",
+                supplierCode: "",
+                website: "",
+                note: "",
+            };
+        } catch (err) {
+            console.error(err);
+            ElMessage.error("批量新增失敗");
+        }
+    });
+}
+
 
 onMounted(fetchProducts);
 </script>
@@ -515,5 +745,10 @@ onMounted(fetchProducts);
 
 .button-group {
     display: flex;
+}
+
+.batch-dialog .el-table th,
+.batch-dialog .el-table td {
+    text-align: center;
 }
 </style>

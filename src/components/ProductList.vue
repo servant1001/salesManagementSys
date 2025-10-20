@@ -27,9 +27,16 @@
         </div>
 
         <!-- 商品列表表格 -->
-        <el-table :data="pagedProducts" style="width: 100%" border :class="tableThemeClass"
+        <el-table
+            :data="pagedProducts"
+            style="width: 100%"
+            border
+            :class="tableThemeClass"
             :header-cell-style="{ background: `var(--table-header-bg)`, color: `var(--table-header-text)` }"
-            @selection-change="handleSelectionChange" ref="productTable">
+            @selection-change="handleSelectionChange"
+            @sort-change="handleSortChange"
+            ref="productTable"
+        >
 
             <!-- checkbox欄位 -->
             <el-table-column v-if="editMode" type="selection" width="55" align="center">
@@ -53,7 +60,7 @@
                 </template>
             </el-table-column>
 
-            <el-table-column prop="name" label="商品名稱" min-width="140">
+            <el-table-column prop="name" label="商品名稱" min-width="180">
                 <template #default="{ row }">
                     <template v-if="row.website">
                         <a :href="row.website" target="_blank" rel="noopener noreferrer"
@@ -74,12 +81,12 @@
                 </template>
             </el-table-column>
             <el-table-column prop="cost" label="成本" min-width="70" />
-            <el-table-column prop="stock" label="庫存數量" min-width="100" />
-            <el-table-column prop="code" label="商品編號" min-width="140" />
+            <el-table-column prop="stock" label="庫存" min-width="70" />
+            <el-table-column prop="code" label="商品編號" sortable min-width="140" />
             <el-table-column prop="supplierName" label="廠商名稱" min-width="120" />
             <el-table-column prop="supplierCode" label="廠商編號" min-width="120" />
             <el-table-column prop="gtin" label="GTIN" min-width="120" />
-            <el-table-column prop="website" label="網站" min-width="100">
+            <el-table-column prop="website" label="網站" min-width="70">
                 <template #default="{ row }">
                     <a v-if="row.website" :href="row.website" target="_blank" rel="noopener noreferrer"
                         style="color: #409eff; text-decoration: underline;">連結</a>
@@ -169,8 +176,7 @@
                 <el-form-item label="GTIN" prop="gtin"
                     :rules="[{ required: true, message: '請輸入 GTIN', trigger: 'blur' }]">
                     <div style="display: flex; gap: 10px;">
-                        <el-input v-model="editProduct.gtin" placeholder="請輸入 GTIN" />
-                        <el-button type="primary" @click="showScannerDialog = true">掃描</el-button>
+                        <el-input v-model="editProduct.gtin" placeholder="請輸入 GTIN" :disabled="true"/>
                     </div>
                 </el-form-item>
 
@@ -457,13 +463,6 @@ async function saveEditProduct() {
     const now = Date.now();
     const currentUser = getCurrentUserDisplayName();
 
-    // 🔍 檢查 GTIN 是否重複
-    if (await checkGTINExists(editProduct.value.gtin, editProduct.value.id)) {
-        ElMessage.error(`GTIN「${editProduct.value.gtin}」已存在，請修改後再保存`);
-        return;
-    }
-
-    // 單筆更新
     const productRef = dbRef(db, `products/${editProduct.value.id}`);
     const updateData = {
         code: editProduct.value.code || "",
@@ -480,12 +479,16 @@ async function saveEditProduct() {
         updated: now,
         updatedBy: currentUser,
     };
-    update(productRef, updateData)
-        .then(() => {
-            showEditDialog.value = false;
-            editProduct.value = null;
-        })
-        .catch(console.error);
+
+    try {
+        await update(productRef, updateData);
+        ElMessage.success("✅ 商品更新成功");
+        showEditDialog.value = false;
+        editProduct.value = null;
+    } catch (error) {
+        console.error(error);
+        ElMessage.error("❌ 商品更新失敗，請稍後再試");
+    }
 }
 
 
@@ -839,9 +842,8 @@ const totalProducts = computed(() => filteredProducts.value.length);
 
 // 計算分頁後要顯示的資料
 const pagedProducts = computed(() => {
-    const start = (currentPage.value - 1) * pageSize.value;
-    const end = start + pageSize.value;
-    return filteredProducts.value.slice(start, end);
+  const start = (currentPage.value - 1) * pageSize.value;
+  return sortedFilteredProducts.value.slice(start, start + pageSize.value);
 });
 
 // 分頁事件
@@ -853,6 +855,40 @@ function handlePageSizeChange(size: number) {
     pageSize.value = size;
     currentPage.value = 1; // 重新回到第1頁
 }
+
+// 排序狀態
+const sortState = ref<{ prop: string; order: 'ascending' | 'descending' | null }>({
+  prop: '',
+  order: null
+});
+
+// 排序事件處理
+function handleSortChange({ prop, order }: any) {
+  sortState.value = { prop, order };
+}
+
+// 排序後資料
+const sortedFilteredProducts = computed(() => {
+  const list = [...filteredProducts.value];
+  const { prop, order } = sortState.value;
+
+  if (!prop || !order) return list;
+
+  return list.sort((a, b) => {
+    const key = prop as keyof Product;   // ✅ 斷言
+    const aVal = a[key] ?? '';
+    const bVal = b[key] ?? '';
+
+    if (typeof aVal === 'number' && typeof bVal === 'number') {
+      return order === 'ascending' ? aVal - bVal : bVal - aVal;
+    }
+
+    return order === 'ascending'
+      ? String(aVal).localeCompare(String(bVal))
+      : String(bVal).localeCompare(String(aVal));
+  });
+});
+
 
 onMounted(fetchProducts);
 </script>

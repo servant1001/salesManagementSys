@@ -78,6 +78,7 @@
             <el-table-column prop="code" label="商品編號" min-width="140" />
             <el-table-column prop="supplierName" label="廠商名稱" min-width="120" />
             <el-table-column prop="supplierCode" label="廠商編號" min-width="120" />
+            <el-table-column prop="gtin" label="GTIN" min-width="120" />
             <el-table-column prop="website" label="網站" min-width="100">
                 <template #default="{ row }">
                     <a v-if="row.website" :href="row.website" target="_blank" rel="noopener noreferrer"
@@ -102,15 +103,19 @@
         <!-- 新增商品對話框 -->
         <el-dialog title="新增商品" v-model="showAddDialog" :width="'90%'" class="add-product-dialog">
             <el-form :model="newProduct" :rules="rules" ref="addForm" label-width="120px">
-                <el-form-item label="商品編號" prop="code">
+                <el-form-item label="GTIN" prop="gtin">
                     <div style="display: flex; gap: 10px;">
-                        <el-input v-model="newProduct.code" placeholder="例如：A001 或條碼號" />
-                        <el-button type="primary" @click="showScannerDialog = true">掃描</el-button>
+                        <el-input v-model="newProduct.gtin" placeholder="請輸入 GTIN" />
+                        <el-button type="primary" @click="startScanNewProduct">掃描</el-button>
                     </div>
                 </el-form-item>
 
                 <el-form-item label="商品名稱" prop="name">
                     <el-input v-model="newProduct.name" />
+                </el-form-item>
+
+                <el-form-item label="商品編號" prop="code">
+                    <el-input v-model="newProduct.code" placeholder="例如：A001 或條碼號" />
                 </el-form-item>
 
                 <el-form-item label="定價" prop="price">
@@ -161,12 +166,20 @@
         <!-- 編輯商品彈窗 -->
         <el-dialog title="編輯商品" v-model="showEditDialog" :width="'90%'" class="edit-product-dialog">
             <el-form v-if="editProduct" :model="editProduct" label-width="120px">
-                <el-form-item label="商品編號">
-                    <el-input v-model="editProduct.code" />
+                <el-form-item label="GTIN" prop="gtin"
+                    :rules="[{ required: true, message: '請輸入 GTIN', trigger: 'blur' }]">
+                    <div style="display: flex; gap: 10px;">
+                        <el-input v-model="editProduct.gtin" placeholder="請輸入 GTIN" />
+                        <el-button type="primary" @click="showScannerDialog = true">掃描</el-button>
+                    </div>
                 </el-form-item>
 
                 <el-form-item label="商品名稱">
                     <el-input v-model="editProduct.name" />
+                </el-form-item>
+
+                <el-form-item label="商品編號">
+                    <el-input v-model="editProduct.code" />
                 </el-form-item>
 
                 <el-form-item label="定價">
@@ -255,16 +268,32 @@
 
             <el-table :data="batchList" border style="width: 100%">
                 <el-table-column type="index" label="#" width="50" />
-                <el-table-column prop="code" label="商品編號" width="200">
+
+                <!-- GTIN 欄位 -->
+                <el-table-column prop="gtin" label="GTIN" width="200">
                     <template #default="{ row }">
-                        <el-input v-model="row.code" placeholder="商品編號" />
+                        <div style="display: flex; gap: 5px;">
+                            <el-input v-model="row.gtin" placeholder="請輸入 GTIN" />
+                            <el-button type="primary" size="small" @click="startScanGTIN(row)">掃描</el-button>
+                        </div>
                     </template>
                 </el-table-column>
-                <el-table-column prop="name" label="商品名稱">
+
+                <!-- 商品名稱 -->
+                <el-table-column prop="name" label="商品名稱" width="200">
                     <template #default="{ row }">
                         <el-input v-model="row.name" placeholder="商品名稱" />
                     </template>
                 </el-table-column>
+
+                <!-- 商品編號 -->
+                <el-table-column prop="code" label="商品編號" width="180">
+                    <template #default="{ row }">
+                        <el-input v-model="row.code" placeholder="商品編號" />
+                    </template>
+                </el-table-column>
+
+                <!-- 操作 -->
                 <el-table-column label="操作" width="100">
                     <template #default="{ $index }">
                         <el-button type="danger" size="small" @click="removeBatchRow($index)">刪除</el-button>
@@ -301,6 +330,7 @@ const { user } = useAuth();
 
 interface Product {
     id: string;
+    gtin: string;
     code: string;
     name: string;
     price: number;
@@ -327,6 +357,7 @@ const showScannerDialog = ref(false);
 const addForm = ref<any>(null);
 
 const newProduct = ref<Omit<Product, "id" | "createdBy" | "updatedBy">>({
+    gtin: "",
     code: "",
     name: "",
     price: 0,
@@ -342,25 +373,44 @@ const newProduct = ref<Omit<Product, "id" | "createdBy" | "updatedBy">>({
 
 // 驗證規則
 const rules = {
+    gtin: [{ required: true, message: "請輸入 GTIN", trigger: "blur" }],
     code: [{ required: true, message: "請輸入商品編號", trigger: "blur" }],
     name: [{ required: true, message: "請輸入商品名稱", trigger: "blur" }],
     price: [{ required: true, message: "請輸入定價", trigger: "blur" }],
     sellingPrice: [{ required: true, message: "請輸入售價", trigger: "blur" }],
     cost: [{ required: true, message: "請輸入成本", trigger: "blur" }],
     stock: [{ required: true, message: "請輸入庫存", trigger: "change" }],
-    // supplierName: [{ required: true, message: "請輸入廠商名稱", trigger: "blur" }],
-    // supplierCode: [{ required: true, message: "請輸入廠商編號", trigger: "blur" }],
 };
 
 // 編輯彈窗
 const showEditDialog = ref(false);
 const editProduct = ref<Product | null>(null);
 
+const scanTargetRow = ref<any>(null);
+
+function startScanGTIN(row: any) {
+    scanTargetRow.value = row;
+    showScannerDialog.value = true;
+}
+
+function startScanNewProduct() {
+    scanTargetRow.value = newProduct.value;
+    showScannerDialog.value = true;
+}
+
 // 掃描條碼
 function handleScanResult(result: string) {
-    newProduct.value.code = result;
+    if (scanTargetRow.value) {
+        scanTargetRow.value.gtin = result; // 將掃描結果填入對應 row
+        scanTargetRow.value = null; // 清除目標
+    } else if (editProduct.value) {
+        editProduct.value.gtin = result;  // 編輯模式填入 GTIN
+    } else {
+        newProduct.value.gtin = result;   // 新增模式填入 GTIN
+    }
     showScannerDialog.value = false;
 }
+
 
 function getCurrentUserDisplayName(): string | undefined {
     return user.value?.displayName ?? undefined;
@@ -407,50 +457,37 @@ async function saveEditProduct() {
     const now = Date.now();
     const currentUser = getCurrentUserDisplayName();
 
-    // 新增或複製商品
-    if (!editProduct.value.id) {
-        const codeExists = await checkProductCodeExists(editProduct.value.code);
-        if (codeExists) {
-            ElMessage.warning("商品編號已存在，請使用不同的編號");
-            return;
-        }
-
-        const productsRef = dbRef(db, "products");
-        const newRef = push(productsRef);
-        const id = newRef.key!;
-        update(newRef, { ...editProduct.value, id, created: now, createdBy: currentUser })
-            .then(() => {
-                ElMessage.success(`已新增商品：${editProduct.value?.name}`);
-                showEditDialog.value = false;
-                editProduct.value = null;
-            })
-            .catch(console.error);
-
-    } else {
-        // 更新商品
-        const productRef = dbRef(db, `products/${editProduct.value.id}`);
-        const updateData = {
-            name: editProduct.value.name || "",
-            code: editProduct.value.code || "",
-            price: editProduct.value.price ?? 0,
-            sellingPrice: editProduct.value.sellingPrice ?? 0,
-            cost: editProduct.value.cost ?? 0,
-            stock: editProduct.value.stock ?? 0,
-            supplierName: editProduct.value.supplierName || "",
-            supplierCode: editProduct.value.supplierCode || "",
-            website: editProduct.value.website || "",
-            note: editProduct.value.note || "",
-            updated: now,
-            updatedBy: currentUser,
-        };
-        update(productRef, updateData)
-            .then(() => {
-                showEditDialog.value = false;
-                editProduct.value = null;
-            })
-            .catch(console.error);
+    // 🔍 檢查 GTIN 是否重複
+    if (await checkGTINExists(editProduct.value.gtin, editProduct.value.id)) {
+        ElMessage.error(`GTIN「${editProduct.value.gtin}」已存在，請修改後再保存`);
+        return;
     }
+
+    // 單筆更新
+    const productRef = dbRef(db, `products/${editProduct.value.id}`);
+    const updateData = {
+        code: editProduct.value.code || "",
+        gtin: editProduct.value.gtin || "",
+        name: editProduct.value.name || "",
+        price: editProduct.value.price ?? 0,
+        sellingPrice: editProduct.value.sellingPrice ?? 0,
+        cost: editProduct.value.cost ?? 0,
+        stock: editProduct.value.stock ?? 0,
+        supplierName: editProduct.value.supplierName || "",
+        supplierCode: editProduct.value.supplierCode || "",
+        website: editProduct.value.website || "",
+        note: editProduct.value.note || "",
+        updated: now,
+        updatedBy: currentUser,
+    };
+    update(productRef, updateData)
+        .then(() => {
+            showEditDialog.value = false;
+            editProduct.value = null;
+        })
+        .catch(console.error);
 }
+
 
 // 刪除前確認
 function deleteProduct(product: Product) {
@@ -474,9 +511,15 @@ function deleteProduct(product: Product) {
         .catch(() => { });
 }
 
+async function checkGTINExists(gtin: string, excludeId?: string): Promise<boolean> {
+    const productsRef = dbRef(db, "products");
+    const snapshot = await get(productsRef);
+    if (!snapshot.exists()) return false;
 
+    const productsData = snapshot.val() as Record<string, Product>;
+    return Object.values(productsData).some(p => p.gtin === gtin && p.id !== excludeId);
+}
 
-// 新增商品（必填驗證）
 // 新增商品（必填驗證 + 編號檢查）
 async function submitAddProduct() {
     addForm.value.validate(async (valid: boolean) => {
@@ -485,14 +528,19 @@ async function submitAddProduct() {
             return;
         }
 
-        // 🔍 檢查商品編號是否已存在
+        // 🔍 檢查 GTIN 是否重複
+        if (await checkGTINExists(newProduct.value.gtin)) {
+            ElMessage.error(`GTIN「${newProduct.value.gtin}」已存在，請修改後再新增`);
+            return;
+        }
+
+        // 🔍 檢查商品編號是否重複
         const codeExists = await checkProductCodeExists(newProduct.value.code);
         if (codeExists) {
             ElMessage.error(`商品編號「${newProduct.value.code}」已存在，請修改後再新增`);
             return;
         }
 
-        // 新增商品
         addProduct();
     });
 }
@@ -530,6 +578,7 @@ function addProduct() {
         .then(() => {
             showAddDialog.value = false;
             newProduct.value = {
+                gtin: "",
                 code: "",
                 name: "",
                 price: 0,
@@ -597,7 +646,7 @@ const batchBase = ref({
     website: "",
     note: "",
 });
-const batchList = ref<{ code: string; name: string }[]>([]);
+const batchList = ref<{ gtin: string; code: string; name: string }[]>([]);
 
 const batchForm = ref<any>(null);
 
@@ -610,7 +659,7 @@ const batchRules = {
 
 
 function addBatchRow() {
-    batchList.value.push({ code: "", name: "" });
+    batchList.value.push({ gtin: "", code: "", name: "" });
 }
 
 function removeBatchRow(index: number) {
@@ -665,14 +714,15 @@ async function submitBatchProducts() {
         const snapshot = await get(productsRef);
         const existingProducts = snapshot.exists() ? (snapshot.val() as Record<string, Product>) : {};
         const existingCodes = new Set(Object.values(existingProducts).map(p => p.code));
+        const existingGTINs = new Set(Object.values(existingProducts).map(p => p.gtin));
 
-        // 找出所有輸入中重複的編號
+        // 找出重複的編號或 GTIN
         const duplicateCodes: string[] = [];
+        const duplicateGTINs: string[] = [];
         for (const item of batchList.value) {
-            if (!item.code || !item.name) continue;
-            if (existingCodes.has(item.code)) {
-                duplicateCodes.push(item.code);
-            }
+            if (!item.code || !item.name || !item.gtin) continue;
+            if (existingCodes.has(item.code)) duplicateCodes.push(item.code);
+            if (existingGTINs.has(item.gtin)) duplicateGTINs.push(item.gtin);
         }
 
         // 🚫 若有重複，不送出
@@ -680,11 +730,15 @@ async function submitBatchProducts() {
             ElMessage.error(`以下商品編號已存在，請修改後再提交：${duplicateCodes.join(", ")}`);
             return;
         }
+        if (duplicateGTINs.length > 0) {
+            ElMessage.error(`以下 GTIN 已存在，請修改後再提交：${duplicateGTINs.join(", ")}`);
+            return;
+        }
 
         // 檢查是否至少有一筆完整商品
-        const validList = batchList.value.filter(item => item.code && item.name);
+        const validList = batchList.value.filter(item => item.code && item.name && item.gtin);
         if (!validList.length) {
-            ElMessage.warning("請至少填寫一筆完整商品（編號與名稱）");
+            ElMessage.warning("請至少填寫一筆完整商品（編號、名稱與 GTIN）");
             return;
         }
 
@@ -696,6 +750,7 @@ async function submitBatchProducts() {
             updates[id] = {
                 id,
                 code: item.code,
+                gtin: item.gtin,           // 新增 GTIN
                 name: item.name,
                 price: batchBase.value.price,
                 sellingPrice: batchBase.value.sellingPrice,

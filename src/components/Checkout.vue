@@ -10,7 +10,9 @@
 
         <h3 style="margin-top: 20px;">已掃描商品列表</h3>
         <el-table v-if="cart.length" :data="cart" border style="width: 100%; margin-top: 10px;">
-            <el-table-column prop="name" label="商品名稱" />
+            <el-table-column prop="name" label="商品名稱" width="400" />
+            <el-table-column prop="code" label="商品編號" width="180" />
+            <el-table-column prop="gtin" label="GTIN" width="180" />
             <el-table-column label="售價" width="100">
                 <template #default="{ row }">
                     <el-input v-if="row.editing" v-model.number="row.sellingPrice" size="small" />
@@ -48,7 +50,7 @@
             <el-table-column prop="supplierName" label="廠商名稱" width="120" />
 
             <el-table-column prop="supplierCode" label="廠商編號" width="120" />
-            <el-table-column label="操作" width="180">
+            <el-table-column label="操作">
                 <template #default="{ row, $index }">
                     <el-button type="primary" size="mini" @click="toggleEdit(row)">
                         {{ row.editing ? "完成" : "編輯" }}
@@ -88,6 +90,8 @@ const { user } = useAuth();
 
 interface CartItem {
     barcode: string;
+    gtin: string;
+    code: string;
     name: string;
     price: number;
     sellingPrice: number;
@@ -109,6 +113,7 @@ const total = computed(() =>
 const beepSound = new Audio("/scanner-beep.mp3"); // 放在 public/beep.mp3
 
 interface Product {
+    gtin: string;
     code: string;
     name: string;
     price: number;
@@ -116,20 +121,23 @@ interface Product {
     cost: number;
 }
 
-async function handleScan(scannedCode: string) {
-
+async function handleScan(scannedGtin: string) {
     const dbRoot = dbRef(db);
     const snapshot = await get(child(dbRoot, "products"));
     if (!snapshot.exists()) {
         ElMessage({ message: "資料庫中沒有商品資料", type: "warning", duration: 1500 });
         return;
     }
+
     const productsData = snapshot.val() as Record<string, any>;
+
+    // 用 scannedGtin 去找對應商品
     const productEntry = Object.entries(productsData).find(
-        ([id, data]) => (data as Product).code === scannedCode
+        ([id, data]) => (data as Product).gtin === scannedGtin
     );
+
     if (!productEntry) {
-        ElMessage({ message: `找不到代碼 ${scannedCode} 的商品`, type: "warning", duration: 1500 });
+        ElMessage({ message: `找不到 GTIN ${scannedGtin} 的商品`, type: "warning", duration: 1500 });
         return;
     }
 
@@ -138,17 +146,19 @@ async function handleScan(scannedCode: string) {
 
     const existingItem = cart.find(item => item.barcode === barcode);
     if (existingItem) {
-        existingItem.quantity += 1; // 數量加 1
+        existingItem.quantity += 1;
     } else {
         const cost = product.cost ?? 0;
-        const sellingPrice = product.sellingPrice ?? product.price ?? 0; // 使用售價，若無則用定價
+        const sellingPrice = product.sellingPrice ?? product.price ?? 0;
 
         cart.push({
-            barcode,
+            barcode,              // Firebase 內部 id
+            gtin: product.gtin,   // 用掃描值查到的 GTIN
+            code: product.code ?? "",
             name: product.name,
             price: product.price,
-            sellingPrice: sellingPrice,
-            cost: cost,
+            sellingPrice,
+            cost,
             supplierName: (data as any).supplierName ?? "",
             supplierCode: (data as any).supplierCode ?? "",
             quantity: 1,
@@ -225,6 +235,8 @@ async function confirmCheckout() {
         operator: user.value?.displayName || user.value?.email || "",
         items: cart.map(item => ({
             barcode: item.barcode,
+            gtin: item.gtin,
+            code: item.code,
             name: item.name,
             price: item.price,
             sellingPrice: item.sellingPrice,

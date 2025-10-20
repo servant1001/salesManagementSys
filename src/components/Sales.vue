@@ -157,6 +157,23 @@
                         <div v-else>{{ row.name }}</div>
                     </template>
                 </el-table-column>
+                <el-table-column prop="code" label="商品編號" width="120">
+                    <template #default="{ row }">
+                        <div v-if="editingDetailRow === row">
+                            <el-input v-model="row.code" size="small" placeholder="輸入商品編號" />
+                        </div>
+                        <div v-else>{{ row.code }}</div>
+                    </template>
+                </el-table-column>
+
+                <el-table-column prop="gtin" label="GTIN" width="120">
+                    <template #default="{ row }">
+                        <div v-if="editingDetailRow === row">
+                            <el-input v-model="row.gtin" size="small" placeholder="輸入 GTIN" />
+                        </div>
+                        <div v-else>{{ row.gtin }}</div>
+                    </template>
+                </el-table-column>
                 <el-table-column prop="sellingPrice" label="售價" width="120">
                     <template #default="{ row }">
                         <div v-if="editingDetailRow === row">
@@ -212,6 +229,8 @@ const { user } = useAuth();
 
 interface SaleItem {
     barcode: string;
+    gtin: string;
+    code: string;
     name: string;
     price: number;
     sellingPrice: number;
@@ -413,6 +432,7 @@ function showDetails(rowItems: SaleItem[], operator: string, total: number, tota
     selectedProfit.value = totalProfit || 0;
     dialogVisible.value = true;
     currentEditingSaleId = saleId || null;
+    console.log(selectedItems.value)
 }
 
 // 新增商品明細
@@ -424,6 +444,8 @@ function addNewDetailItem() {
 
     const newItem: SaleItem = {
         barcode: `new-${Date.now()}`, // 簡單生成唯一條碼
+        gtin: '',
+        code: '',
         name: '',
         price: 0,
         sellingPrice: 0,

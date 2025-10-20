@@ -27,7 +27,7 @@
         </div>
 
         <!-- 商品列表表格 -->
-        <el-table :data="filteredProducts" style="width: 100%" border :class="tableThemeClass"
+        <el-table :data="pagedProducts" style="width: 100%" border :class="tableThemeClass"
             :header-cell-style="{ background: `var(--table-header-bg)`, color: `var(--table-header-text)` }"
             @selection-change="handleSelectionChange" ref="productTable">
 
@@ -36,7 +36,10 @@
             </el-table-column>
 
             <!-- 序號欄位 -->
-            <el-table-column type="index" label="#" width="50" align="center">
+            <el-table-column label="#" width="50" align="center">
+                <template #default="scope">
+                    {{ (currentPage - 1) * pageSize + scope.$index + 1 }}
+                </template>
             </el-table-column>
 
             <!-- 操作欄整欄隨編輯模式顯示 -->
@@ -88,6 +91,11 @@
             <el-table-column prop="updated" label="更新時間" min-width="190" :formatter="formatDate" />
         </el-table>
 
+        <!-- 分頁 -->
+        <el-pagination background layout="prev, pager, next, sizes, total" :total="totalProducts" :page-size="pageSize"
+            :current-page.sync="currentPage" :page-sizes="[10, 20, 50, 100]" @size-change="handlePageSizeChange"
+            @current-change="handlePageChange" style="margin-top: 20px; text-align: right;">
+        </el-pagination>
 
         <div v-if="!filteredProducts.length" style="margin-top: 1rem">暫無商品資料</div>
 
@@ -767,6 +775,28 @@ function deleteSelectedProducts() {
             }
         })
         .catch(() => { });
+}
+
+// 分頁控制
+const currentPage = ref(1);
+const pageSize = ref(10); // 每頁顯示數量，可修改
+const totalProducts = computed(() => filteredProducts.value.length);
+
+// 計算分頁後要顯示的資料
+const pagedProducts = computed(() => {
+    const start = (currentPage.value - 1) * pageSize.value;
+    const end = start + pageSize.value;
+    return filteredProducts.value.slice(start, end);
+});
+
+// 分頁事件
+function handlePageChange(page: number) {
+    currentPage.value = page;
+}
+
+function handlePageSizeChange(size: number) {
+    pageSize.value = size;
+    currentPage.value = 1; // 重新回到第1頁
 }
 
 onMounted(fetchProducts);

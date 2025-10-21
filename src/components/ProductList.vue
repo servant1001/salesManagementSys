@@ -8,28 +8,47 @@
 
         <!-- 查詢 + 按鈕區 -->
         <div class="top-bar">
+            <!-- 搜尋框 -->
             <el-input v-model="searchQuery" placeholder="搜尋商品名稱或編號" clearable class="search-input" />
 
-            <el-select v-model="selectedVendor" placeholder="選擇廠商" clearable style="width: 180px;">
+            <!-- 廠商選擇 -->
+            <el-select v-model="selectedVendor" placeholder="選擇廠商" clearable class="vendor-select">
                 <el-option label="全部" :value="null" />
                 <el-option v-for="vendor in vendorList" :key="vendor.vendorId" :label="vendor.vendorName"
                     :value="vendor.vendorId" />
             </el-select>
 
-            <div class="button-group">
-                <el-button type="primary" @click="toggleEditMode">
+            <!-- 掃描 + 編輯模式 -->
+            <div class="action-row">
+                <el-button type="primary" @click="openScanner">
+                    <el-icon style="margin-right: 3px;">
+                        <Camera />
+                    </el-icon>
+                    掃描GTIN
+                </el-button>
+
+                <el-button :type="editMode ? 'warning' : 'info'" @click="toggleEditMode">
                     {{ editMode ? "退出編輯模式" : "進入編輯模式" }}
                 </el-button>
+            </div>
+
+            <!-- 商品操作 -->
+            <div class="button-group">
                 <el-button type="success" @click="showAddDialog = true">
                     新增商品
                 </el-button>
                 <el-button type="warning" @click="showBatchDialog = true">
-                    批量新增商品
+                    批量新增
                 </el-button>
                 <el-button type="danger" @click="deleteSelectedProducts">
-                    刪除勾選商品
+                    刪除商品
                 </el-button>
             </div>
+
+            <!-- 掃描視窗 -->
+            <el-dialog v-model="scannerVisible" title="掃描 GTIN 查詢" width="400px">
+                <Scanner @onScan="handleScanGTIN" />
+            </el-dialog>
         </div>
 
         <!-- 商品列表表格 -->
@@ -242,10 +261,12 @@
                     <el-input type="number" min="0" v-model.number="batchBase.cost" />
                 </el-form-item>
 
-                <el-form-item label="庫存" prop="stock">
-                    <div style="display: flex; gap: 10px; align-items: center;">
-                        <el-input-number :min="0" v-model.number="batchBase.stock" />
-                        <el-button type="primary" size="small" @click="syncBatchStock">同步到下方列表</el-button>
+                <el-form-item label="庫存" prop="stock" class="stock-item">
+                    <div class="stock-field">
+                        <el-input-number style="width: 120px;" :min="0" v-model.number="batchBase.stock" />
+                        <el-button style="width: 120px;" type="primary" size="small" @click="syncBatchStock">
+                            庫存同步
+                        </el-button>
                     </div>
                 </el-form-item>
 
@@ -335,6 +356,7 @@ import { ref, computed, onMounted, watch } from "vue";
 import { db } from "@/firebase";
 import { ref as dbRef, onValue, update, push, remove, get, child } from "firebase/database";
 import { ElMessage, ElMessageBox } from "element-plus";
+import { Camera } from "@element-plus/icons-vue";
 import Scanner from "@/components/Scanner.vue";
 import { useThemeStore } from "@/stores/theme";
 import { useAuth } from "@/composables/useAuth";
@@ -365,6 +387,7 @@ interface Product {
 const products = ref<Record<string, Product>>({});
 const editMode = ref(false);
 const searchQuery = ref("");
+const scannerVisible = ref(false);
 
 // 新增商品
 const showAddDialog = ref(false);
@@ -469,6 +492,24 @@ const filteredProducts = computed(() => {
 
     return list;
 });
+
+// 打開掃描框
+function openScanner() {
+    scannerVisible.value = true;
+}
+
+// 處理掃描結果
+function handleScanGTIN(gtin: string) {
+    scannerVisible.value = false;
+    searchQuery.value = gtin;
+
+    const found = Object.values(products.value).find((p) => p.gtin === gtin);
+    if (found) {
+        ElMessage.success(`找到商品：${found.name}`);
+    } else {
+        ElMessage.warning(`查無 GTIN：${gtin}`);
+    }
+}
 
 function formatDate(row: Product, column?: any) {
     const timestamp = column?.property === "updated" ? row.updated : row.created;
@@ -974,22 +1015,77 @@ onMounted(() => {
     display: flex;
     flex-wrap: wrap;
     align-items: center;
-    gap: 10px;
-    margin-bottom: 1rem;
+    gap: 8px;
+    margin-bottom: 10px;
 }
 
 .search-input {
     flex: 1;
-    min-width: 150px;
-    max-width: 300px;
+    width: 180px;
+}
+
+.vendor-select {
+    width: 180px;
+}
+
+.action-row {
+    display: flex;
 }
 
 .button-group {
     display: flex;
 }
 
-.batch-dialog .el-table th,
-.batch-dialog .el-table td {
-    text-align: center;
+/* 手機模式下讓搜尋與廠商各自佔一行 */
+@media (max-width: 768px) {
+    .top-bar {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .search-input,
+    .vendor-select {
+        width: 100%;
+    }
+
+    .action-row,
+    .button-group {
+        width: 100%;
+        justify-content: space-between;
+    }
+
+    .action-row .el-button,
+    .button-group .el-button {
+        flex: 1;
+    }
+}
+
+.batch-add-dialog {
+    overflow: hidden;
+    /* 避免內容撐出 dialog */
+}
+
+.stock-item {
+    width: 100%;
+}
+
+.stock-field {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px;
+    max-width: 100%;
+}
+
+/* 小螢幕自動換行確保不超出 */
+@media (max-width: 768px) {
+    .stock-field {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .stock-field .el-button {
+        width: 100%;
+    }
 }
 </style>

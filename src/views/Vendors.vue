@@ -1,29 +1,27 @@
 <template>
     <div class="vendor-page">
         <!-- 標題 -->
-        <el-row class="titleBar" style="margin-bottom: 10px; align-items: center; justify-content: space-between;">
-            <el-col>
-                <h2>廠商管理</h2>
+        <el-row class="titleBar">
+            <el-col :span="24" class="title-col">
+                <h2>廠商列表</h2>
             </el-col>
         </el-row>
 
-        <!-- 搜尋 + 新增 + 編輯模式切換 -->
-        <el-row class="filterBar" style="
-            display: flex;
-            align-items: center;
-            justify-content: flex-start;
-            gap: 10px;
-            margin-bottom: 10px;
-        ">
+        <div class="top-bar">
+            <!-- 搜尋框 -->
             <el-input v-model="searchKeyword" placeholder="搜尋廠商名稱" clearable @input="filterVendors"
-                style="width: 250px;" />
-            <el-button type="primary" @click="openDialog()">新增廠商</el-button>
+                class="search-input" />
 
-            <!-- ✅ 改成按鈕控制 -->
-            <el-button style="margin: 0;" :type="showActions ? 'warning' : 'info'" @click="toggleEditMode">
-                {{ showActions ? '退出編輯模式' : '進入編輯模式' }}
-            </el-button>
-        </el-row>
+            <!-- 按鈕組 -->
+            <div class="action-buttons">
+                <el-button type="primary" @click="openDialog()">新增廠商</el-button>
+                <el-button :type="showActions ? 'warning' : 'info'" @click="toggleEditMode">
+                    {{ showActions ? '退出編輯模式' : '進入編輯模式' }}
+                </el-button>
+            </div>
+        </div>
+
+
 
         <!-- 廠商列表 -->
         <el-table :data="filteredVendors" border style="width: 100%;">
@@ -246,15 +244,56 @@ onMounted(loadVendors);
 </script>
 
 <style scoped>
-.titleBar h2 {
-    margin: 0;
-    font-weight: 600;
+.titleBar {
+    margin: 0 0 10px 0;
 }
 
-.filterBar {
+.title-col {
+    text-align: left;
+    /* 水平置中 */
+}
+
+.title-col h2 {
+    margin: 0;
+    /* 去掉多餘 margin */
+    font-weight: 600;
+    /* 可選：字體粗細 */
+}
+
+.top-bar {
     display: flex;
-    align-items: center;
     flex-wrap: wrap;
-    gap: 10px;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 10px;
+}
+
+.search-input {
+    flex: 1;
+    max-width: 400px;
+}
+
+.action-buttons {
+    display: flex;
+}
+
+/* 手機模式 */
+@media (max-width: 768px) {
+    .top-bar {
+        flex-direction: column;
+        /* 搜尋框+按鈕換行 */
+        align-items: stretch;
+    }
+
+    .top-bar .action-buttons {
+        width: 100%;
+        justify-content: flex-start;
+        /* 按鈕靠左並排 */
+    }
+
+    .top-bar .el-input {
+        width: 100% !important;
+        /* 搜尋框佔滿整行 */
+    }
 }
 </style>

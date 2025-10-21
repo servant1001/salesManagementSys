@@ -3,14 +3,17 @@
         <el-select v-model="selectedCameraId" placeholder="選擇鏡頭" style="width: 200px; margin-right: 10px;"
             @change="switchCamera">
             <el-option v-for="camera in cameras" :key="camera.deviceId" :label="camera.label || camera.deviceId"
-                :value="camera.deviceId"></el-option>
+                :value="camera.deviceId">
+            </el-option>
         </el-select>
+
         <el-button type="primary" @click="toggleScanner">
             {{ scanning ? "停止掃描" : "開始掃描" }}
         </el-button>
 
         <video ref="video" width="320" height="240" style="border:1px solid #ccc; border-radius: 8px; margin-top: 10px;"
-            v-show="scanning"></video>
+            v-show="scanning">
+        </video>
 
         <!-- 掃描提示 -->
         <div v-if="scanMessage" style="margin-top: 10px; color: green; font-weight: bold;">
@@ -35,6 +38,10 @@ const scanCooldown = 2000; // 2秒冷卻
 
 const emit = defineEmits(["onScan"]); // 向父元件傳遞掃描結果
 
+// 🔊 掃描提示音
+const beepSound = new Audio("/scanner-beep.mp3");
+// 請把 scanner-beep.mp3 放在 /public 資料夾下，例如：public/scanner-beep.mp3
+
 // 取得可用攝像頭
 async function getCameras() {
     try {
@@ -51,6 +58,7 @@ async function getCameras() {
         console.error("取得攝像頭失敗:", err);
     }
 }
+
 function toggleScanner() {
     if (!scanning.value) startScanner();
     else stopScanner();
@@ -71,9 +79,11 @@ function startScanner() {
                     const text = resultObj.getText();
                     emit("onScan", text);
 
-                    // 顯示掃描成功提示
-                    scanMessage.value = `掃描成功: ${text}`;
-                    setTimeout(() => scanMessage.value = null, 2000); // 2秒後消失
+                    // 播放音效
+                    beepSound.currentTime = 0;
+                    beepSound.play().catch(() => { /* 瀏覽器靜音狀態不報錯 */ });
+
+                    setTimeout(() => (scanMessage.value = null), 2000);
                 }
             }
             if (err && err.name !== "NotFoundException") {

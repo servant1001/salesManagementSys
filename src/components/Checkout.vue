@@ -109,9 +109,6 @@ const total = computed(() =>
     cart.reduce((sum, item) => sum + item.sellingPrice * item.quantity, 0)
 );
 
-// 提示音 (可自定義)
-const beepSound = new Audio("/scanner-beep.mp3"); // 放在 public/beep.mp3
-
 interface Product {
     gtin: string;
     code: string;
@@ -172,9 +169,6 @@ async function handleScan(scannedGtin: string) {
         type: "success",
         duration: 1000
     });
-
-    beepSound.currentTime = 0;
-    beepSound.play();
 }
 
 

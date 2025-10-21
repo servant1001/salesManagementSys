@@ -11,16 +11,9 @@
             <el-input v-model="searchQuery" placeholder="搜尋商品名稱或編號" clearable class="search-input" />
 
             <el-select v-model="selectedVendor" placeholder="選擇廠商" clearable style="width: 180px;">
-                <el-option
-                    label="全部"
-                    :value="null"
-                />
-                <el-option
-                    v-for="vendor in vendorList"
-                    :key="vendor.vendorId"
-                    :label="vendor.vendorName"
-                    :value="vendor.vendorId"
-                />
+                <el-option label="全部" :value="null" />
+                <el-option v-for="vendor in vendorList" :key="vendor.vendorId" :label="vendor.vendorName"
+                    :value="vendor.vendorId" />
             </el-select>
 
             <div class="button-group">
@@ -40,16 +33,9 @@
         </div>
 
         <!-- 商品列表表格 -->
-        <el-table
-            :data="pagedProducts"
-            style="width: 100%"
-            border
-            :class="tableThemeClass"
+        <el-table :data="pagedProducts" style="width: 100%" border :class="tableThemeClass"
             :header-cell-style="{ background: `var(--table-header-bg)`, color: `var(--table-header-text)` }"
-            @selection-change="handleSelectionChange"
-            @sort-change="handleSortChange"
-            ref="productTable"
-        >
+            @selection-change="handleSelectionChange" @sort-change="handleSortChange" ref="productTable">
 
             <!-- checkbox欄位 -->
             <el-table-column v-if="editMode" type="selection" width="55" align="center">
@@ -189,7 +175,7 @@
                 <el-form-item label="GTIN" prop="gtin"
                     :rules="[{ required: true, message: '請輸入 GTIN', trigger: 'blur' }]">
                     <div style="display: flex; gap: 10px;">
-                        <el-input v-model="editProduct.gtin" placeholder="請輸入 GTIN" :disabled="true"/>
+                        <el-input v-model="editProduct.gtin" placeholder="請輸入 GTIN" :disabled="true" />
                     </div>
                 </el-form-item>
 
@@ -438,6 +424,12 @@ function handleScanResult(result: string) {
         newProduct.value.gtin = result;   // 新增模式填入 GTIN
     }
     showScannerDialog.value = false;
+
+    ElMessage({
+        message: `已掃描GTIN: ${result} `,
+        type: "success",
+        duration: 1000
+    });
 }
 
 
@@ -877,8 +869,8 @@ const totalProducts = computed(() => filteredProducts.value.length);
 
 // 計算分頁後要顯示的資料
 const pagedProducts = computed(() => {
-  const start = (currentPage.value - 1) * pageSize.value;
-  return sortedFilteredProducts.value.slice(start, start + pageSize.value);
+    const start = (currentPage.value - 1) * pageSize.value;
+    return sortedFilteredProducts.value.slice(start, start + pageSize.value);
 });
 
 // 分頁事件
@@ -893,35 +885,35 @@ function handlePageSizeChange(size: number) {
 
 // 排序狀態
 const sortState = ref<{ prop: string; order: 'ascending' | 'descending' | null }>({
-  prop: '',
-  order: null
+    prop: '',
+    order: null
 });
 
 // 排序事件處理
 function handleSortChange({ prop, order }: any) {
-  sortState.value = { prop, order };
+    sortState.value = { prop, order };
 }
 
 // 排序後資料
 const sortedFilteredProducts = computed(() => {
-  const list = [...filteredProducts.value];
-  const { prop, order } = sortState.value;
+    const list = [...filteredProducts.value];
+    const { prop, order } = sortState.value;
 
-  if (!prop || !order) return list;
+    if (!prop || !order) return list;
 
-  return list.sort((a, b) => {
-    const key = prop as keyof Product;   // ✅ 斷言
-    const aVal = a[key] ?? '';
-    const bVal = b[key] ?? '';
+    return list.sort((a, b) => {
+        const key = prop as keyof Product;   // ✅ 斷言
+        const aVal = a[key] ?? '';
+        const bVal = b[key] ?? '';
 
-    if (typeof aVal === 'number' && typeof bVal === 'number') {
-      return order === 'ascending' ? aVal - bVal : bVal - aVal;
-    }
+        if (typeof aVal === 'number' && typeof bVal === 'number') {
+            return order === 'ascending' ? aVal - bVal : bVal - aVal;
+        }
 
-    return order === 'ascending'
-      ? String(aVal).localeCompare(String(bVal))
-      : String(bVal).localeCompare(String(aVal));
-  });
+        return order === 'ascending'
+            ? String(aVal).localeCompare(String(bVal))
+            : String(bVal).localeCompare(String(aVal));
+    });
 });
 
 const selectedVendor = ref<string | null>(null); // 選擇的廠商編號
@@ -940,8 +932,8 @@ async function fetchVendors() {
 }
 
 watch(selectedVendor, () => {
-  // 每次切換廠商，排序重置為商品編號由小到大
-  sortState.value = { prop: "code", order: "ascending" };
+    // 每次切換廠商，排序重置為商品編號由小到大
+    sortState.value = { prop: "code", order: "ascending" };
 });
 
 function syncBatchStock() {

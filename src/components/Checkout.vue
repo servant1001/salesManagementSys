@@ -6,11 +6,38 @@
             </el-col>
         </el-row>
 
-        <Scanner @onScan="handleScan" />
+        <!-- 掃描 & 手動新增商品區塊 -->
+        <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px;">
+            <!-- 掃描元件 -->
+            <Scanner @onScan="handleScan" />
+
+            <!-- 手動輸入商品編號/GTIN -->
+            <el-input v-model="manualGtin" placeholder="輸入商品編號或 GTIN" size="small" style="width: 200px;"
+                @keyup.enter="addManualItem" />
+
+            <!-- 手動輸入數量 -->
+            <el-input-number v-model.number="manualQuantity" :min="1" size="small" style="width: 80px;"
+                @keyup.enter="addManualItem" />
+
+            <!-- 加入購物車按鈕 -->
+            <el-button type="primary" size="small" @click="addManualItem">加入購物車</el-button>
+        </div>
 
         <h3 style="margin-top: 20px;">已掃描商品列表</h3>
         <el-table v-if="cart.length" :data="cart" border style="width: 100%; margin-top: 10px;">
-            <el-table-column prop="name" label="商品名稱" width="400" />
+            <el-table-column label="商品圖片" width="120" align="center">
+                <template #default="{ row }">
+                    <div
+                        style="width: 100px; height: 100px; border-radius: 8px; overflow: hidden; display: flex; align-items: center; justify-content: center; background: #f5f5f5;">
+                        <img v-if="row.imageUrl" :src="row.imageUrl" alt="商品圖片"
+                            style="width: 100%; height: 100%; object-fit: cover;" />
+                        <el-icon v-else style="font-size: 32px; color: #ccc;">
+                            <Picture />
+                        </el-icon>
+                    </div>
+                </template>
+            </el-table-column>
+            <el-table-column prop="name" label="商品名稱" width="180" />
             <el-table-column prop="code" label="商品編號" width="180" />
             <el-table-column prop="gtin" label="GTIN" width="180" />
             <el-table-column label="售價" width="100">
@@ -28,6 +55,17 @@
             </el-table-column>
             <el-table-column label="小計" width="120">
                 <template #default="{ row }">{{ row.sellingPrice * row.quantity }} 元</template>
+            </el-table-column>
+
+            <el-table-column label="操作" width="170">
+                <template #default="{ row, $index }">
+                    <el-button type="primary" size="mini" @click="toggleEdit(row)">
+                        {{ row.editing ? "完成" : "編輯" }}
+                    </el-button>
+                    <el-button type="danger" size="mini" style="margin-left: 5px" @click="removeItem($index)">
+                        刪除
+                    </el-button>
+                </template>
             </el-table-column>
 
             <el-table-column prop="price" label="定價" width="100">
@@ -49,17 +87,7 @@
 
             <el-table-column prop="supplierName" label="廠商名稱" width="120" />
 
-            <el-table-column prop="supplierCode" label="廠商編號" width="120" />
-            <el-table-column label="操作">
-                <template #default="{ row, $index }">
-                    <el-button type="primary" size="mini" @click="toggleEdit(row)">
-                        {{ row.editing ? "完成" : "編輯" }}
-                    </el-button>
-                    <el-button type="danger" size="mini" style="margin-left: 5px" @click="removeItem($index)">
-                        刪除
-                    </el-button>
-                </template>
-            </el-table-column>
+            <el-table-column prop="supplierCode" label="廠商編號" />
         </el-table>
 
         <div v-if="cart.length" style="margin-top: 10px; font-weight: bold; font-size: 1.2rem;">
@@ -79,8 +107,9 @@
 </template>
 
 <script setup lang="ts">
-import { reactive, computed } from "vue";
+import { reactive, computed, ref } from "vue";
 import Scanner from "@/components/Scanner.vue";
+import { Picture } from "@element-plus/icons-vue";
 import { ElMessage } from "element-plus";
 import { db } from "@/firebase";
 import { ref as dbRef, get, child, push, set, update } from "firebase/database";
@@ -98,6 +127,7 @@ interface CartItem {
     cost: number;
     supplierName?: string;
     supplierCode?: string;
+    imageUrl?: string;
     quantity: number;
     editing?: boolean; // 編輯狀態
     estimatedProfit?: number; // 預估毛利
@@ -116,9 +146,10 @@ interface Product {
     price: number;
     sellingPrice?: number;
     cost: number;
+    imageUrl?: string;
 }
 
-async function handleScan(scannedGtin: string) {
+async function handleScan(scannedGtin: string, quantity = 1) {
     const dbRoot = dbRef(db);
     const snapshot = await get(child(dbRoot, "products"));
     if (!snapshot.exists()) {
@@ -132,6 +163,7 @@ async function handleScan(scannedGtin: string) {
     const productEntry = Object.entries(productsData).find(
         ([id, data]) => (data as Product).gtin === scannedGtin
     );
+    console.log("掃描結果:", productEntry);
 
     if (!productEntry) {
         ElMessage({ message: `找不到 GTIN ${scannedGtin} 的商品`, type: "warning", duration: 1500 });
@@ -158,7 +190,8 @@ async function handleScan(scannedGtin: string) {
             cost,
             supplierName: (data as any).supplierName ?? "",
             supplierCode: (data as any).supplierCode ?? "",
-            quantity: 1,
+            imageUrl: product.imageUrl,
+            quantity,
             editing: false,
             estimatedProfit: sellingPrice - cost
         });
@@ -256,6 +289,24 @@ async function confirmCheckout() {
         ElMessage({ message: "結帳失敗，請重試", type: "error", duration: 1500 });
     }
 }
+
+const manualGtin = ref("");
+const manualQuantity = ref(1); // 預設數量 1
+
+async function addManualItem() {
+    const scannedGtin = manualGtin.value.trim();
+    const quantity = manualQuantity.value;
+
+    if (!scannedGtin || quantity <= 0) return;
+
+    // 使用原本掃描邏輯新增商品
+    await handleScan(scannedGtin, quantity);
+
+    // 清空輸入框並重置數量
+    manualGtin.value = "";
+    manualQuantity.value = 1;
+}
+
 </script>
 <style scoped>
 .titleBar {

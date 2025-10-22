@@ -78,6 +78,19 @@
                 </template>
             </el-table-column>
 
+            <el-table-column label="商品圖片" width="120" align="center">
+                <template #default="{ row }">
+                    <div
+                        style="width: 100px; height: 100px; border-radius: 8px; overflow: hidden; display: flex; align-items: center; justify-content: center; background: #f5f5f5;">
+                        <img v-if="row.imageUrl" :src="row.imageUrl" alt="商品圖片"
+                            style="width: 100%; height: 100%; object-fit: cover;" />
+                        <el-icon v-else style="font-size: 32px; color: #ccc;">
+                            <Picture />
+                        </el-icon>
+                    </div>
+                </template>
+            </el-table-column>
+
             <el-table-column prop="name" label="商品名稱" min-width="180">
                 <template #default="{ row }">
                     <template v-if="row.website">
@@ -170,6 +183,18 @@
                     </div>
                 </el-form-item>
 
+                <el-form-item label="商品圖片網址">
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <!-- 輸入框 -->
+                        <el-input v-model="newProduct.imageUrl" placeholder="請輸入圖片網址" style="flex: 1;"></el-input>
+
+                        <!-- 圖片預覽 -->
+                        <img v-if="newProduct.imageUrl" :src="newProduct.imageUrl" alt="預覽"
+                            style="width: 80px; height: 80px; object-fit: cover; border-radius: 6px; border: 1px solid #ccc;" />
+                    </div>
+                </el-form-item>
+
+
                 <!-- 🆕 網站 -->
                 <el-form-item label="網站">
                     <el-input v-model="newProduct.website" placeholder="請輸入網站連結 (例如：https://example.com)" />
@@ -228,6 +253,17 @@
 
                 <el-form-item label="廠商編號">
                     <el-input v-model="editProduct.supplierCode" />
+                </el-form-item>
+
+                <el-form-item label="商品圖片網址">
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <!-- 輸入框 -->
+                        <el-input v-model="editProduct.imageUrl" placeholder="請輸入圖片網址" style="flex: 1;"></el-input>
+
+                        <!-- 圖片預覽 -->
+                        <img v-if="editProduct.imageUrl" :src="editProduct.imageUrl" alt="預覽"
+                            style="width: 80px; height: 80px; object-fit: cover; border-radius: 6px; border: 1px solid #ccc;" />
+                    </div>
                 </el-form-item>
 
                 <el-form-item label="網站">
@@ -329,6 +365,20 @@
                     </template>
                 </el-table-column>
 
+                <!-- 商品圖片欄位 -->
+                <el-table-column prop="imageUrl" label="商品圖片" width="220">
+                    <template #default="{ row }">
+                        <div style="display: flex; align-items: center; gap: 10px;">
+                            <!-- 輸入框 -->
+                            <el-input v-model="row.imageUrl" placeholder="請輸入圖片網址" style="flex: 1;" />
+
+                            <!-- 圖片預覽 -->
+                            <img v-if="row.imageUrl" :src="row.imageUrl" alt="預覽"
+                                style="width: 60px; height: 60px; object-fit: cover; border-radius: 6px; border: 1px solid #ccc;" />
+                        </div>
+                    </template>
+                </el-table-column>
+
                 <!-- 操作 -->
                 <el-table-column label="操作">
                     <template #default="{ $index }">
@@ -356,7 +406,7 @@ import { ref, computed, onMounted, watch } from "vue";
 import { db } from "@/firebase";
 import { ref as dbRef, onValue, update, push, remove, get, child } from "firebase/database";
 import { ElMessage, ElMessageBox } from "element-plus";
-import { Camera } from "@element-plus/icons-vue";
+import { Camera, Picture } from "@element-plus/icons-vue";
 import Scanner from "@/components/Scanner.vue";
 import { useThemeStore } from "@/stores/theme";
 import { useAuth } from "@/composables/useAuth";
@@ -376,6 +426,7 @@ interface Product {
     stock: number;
     supplierName: string;
     supplierCode: string;
+    imageUrl?: string;
     website?: string;
     note?: string;
     created: number;
@@ -404,6 +455,7 @@ const newProduct = ref<Omit<Product, "id" | "createdBy" | "updatedBy">>({
     stock: 0,
     supplierName: "",
     supplierCode: "",
+    imageUrl: "",
     website: "",
     note: "",
     created: Date.now(),
@@ -542,6 +594,7 @@ async function saveEditProduct() {
         stock: editProduct.value.stock ?? 0,
         supplierName: editProduct.value.supplierName || "",
         supplierCode: editProduct.value.supplierCode || "",
+        imageUrl: editProduct.value.imageUrl || "",
         website: editProduct.value.website || "",
         note: editProduct.value.note || "",
         updated: now,
@@ -717,7 +770,7 @@ const batchBase = ref({
     website: "",
     note: "",
 });
-const batchList = ref<{ gtin: string; code: string; name: string, stock: number }[]>([]);
+const batchList = ref<{ gtin: string; code: string; name: string, stock: number, imageUrl: string }[]>([]);
 
 const batchForm = ref<any>(null);
 
@@ -730,7 +783,7 @@ const batchRules = {
 
 
 function addBatchRow() {
-    batchList.value.push({ gtin: "", code: "", name: "", stock: batchBase.value.stock ?? 0 });
+    batchList.value.push({ gtin: "", code: "", name: "", stock: batchBase.value.stock ?? 0, imageUrl: "" });
 }
 
 function removeBatchRow(index: number) {
@@ -829,6 +882,7 @@ async function submitBatchProducts() {
                 stock: item.stock,
                 supplierName: batchBase.value.supplierName,
                 supplierCode: batchBase.value.supplierCode,
+                imageUrl: item.imageUrl,
                 website: batchBase.value.website,
                 note: batchBase.value.note,
                 created: now,

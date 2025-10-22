@@ -40,7 +40,7 @@
                 <el-button type="warning" @click="showBatchDialog = true">
                     批量新增
                 </el-button>
-                <el-button type="danger" @click="deleteSelectedProducts">
+                <el-button type="danger" @click="deleteSelectedProducts" :disabled="!selectedProducts.length">
                     刪除商品
                 </el-button>
             </div>
@@ -61,19 +61,22 @@
             </el-table-column>
 
             <!-- 序號欄位 -->
-            <el-table-column label="#" width="50" align="center">
+            <el-table-column label="#" width="35" align="center">
                 <template #default="scope">
                     {{ (currentPage - 1) * pageSize + scope.$index + 1 }}
                 </template>
             </el-table-column>
 
             <!-- 操作欄整欄隨編輯模式顯示 -->
-            <el-table-column v-if="editMode" label="操作" width="210">
+            <el-table-column v-if="editMode" label="操作" width="90">
                 <template #default="{ row }">
-                    <div style="display: flex;">
-                        <el-button type="primary" size="small" @click="openEditDialog(row)">編輯</el-button>
-                        <el-button type="warning" size="small" @click="copyProduct(row)">複製</el-button>
-                        <el-button type="danger" size="small" @click="deleteProduct(row)">刪除</el-button>
+                    <div style="display: flex; flex-direction: column; align-items: center;">
+                        <el-button type="primary" size="small" style="width: 70px;"
+                            @click="openEditDialog(row)">編輯</el-button>
+                        <el-button type="warning" size="small" style="width: 70px; margin: 10px 0 10px 0;"
+                            @click="copyProduct(row)">複製</el-button>
+                        <el-button type="danger" size="small" style="width: 70px; margin: 0;"
+                            @click="deleteProduct(row)">刪除</el-button>
                     </div>
                 </template>
             </el-table-column>
@@ -106,14 +109,27 @@
             </el-table-column>
 
             <el-table-column prop="price" label="定價" min-width="70" />
-            <el-table-column prop="sellingPrice" label="售價" min-width="70">
+            <el-table-column prop="sellingPrice" label="售價" min-width="100">
                 <template #default="{ row }">
-                    <span style="font-weight: bold;">{{ row.sellingPrice }} 元</span>
+                    <span>
+                        <span style="color: red; font-size: 24px; font-weight: bold;">
+                            {{ row.sellingPrice }}
+                        </span>
+                        元
+                    </span>
                 </template>
             </el-table-column>
             <el-table-column prop="cost" label="成本" min-width="70" />
-            <el-table-column prop="stock" label="庫存" min-width="70" />
-            <el-table-column prop="code" label="商品編號" sortable min-width="140" />
+            <el-table-column prop="stock" label="庫存" min-width="70">
+                <template #default="{ row }">
+                    <span>
+                        <span style="color: #fff; font-size: 24px; font-weight: bold;">
+                            {{ row.stock }}
+                        </span>
+                    </span>
+                </template>
+            </el-table-column>
+            <el-table-column prop="code" label="商品編號" sortable min-width="120" />
             <el-table-column prop="supplierName" label="廠商名稱" min-width="120" />
             <el-table-column prop="supplierCode" label="廠商編號" min-width="120" />
             <el-table-column prop="gtin" label="GTIN" min-width="120" />

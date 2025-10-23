@@ -6,26 +6,19 @@
             </el-col>
         </el-row>
 
-        <el-row class="filterBar" :gutter="10" style="margin-bottom: 10px; align-items: center;">
+        <div class="top-bar">
             <!-- 搜尋框 -->
-            <el-col :xs="24" :sm="12" :md="6">
-                <el-input v-model="searchKeyword" placeholder="搜尋商品名稱" clearable @input="filterSales"
-                    style="width: 100%;" />
-            </el-col>
-
-            <!-- 日期 + 編輯模式 -->
-            <el-col :xs="24" :sm="12" :md="8">
-                <div class="toolbar">
-                    <el-date-picker v-model="selectedMonth" type="month" placeholder="選擇年月" format="YYYY-MM"
-                        value-format="YYYY-MM" clearable @change="() => loadSalesByMonth(selectedMonth)"
-                        class="date-picker" style="width: 100%; max-width: 350px;" />
-                    <el-button :type="showActions ? 'warning' : 'info'" @click="toggleEditMode" class="edit-btn">
-                        {{ showActions ? '退出編輯模式' : '進入編輯模式' }}
-                    </el-button>
-                </div>
-            </el-col>
-        </el-row>
-
+            <el-input v-model="searchKeyword" placeholder="搜尋商品名稱" clearable @input="filterSales"
+                class="search-input" />
+            <div class="action-row">
+                <el-date-picker style="margin-right: 10px; width: 100%;" v-model="selectedMonth" type="month"
+                    placeholder="選擇年月" format="YYYY-MM" value-format="YYYY-MM" clearable
+                    @change="() => loadSalesByMonth(selectedMonth)" class="date-picker" />
+                <el-button style="max-width: 120px;" :type="showActions ? 'warning' : 'info'" @click="toggleEditMode">
+                    {{ showActions ? '退出編輯模式' : '進入編輯模式' }}
+                </el-button>
+            </div>
+        </div>
 
         <el-row class="statsBar" style="
             display: flex;
@@ -84,7 +77,7 @@
                 <template #default="{ row }">
                     <el-button type="primary" size="mini"
                         @click="showDetails(row.items, row.operator, row.total, row.totalProfit, row.id)">
-                        查看明細
+                        商品明細
                     </el-button>
                 </template>
             </el-table-column>
@@ -115,7 +108,7 @@
                     <el-button size="small" type="primary" @click="addNewDetailItem">
                         新增商品
                     </el-button>
-                    <el-button size="small" :type="showDetailActions ? 'warning' : 'info'"
+                    <el-button style="margin: 0;" size="small" :type="showDetailActions ? 'warning' : 'info'"
                         @click="toggleDetailEditMode">
                         {{ showDetailActions ? '退出編輯模式' : '進入編輯模式' }}
                     </el-button>
@@ -145,6 +138,20 @@
                             <el-button size="mini" type="danger" @click="deleteDetailItem(row)">
                                 刪除
                             </el-button>
+                        </div>
+                    </template>
+                </el-table-column>
+
+                <!-- 商品圖片欄 -->
+                <el-table-column label="商品圖片" width="120" align="center">
+                    <template #default="{ row }">
+                        <div
+                            style="width: 100px; height: 100px; border-radius: 8px; overflow: hidden; display: flex; align-items: center; justify-content: center; background: #f5f5f5;">
+                            <img v-if="row.imageUrl" :src="row.imageUrl" alt="商品圖片"
+                                style="width: 100%; height: 100%; object-fit: cover;" />
+                            <el-icon v-else style="font-size: 32px; color: #ccc;">
+                                <Picture />
+                            </el-icon>
                         </div>
                     </template>
                 </el-table-column>
@@ -224,6 +231,7 @@ import { ref, onMounted, computed } from "vue";
 import { db } from "@/firebase";
 import { query, orderByChild, startAt, endAt, get, child, ref as dbRef, remove, update } from "firebase/database";
 import { ElMessage, ElMessageBox } from "element-plus";
+import { Picture } from "@element-plus/icons-vue";
 import { useAuth } from "@/composables/useAuth";
 const { user } = useAuth();
 
@@ -238,6 +246,7 @@ interface SaleItem {
     cost?: number;
     supplierName?: string;
     supplierCode?: string;
+    imageUrl?: string;
 }
 
 interface Sale {
@@ -451,6 +460,7 @@ function addNewDetailItem() {
         sellingPrice: 0,
         quantity: 1,
         cost: 0,
+        imageUrl: ''
     };
 
     selectedItems.value.push(newItem);
@@ -574,49 +584,27 @@ onMounted(() => loadSalesByMonth(selectedMonth.value));
     font-weight: 600;
 }
 
-.toolbar {
+.top-bar {
     display: flex;
-    align-items: center;
-    gap: 10px;
     flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 10px;
+}
+
+.search-input {
+    flex: 1;
+    width: 180px;
+}
+
+.action-row {
+    display: flex;
 }
 
 /* ✅ 外層容器一定要 block 且 100% */
 .date-picker-wrapper {
     display: block;
     width: 100%;
-}
-
-.date-picker {
-    width: 100%;
-}
-
-/* ✅ 重點：強制內層的 el-input 與 wrapper 撐滿 */
-.date-picker .el-input,
-.date-picker .el-input__wrapper {
-    display: block !important;
-    width: 100% !important;
-    max-width: 100% !important;
-    box-sizing: border-box !important;
-}
-
-.edit-btn {
-    white-space: nowrap;
-}
-
-/* ✅ 手機模式 */
-@media (max-width: 768px) {
-    .toolbar {
-        margin: 10px 0 0 0;
-        flex-direction: column;
-        align-items: stretch;
-    }
-
-    .date-picker-wrapper,
-    .date-picker,
-    .edit-btn {
-        width: 100%;
-    }
 }
 
 .detail-header {
@@ -677,6 +665,28 @@ onMounted(() => loadSalesByMonth(selectedMonth.value));
 
     .summary-actions {
         justify-content: flex-start;
+    }
+}
+
+@media (max-width: 768px) {
+    .top-bar {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .search-input {
+        width: 100%;
+    }
+
+    .action-row,
+    .button-group {
+        width: 100%;
+        justify-content: space-between;
+    }
+
+    .action-row .el-button,
+    .button-group .el-button {
+        flex: 1;
     }
 }
 </style>

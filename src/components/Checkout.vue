@@ -6,21 +6,21 @@
             </el-col>
         </el-row>
 
-        <!-- 掃描 & 手動新增商品區塊 -->
-        <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px;">
+        <div class="top-bar">
             <!-- 掃描元件 -->
             <Scanner @onScan="handleScan" />
 
             <!-- 手動輸入商品編號/GTIN -->
-            <el-input v-model="manualGtin" placeholder="輸入商品編號或 GTIN" size="small" style="width: 200px;"
+            <el-input v-model="manualGtin" placeholder="輸入商品編號或 GTIN" style="width: 200px;"
                 @keyup.enter="addManualItem" />
 
             <!-- 手動輸入數量 -->
-            <el-input-number v-model.number="manualQuantity" :min="1" size="small" style="width: 80px;"
+            <el-input-number v-model.number="manualQuantity" :min="1" style="width: 100px;"
                 @keyup.enter="addManualItem" />
 
             <!-- 加入購物車按鈕 -->
-            <el-button type="primary" size="small" @click="addManualItem">加入購物車</el-button>
+            <el-button type="primary" @click="addManualItem">加入購物車</el-button>
+
         </div>
 
         <h3 style="margin-top: 20px;">已掃描商品列表</h3>
@@ -270,6 +270,7 @@ async function confirmCheckout() {
             cost: item.cost,
             supplierName: item.supplierName,
             supplierCode: item.supplierCode,
+            imageUrl: item.imageUrl,
             quantity: item.quantity,
             estimatedProfit: item.estimatedProfit
         })),
@@ -323,5 +324,13 @@ async function addManualItem() {
     /* 去掉多餘 margin */
     font-weight: 600;
     /* 可選：字體粗細 */
+}
+
+.top-bar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 10px;
 }
 </style>

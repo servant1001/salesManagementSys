@@ -7,7 +7,7 @@
             </el-option>
         </el-select>
 
-        <el-button type="primary" @click="toggleScanner">
+        <el-button style="width: 100px;" type="primary" @click="toggleScanner">
             {{ scanning ? "停止掃描" : "開始掃描" }}
         </el-button>
 

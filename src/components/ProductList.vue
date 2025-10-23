@@ -230,12 +230,14 @@
 
 
         <!-- 編輯商品彈窗 -->
-        <el-dialog title="編輯商品" v-model="showEditDialog" :width="'90%'" class="edit-product-dialog">
+        <el-dialog :title="isCopyMode ? '複製商品' : '編輯商品'" v-model="showEditDialog" :width="'90%'"
+            class="edit-product-dialog">
             <el-form v-if="editProduct" :model="editProduct" label-width="120px">
                 <el-form-item label="GTIN" prop="gtin"
                     :rules="[{ required: true, message: '請輸入 GTIN', trigger: 'blur' }]">
                     <div style="display: flex; gap: 10px;">
-                        <el-input v-model="editProduct.gtin" placeholder="請輸入 GTIN" :disabled="true" />
+                        <el-input v-model="editProduct.gtin" placeholder="請輸入 GTIN"
+                            :disabled="!isCopyMode ? true : false" />
                     </div>
                 </el-form-item>
 
@@ -593,41 +595,78 @@ function openEditDialog(product: Product) {
     showEditDialog.value = true;
 }
 
-// 單筆更新
+// 編輯商品(更新)、複製商品(新增)
 async function saveEditProduct() {
     if (!editProduct.value) return;
-    const now = Date.now();
-    const currentUser = getCurrentUserDisplayName();
 
-    const productRef = dbRef(db, `products/${editProduct.value.id}`);
-    const updateData = {
-        code: editProduct.value.code || "",
-        gtin: editProduct.value.gtin || "",
-        name: editProduct.value.name || "",
-        price: editProduct.value.price ?? 0,
-        sellingPrice: editProduct.value.sellingPrice ?? 0,
-        cost: editProduct.value.cost ?? 0,
-        stock: editProduct.value.stock ?? 0,
-        supplierName: editProduct.value.supplierName || "",
-        supplierCode: editProduct.value.supplierCode || "",
-        imageUrl: editProduct.value.imageUrl || "",
-        website: editProduct.value.website || "",
-        note: editProduct.value.note || "",
-        updated: now,
-        updatedBy: currentUser,
-    };
+    // 商品編號必填檢查
+    const code = editProduct.value.code?.trim();
+    if (!code) {
+        ElMessage.warning("請輸入商品編號");
+        return;
+    }
 
-    try {
+    if (isCopyMode.value) {
+        // 複製模式(新增商品)
+        const gtin = editProduct.value.gtin?.trim();
+        // GTIN & code 必填檢查
+        if (!gtin) {
+            ElMessage.warning("請輸入 GTIN");
+            return;
+        }
+
+        // GTIN 重複檢查
+        if (await checkGTINExists(gtin)) {
+            ElMessage.error(`GTIN「${gtin}」已存在，請修改`);
+            return;
+        }
+
+        // 商品編號重複檢查
+        if (await checkCodeExists(code)) {
+            ElMessage.error(`商品編號「${code}」已存在，請修改`);
+            return;
+        }
+
+        // 複製模式下 → 當作新增
+        const currentUser = getCurrentUserDisplayName();
+        const productsRef = dbRef(db, "products");
+        const productData = {
+            ...editProduct.value,
+            id: undefined,
+            created: Date.now(),
+            createdBy: currentUser,
+        };
+        const newRef = push(productsRef);
+        const id = newRef.key!;
+        await update(newRef, { ...productData, id });
+        ElMessage.success("✅ 商品複製成功");
+    } else {
+        // 編輯模式(更新商品)
+        const now = Date.now();
+        const currentUser = getCurrentUserDisplayName();
+        const productRef = dbRef(db, `products/${editProduct.value.id}`);
+
+        // 只在編輯了商品編號才檢查重複
+        const snapshot = await get(productRef);
+        const existingProduct = snapshot.val();
+        if (existingProduct.code !== code && await checkCodeExists(code)) {
+            ElMessage.error(`商品編號「${code}」已存在，請修改`);
+            return;
+        }
+
+        const updateData = {
+            ...editProduct.value,
+            updated: now,
+            updatedBy: currentUser,
+        };
         await update(productRef, updateData);
         ElMessage.success("✅ 商品更新成功");
-        showEditDialog.value = false;
-        editProduct.value = null;
-    } catch (error) {
-        console.error(error);
-        ElMessage.error("❌ 商品更新失敗，請稍後再試");
     }
-}
 
+    showEditDialog.value = false;
+    editProduct.value = null;
+    isCopyMode.value = false; // 重置
+}
 
 // 刪除前確認
 function deleteProduct(product: Product) {
@@ -651,6 +690,7 @@ function deleteProduct(product: Product) {
         .catch(() => { });
 }
 
+// 檢查 GTIN 是否已存在（排除特定 ID）
 async function checkGTINExists(gtin: string, excludeId?: string): Promise<boolean> {
     const productsRef = dbRef(db, "products");
     const snapshot = await get(productsRef);
@@ -658,6 +698,13 @@ async function checkGTINExists(gtin: string, excludeId?: string): Promise<boolea
 
     const productsData = snapshot.val() as Record<string, Product>;
     return Object.values(productsData).some(p => p.gtin === gtin && p.id !== excludeId);
+}
+
+// 檢查商品編號是否已存在
+async function checkCodeExists(code: string): Promise<boolean> {
+    const snapshot = await get(dbRef(db, "products"));
+    const products = snapshot.val() || {};
+    return Object.values(products).some((p: any) => p.code === code);
 }
 
 // 新增商品（必填驗證 + 編號檢查）
@@ -694,18 +741,22 @@ async function checkProductCodeExists(code: string): Promise<boolean> {
     return Object.values(productsData).some((p) => p.code === code);
 }
 
-
+const isCopyMode = ref(false);
 function copyProduct(product: Product) {
-    // 複製原商品資料，但 id 先不帶，名稱加上 "(複製)"
+    // 開啟複製模式
+    isCopyMode.value = true;
+
+    // 複製資料，重設 id 與時間
     editProduct.value = {
         ...product,
-        id: undefined, // 新增時 Firebase 會自動生成 id
+        id: undefined,
+        gtin: "", // 讓 GTIN 可重新輸入
         name: `${product.name} (複製)`,
         created: Date.now(),
         createdBy: getCurrentUserDisplayName(),
     } as unknown as Product;
 
-    showEditDialog.value = true; // 顯示編輯彈窗
+    showEditDialog.value = true;
 }
 
 function addProduct() {

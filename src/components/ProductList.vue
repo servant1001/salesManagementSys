@@ -346,6 +346,7 @@
 
             <h4 style="margin-bottom: 10px;">商品清單</h4>
             <div style="margin-bottom: 10px; display: flex; justify-content: flex-end;">
+                <el-button type="danger" @click="clearAllBatchRows">全部清空</el-button>
                 <el-button type="primary" @click="addBatchRow">新增一列</el-button>
             </div>
 
@@ -853,9 +854,61 @@ const batchRules = {
 };
 
 
-function addBatchRow() {
-    batchList.value.push({ gtin: "", code: "", name: "", stock: batchBase.value.stock ?? 0, imageUrl: "", useGtinAsCode: false });
-}
+const addBatchRow = () => {
+    const last = batchList.value[batchList.value.length - 1];
+    let newGtin = "";
+    let useGtinAsCode = false;
+
+    if (last && last.gtin) {
+        // 找出 GTIN 結尾數字區塊並 +1
+        const match = last.gtin.match(/(\d+)$/);
+        if (match) {
+            const prefix = last.gtin.slice(0, match.index);
+            const num = match[1] ?? "0";
+            const nextNum = String(Number(num) + 1).padStart(num.length, "0");
+            newGtin = prefix + nextNum;
+        } else {
+            // 若沒有數字結尾就複製上一筆
+            newGtin = last.gtin;
+        }
+
+        // 若上一筆打勾，繼承勾選狀態
+        useGtinAsCode = !!last.useGtinAsCode;
+    } else {
+        // 第一筆預設值
+        newGtin = "CN00100101";
+    }
+
+    batchList.value.push({
+        gtin: newGtin,
+        code: useGtinAsCode ? newGtin : "", // 若繼承勾選則直接用 GTIN
+        name: "",
+        stock: 0,
+        imageUrl: "",
+        useGtinAsCode, // ✅ 繼承前一筆的勾選狀態
+    });
+};
+
+const clearAllBatchRows = async () => {
+    try {
+        await ElMessageBox.confirm(
+            "確定要清空所有商品嗎？此動作無法復原！",
+            "確認清空",
+            {
+                confirmButtonText: "確認",
+                cancelButtonText: "取消",
+                type: "warning",
+            }
+        );
+
+        // 使用者按下確認後執行清空
+        batchList.value = [];
+        ElMessage.success("已清空商品列表");
+    } catch {
+        // 使用者按取消
+        ElMessage.info("已取消清空");
+    }
+};
 
 function removeBatchRow(index: number) {
     batchList.value.splice(index, 1);

@@ -353,11 +353,15 @@
                 <el-table-column type="index" label="#" width="50" />
 
                 <!-- GTIN 欄位 -->
-                <el-table-column prop="gtin" label="GTIN" width="200">
+                <el-table-column prop="gtin" label="GTIN" width="350">
                     <template #default="{ row }">
-                        <div style="display: flex; gap: 5px;">
-                            <el-input v-model="row.gtin" placeholder="請輸入 GTIN" />
+                        <div style="display: flex; align-items: center; gap: 6px;">
+                            <el-input v-model="row.gtin" placeholder="請輸入 GTIN" @input="onGtinChange(row)"
+                                style="flex: 1;" />
                             <el-button type="primary" size="small" @click="startScanGTIN(row)">掃描</el-button>
+                            <el-checkbox v-model="row.useGtinAsCode" @change="onUseGtinAsCodeChange(row)">
+                                同步編號
+                            </el-checkbox>
                         </div>
                     </template>
                 </el-table-column>
@@ -372,7 +376,7 @@
                 <!-- 商品編號 -->
                 <el-table-column prop="code" label="商品編號" width="180">
                     <template #default="{ row }">
-                        <el-input v-model="row.code" placeholder="商品編號" />
+                        <el-input v-model="row.code" placeholder="商品編號" :disabled="row.useGtinAsCode" />
                     </template>
                 </el-table-column>
 
@@ -837,7 +841,7 @@ const batchBase = ref({
     website: "",
     note: "",
 });
-const batchList = ref<{ gtin: string; code: string; name: string, stock: number, imageUrl: string }[]>([]);
+const batchList = ref<{ gtin: string; code: string; name: string, stock: number, imageUrl: string, useGtinAsCode: boolean }[]>([]);
 
 const batchForm = ref<any>(null);
 
@@ -850,7 +854,7 @@ const batchRules = {
 
 
 function addBatchRow() {
-    batchList.value.push({ gtin: "", code: "", name: "", stock: batchBase.value.stock ?? 0, imageUrl: "" });
+    batchList.value.push({ gtin: "", code: "", name: "", stock: batchBase.value.stock ?? 0, imageUrl: "", useGtinAsCode: false });
 }
 
 function removeBatchRow(index: number) {
@@ -987,6 +991,26 @@ const productTable = ref<any>(null);
 function handleSelectionChange(val: Product[]) {
     selectedProducts.value = val;
 }
+
+// ✅ 當 GTIN 改變時，如果「使用為編號」有勾選，立即同步更新商品編號
+const onGtinChange = (row: any) => {
+    if (row.useGtinAsCode) {
+        row.code = row.gtin;
+    }
+};
+
+// ✅ 當 checkbox 勾選/取消時控制行為
+const onUseGtinAsCodeChange = (row: any) => {
+    if (row.useGtinAsCode) {
+        // 勾選後立即套用 GTIN 當作編號
+        row.code = row.gtin;
+    }
+    // 若取消勾選，可選擇是否清空或保留
+    // 若要清空商品編號可加上：
+    // else {
+    //     row.code = "";
+    // }
+};
 
 // 批次刪除勾選商品
 function deleteSelectedProducts() {

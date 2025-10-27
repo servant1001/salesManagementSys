@@ -21,9 +21,13 @@
             <!-- 加入購物車按鈕 -->
             <el-button type="primary" @click="addManualItem">加入購物車</el-button>
 
+            <!-- 🔹手動添加商品按鈕 -->
+            <el-button type="success" @click="showAddDialog = true">
+                手動添加商品
+            </el-button>
         </div>
 
-        <h3 style="margin-top: 20px;">已掃描商品列表</h3>
+        <h3 style="margin-top: 20px;">購物車商品</h3>
         <el-table v-if="cart.length" :data="cart" border style="width: 100%; margin-top: 10px;">
             <el-table-column label="商品圖片" width="120" align="center">
                 <template #default="{ row }">
@@ -93,7 +97,7 @@
         <div v-if="cart.length" style="margin-top: 10px; font-weight: bold; font-size: 1.2rem;">
             總金額：{{ total }} 元
         </div>
-        <div v-else style="margin-top: 10px;">尚未掃描任何商品</div>
+        <div v-else style="margin-top: 10px;">尚未添加任何商品</div>
 
         <!-- 「全部清空」按鈕 -->
         <el-button type="warning" style="margin-top: 20px;" :disabled="cart.length === 0" @click="clearCart">
@@ -103,6 +107,46 @@
         <el-button type="success" style="margin-top: 20px;" :disabled="cart.length === 0" @click="confirmCheckout">
             確認結帳
         </el-button>
+
+        <!-- 🔹手動添加商品的彈窗 -->
+        <el-dialog title="手動添加商品" v-model="showAddDialog" :width="'90%'">
+            <el-form :model="manualItem" label-width="100px">
+                <el-form-item label="商品名稱">
+                    <el-input v-model="manualItem.name" />
+                </el-form-item>
+                <el-form-item label="商品編號">
+                    <el-input v-model="manualItem.code" />
+                </el-form-item>
+                <el-form-item label="GTIN">
+                    <el-input v-model="manualItem.gtin" />
+                </el-form-item>
+                <el-form-item label="定價">
+                    <el-input-number v-model.number="manualItem.price" :min="0" />
+                </el-form-item>
+                <el-form-item label="售價">
+                    <el-input-number v-model.number="manualItem.sellingPrice" :min="0" />
+                </el-form-item>
+                <el-form-item label="成本">
+                    <el-input-number v-model.number="manualItem.cost" :min="0" />
+                </el-form-item>
+                <el-form-item label="數量">
+                    <el-input-number v-model.number="manualItem.quantity" :min="1" />
+                </el-form-item>
+                <el-form-item label="廠商名稱">
+                    <el-input v-model="manualItem.supplierName" />
+                </el-form-item>
+                <el-form-item label="廠商編號">
+                    <el-input v-model="manualItem.supplierCode" />
+                </el-form-item>
+                <el-form-item label="圖片URL">
+                    <el-input v-model="manualItem.imageUrl" placeholder="https://..." />
+                </el-form-item>
+            </el-form>
+            <template #footer>
+                <el-button @click="showAddDialog = false">取消</el-button>
+                <el-button type="primary" @click="confirmAddManualItem">確認添加</el-button>
+            </template>
+        </el-dialog>
     </div>
 </template>
 
@@ -308,6 +352,60 @@ async function addManualItem() {
     manualQuantity.value = 1;
 }
 
+// 🔹手動添加彈窗控制
+const showAddDialog = ref(false);
+const manualItem = reactive({
+    name: "",
+    code: "",
+    gtin: "",
+    price: 0,
+    sellingPrice: 0,
+    cost: 0,
+    quantity: 1,
+    supplierName: "",
+    supplierCode: "",
+    imageUrl: ""
+});
+
+function confirmAddManualItem() {
+    if (!manualItem.name || manualItem.quantity <= 0) {
+        ElMessage.warning("請輸入完整資料");
+        return;
+    }
+
+    cart.push({
+        barcode: `manual_${Date.now()}`,
+        gtin: manualItem.gtin || "",
+        code: manualItem.code || "",
+        name: manualItem.name,
+        price: manualItem.price,
+        sellingPrice: manualItem.sellingPrice || manualItem.price,
+        cost: manualItem.cost,
+        supplierName: manualItem.supplierName,
+        supplierCode: manualItem.supplierCode,
+        imageUrl: manualItem.imageUrl,
+        quantity: manualItem.quantity,
+        editing: false,
+        estimatedProfit: (manualItem.sellingPrice || manualItem.price) - manualItem.cost
+    });
+
+    ElMessage.success("商品已手動添加至購物車");
+    showAddDialog.value = false;
+
+    // 清空輸入
+    Object.assign(manualItem, {
+        name: "",
+        code: "",
+        gtin: "",
+        price: 0,
+        sellingPrice: 0,
+        cost: 0,
+        quantity: 1,
+        supplierName: "",
+        supplierCode: "",
+        imageUrl: ""
+    });
+}
 </script>
 <style scoped>
 .titleBar {

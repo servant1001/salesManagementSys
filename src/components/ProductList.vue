@@ -137,6 +137,7 @@
                 <template #default="{ row }">
                     <a v-if="row.website" :href="row.website" target="_blank" rel="noopener noreferrer"
                         style="color: #409eff; text-decoration: underline;">連結</a>
+                    <span v-else>-</span>
                 </template>
             </el-table-column>
             <el-table-column prop="note" label="備註" min-width="120" />

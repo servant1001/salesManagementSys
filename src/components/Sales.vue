@@ -156,12 +156,18 @@
                     </template>
                 </el-table-column>
 
-                <el-table-column prop="name" label="名稱">
+                <el-table-column prop="name" label="商品名稱">
                     <template #default="{ row }">
                         <div v-if="editingDetailRow === row">
                             <el-input v-model="row.name" size="small" placeholder="輸入商品名稱" />
                         </div>
-                        <div v-else>{{ row.name }}</div>
+                        <div v-else>
+                            <a v-if="row.website" :href="row.website" target="_blank"
+                                style="color: #409eff; text-decoration: none;">
+                                {{ row.name }}
+                            </a>
+                            <span v-else>{{ row.name }}</span>
+                        </div>
                     </template>
                 </el-table-column>
                 <el-table-column prop="code" label="商品編號" width="120">
@@ -218,6 +224,19 @@
                             :style="{ color: (row.sellingPrice - row.cost) >= 0 ? '#00fc2a' : '#fc0000', fontWeight: 'bold' }">
                             {{ ((row.sellingPrice - row.cost) * row.quantity).toFixed(0) }} 元
                         </span>
+                    </template>
+                </el-table-column>
+
+                <el-table-column prop="website" label="網站連結" width="180">
+                    <template #default="{ row }">
+                        <div v-if="editingDetailRow === row">
+                            <el-input v-model="row.website" size="small" placeholder="輸入網站連結" />
+                        </div>
+                        <div v-else>
+                            <a v-if="row.website" :href="row.website" target="_blank" rel="noopener noreferrer"
+                                style="color: #409eff; text-decoration: underline;">連結</a>
+                            <span v-else>-</span>
+                        </div>
                     </template>
                 </el-table-column>
             </el-table>

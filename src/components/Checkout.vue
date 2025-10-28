@@ -92,6 +92,14 @@
             <el-table-column prop="supplierName" label="廠商名稱" width="120" />
 
             <el-table-column prop="supplierCode" label="廠商編號" />
+
+            <el-table-column prop="website" label="網站" width="200">
+                <template #default="{ row }">
+                    <a v-if="row.website" :href="row.website" target="_blank" rel="noopener noreferrer"
+                        style="color: #409eff; text-decoration: underline;">連結</a>
+                    <span v-else>-</span>
+                </template>
+            </el-table-column>
         </el-table>
 
         <div v-if="cart.length" style="margin-top: 10px; font-weight: bold; font-size: 1.2rem;">
@@ -141,6 +149,10 @@
                 <el-form-item label="圖片URL">
                     <el-input v-model="manualItem.imageUrl" placeholder="https://..." />
                 </el-form-item>
+                <el-form-item label="網站">
+                    <el-input v-model="manualItem.website" placeholder="https://..." />
+                </el-form-item>
+
             </el-form>
             <template #footer>
                 <el-button @click="showAddDialog = false">取消</el-button>
@@ -172,6 +184,7 @@ interface CartItem {
     supplierName?: string;
     supplierCode?: string;
     imageUrl?: string;
+    website?: string;
     quantity: number;
     editing?: boolean; // 編輯狀態
     estimatedProfit?: number; // 預估毛利
@@ -235,6 +248,7 @@ async function handleScan(scannedGtin: string, quantity = 1) {
             supplierName: (data as any).supplierName ?? "",
             supplierCode: (data as any).supplierCode ?? "",
             imageUrl: product.imageUrl,
+            website: (data as any).website || "",
             quantity,
             editing: false,
             estimatedProfit: sellingPrice - cost
@@ -315,6 +329,7 @@ async function confirmCheckout() {
             supplierName: item.supplierName,
             supplierCode: item.supplierCode,
             imageUrl: item.imageUrl,
+            website: item.website || "",
             quantity: item.quantity,
             estimatedProfit: item.estimatedProfit
         })),
@@ -364,7 +379,8 @@ const manualItem = reactive({
     quantity: 1,
     supplierName: "",
     supplierCode: "",
-    imageUrl: ""
+    imageUrl: "",
+    website: ""
 });
 
 function confirmAddManualItem() {
@@ -384,6 +400,7 @@ function confirmAddManualItem() {
         supplierName: manualItem.supplierName,
         supplierCode: manualItem.supplierCode,
         imageUrl: manualItem.imageUrl,
+        website: manualItem.website || "",
         quantity: manualItem.quantity,
         editing: false,
         estimatedProfit: (manualItem.sellingPrice || manualItem.price) - manualItem.cost
@@ -403,7 +420,8 @@ function confirmAddManualItem() {
         quantity: 1,
         supplierName: "",
         supplierCode: "",
-        imageUrl: ""
+        imageUrl: "",
+        website: ""
     });
 }
 </script>

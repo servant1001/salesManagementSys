@@ -14,7 +14,7 @@ export function generateBarcodeImage(name: string, gtin: string): Promise<string
             JsBarcode(canvas, gtin, {
                 format: 'CODE128',
                 width: 3,
-                height: 70,
+                height: 80,
                 displayValue: true,
                 fontSize: 18,
                 margin: 5,
@@ -35,8 +35,8 @@ export function generateBarcodeImage(name: string, gtin: string): Promise<string
 
                 // 商品名稱自動縮放函數
                 function drawTextFit(text: string, y: number) {
-                    let fontSize = 24
-                    ctx.font = `bold ${fontSize}px sans-serif`
+                    let fontSize = 16
+                    ctx.font = `${fontSize}px sans-serif`
                     ctx.textAlign = 'center'
                     while (ctx.measureText(text).width > finalCanvas.width - 20 && fontSize > 8) {
                         fontSize--

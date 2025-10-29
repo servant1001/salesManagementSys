@@ -61,7 +61,7 @@
             </el-table-column>
 
             <!-- 序號欄位 -->
-            <el-table-column label="#" width="35" align="center">
+            <el-table-column label="#" width="40" align="center">
                 <template #default="scope">
                     {{ (currentPage - 1) * pageSize + scope.$index + 1 }}
                 </template>
@@ -133,6 +133,13 @@
             <el-table-column prop="supplierName" label="廠商名稱" min-width="120" />
             <el-table-column prop="supplierCode" label="廠商編號" min-width="120" />
             <el-table-column prop="gtin" label="GTIN" min-width="120" />
+            <el-table-column label="條碼" width="100">
+                <template #default="scope">
+                    <el-button type="primary" size="small" @click="handleGenerateBarcode(scope.row)">
+                        生成條碼
+                    </el-button>
+                </template>
+            </el-table-column>
             <el-table-column prop="website" label="網站" min-width="70">
                 <template #default="{ row }">
                     <a v-if="row.website" :href="row.website" target="_blank" rel="noopener noreferrer"
@@ -422,6 +429,18 @@
         <el-dialog title="掃描條碼" v-model="showScannerDialog" width="400px" destroy-on-close>
             <Scanner @onScan="handleScanResult" />
         </el-dialog>
+
+        <!-- 條碼預覽彈窗 -->
+        <el-dialog v-model="showBarcodeDialog" title="條碼預覽" width="500px" center>
+            <div v-if="barcodeDataUrl" class="barcode-preview">
+                <img :src="barcodeDataUrl" alt="Barcode" />
+            </div>
+            <template #footer>
+                <el-button
+                    @click="downloadBarcode(currentProduct?.name, currentProduct?.gtin, barcodeDataUrl)">下載圖片</el-button>
+                <el-button type="primary" @click="showBarcodeDialog = false">關閉</el-button>
+            </template>
+        </el-dialog>
     </div>
 </template>
 
@@ -434,6 +453,7 @@ import { Camera, Picture } from "@element-plus/icons-vue";
 import Scanner from "@/components/Scanner.vue";
 import { useThemeStore } from "@/stores/theme";
 import { useAuth } from "@/composables/useAuth";
+import { generateBarcodeImage, downloadBarcode } from '@/utils/barcode'  // 引入剛剛的模組
 
 const themeStore = useThemeStore();
 const tableThemeClass = computed(() => (themeStore.isDarkTheme ? "table-dark" : "table-light"));
@@ -1189,6 +1209,27 @@ function syncBatchStock() {
     ElMessage.success(`已將庫存同步為 ${stockValue}`);
 }
 
+// 條碼 Dialog 狀態
+const showBarcodeDialog = ref(false)
+const barcodeDataUrl = ref('')
+const currentProduct = ref<{ name: string; gtin: string } | null>(null)
+
+// 點擊「生成條碼」
+async function handleGenerateBarcode(product: { name: string; gtin: string }) {
+    try {
+        if (!product.gtin) {
+            ElMessage.warning('該商品沒有 GTIN')
+            return
+        }
+        currentProduct.value = product
+        barcodeDataUrl.value = await generateBarcodeImage(product.name, product.gtin)
+        showBarcodeDialog.value = true
+    } catch (error) {
+        console.error(error)
+        ElMessage.error('生成條碼時發生錯誤')
+    }
+}
+
 // 在 onMounted 中呼叫
 onMounted(() => {
     fetchProducts();
@@ -1286,5 +1327,11 @@ onMounted(() => {
     .stock-field .el-button {
         width: 100%;
     }
+}
+
+.barcode-preview {
+    display: flex;
+    justify-content: center;
+    align-items: center;
 }
 </style>

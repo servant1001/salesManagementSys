@@ -36,6 +36,13 @@
         </el-row>
 
         <el-table v-if="filteredSales.length" :data="filteredSales" border style="width:100%">
+            <!-- ✅ 序號欄 -->
+            <el-table-column label="#" width="50" align="center" fixed="left">
+                <template #default="{ $index }">
+                    {{ $index + 1 }}
+                </template>
+            </el-table-column>
+
             <!-- ✅ 操作欄（只有在編輯模式時顯示） -->
             <el-table-column v-if="showActions" fixed="left" label="操作" width="80">
                 <template #default="{ row }">
@@ -47,25 +54,25 @@
                 <template #default="{ row }">{{ formatDate(row.timestamp) }}</template>
             </el-table-column>
 
-            <el-table-column prop="total" label="總金額" width="80">
+            <el-table-column prop="total" label="總金額" width="100">
                 <template #default="{ row }">
                     <div v-if="editingRow === row">
                         <el-input-number v-model="row.total" :min="0" size="small" />
                     </div>
-                    <div v-else>
+                    <div v-else style="font-size: 20px; font-weight: bold;">
                         {{ row.total }} 元
                     </div>
                 </template>
             </el-table-column>
 
-            <el-table-column prop="totalProfit" label="總毛利" width="80">
+            <el-table-column prop="totalProfit" label="總毛利" width="100">
                 <template #default="{ row }">
                     <div v-if="editingRow === row">
                         <el-input-number v-model="row.totalProfit" size="small" />
                     </div>
                     <div v-else>
                         <span
-                            :style="{ color: (row.totalProfit ?? 0) >= 0 ? '#00fc2a' : '#fc0000', fontWeight: 'bold' }">
+                            :style="{ color: (row.totalProfit ?? 0) >= 0 ? '#67c23a' : '#fc0000', fontWeight: 'bold', fontSize: '20px' }">
                             {{ row.totalProfit ?? 0 }} 元
                         </span>
                     </div>
@@ -118,6 +125,13 @@
 
 
             <el-table :data="selectedItems" border style="width: 100%;" size="small">
+                <!-- 序號欄位 -->
+                <el-table-column label="#" width="50" align="center">
+                    <template #default="{ $index }">
+                        {{ $index + 1 }}
+                    </template>
+                </el-table-column>
+
                 <el-table-column v-if="showDetailActions" label="操作" width="150">
                     <template #default="{ row }">
                         <!-- 編輯模式 -->
@@ -213,7 +227,7 @@
                 <el-table-column prop="cost" label="成本" width="100" />
                 <el-table-column prop="estimatedProfit" label="毛利(單個)" width="120">
                     <template #default="{ row }">
-                        <span :style="{ color: (row.sellingPrice - row.cost) >= 0 ? '#00fc2a' : '#fc0000' }">
+                        <span :style="{ color: (row.sellingPrice - row.cost) >= 0 ? '#67c23a' : '#fc0000' }">
                             {{ (row.sellingPrice - row.cost).toFixed(0) }} 元
                         </span>
                     </template>
@@ -221,7 +235,7 @@
                 <el-table-column label="預估總毛利" width="120">
                     <template #default="{ row }">
                         <span
-                            :style="{ color: (row.sellingPrice - row.cost) >= 0 ? '#00fc2a' : '#fc0000', fontWeight: 'bold' }">
+                            :style="{ color: (row.sellingPrice - row.cost) >= 0 ? '#67c23a' : '#fc0000', fontWeight: 'bold' }">
                             {{ ((row.sellingPrice - row.cost) * row.quantity).toFixed(0) }} 元
                         </span>
                     </template>

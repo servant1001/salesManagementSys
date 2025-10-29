@@ -13,11 +13,12 @@ export function generateBarcodeImage(name: string, gtin: string): Promise<string
             const canvas = document.createElement('canvas')
             JsBarcode(canvas, gtin, {
                 format: 'CODE128',
-                width: 3,
+                width: 2.9,
                 height: 80,
                 displayValue: true,
                 fontSize: 18,
                 margin: 5,
+                textMargin: -3,
             })
 
             const barcodeImg = canvas.toDataURL('image/png')
@@ -46,7 +47,7 @@ export function generateBarcodeImage(name: string, gtin: string): Promise<string
                 }
 
                 ctx.fillStyle = '#000'
-                drawTextFit(name, 30)
+                drawTextFit(name, 32)
 
                 // 貼上條碼
                 ctx.drawImage(img, 0, 35)

@@ -12,6 +12,13 @@
             <el-input v-model="searchKeyword" placeholder="搜尋廠商名稱" clearable @input="filterVendors"
                 class="search-input" />
 
+            <!-- 國家選擇 -->
+            <el-select v-model="countryFilter" placeholder="全部" @change="filterVendors" style="width: 120px;">
+                <el-option label="全部" value="all" />
+                <el-option label="台灣" value="TW" />
+                <el-option label="中國" value="CN" />
+            </el-select>
+
             <!-- 按鈕組 -->
             <div class="action-buttons">
                 <el-button type="primary" @click="openDialog()">新增廠商</el-button>
@@ -25,6 +32,9 @@
 
         <!-- 廠商列表 -->
         <el-table :data="filteredVendors" border style="width: 100%;">
+            <!-- ✅ 序號欄 -->
+            <el-table-column type="index" label="序號" width="60" align="center" />
+
             <!-- ✅ 操作欄放最左邊 -->
             <el-table-column v-if="showActions" fixed="left" label="操作" min-width="140">
                 <template #default="{ row }">
@@ -143,12 +153,22 @@ async function loadVendors() {
 }
 
 
+const countryFilter = ref<"all" | "TW" | "CN">("all");
+
 function filterVendors() {
-    filteredVendors.value = vendors.value.filter(v =>
-        searchKeyword.value
+    filteredVendors.value = vendors.value.filter(v => {
+        const matchesKeyword = searchKeyword.value
             ? v.vendorName.toLowerCase().includes(searchKeyword.value.toLowerCase())
-            : true
-    );
+            : true;
+
+        const matchesCountry = countryFilter.value === "all"
+            ? true
+            : countryFilter.value === "TW"
+                ? v.vendorId.startsWith("TW")
+                : v.vendorId.startsWith("CN");
+
+        return matchesKeyword && matchesCountry;
+    });
 }
 
 function toggleEditMode() {
@@ -291,7 +311,8 @@ onMounted(loadVendors);
         /* 按鈕靠左並排 */
     }
 
-    .top-bar .el-input {
+    .top-bar .el-input,
+    .top-bar .el-select {
         width: 100% !important;
         /* 搜尋框佔滿整行 */
     }

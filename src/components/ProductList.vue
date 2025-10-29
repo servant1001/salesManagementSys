@@ -61,7 +61,7 @@
             </el-table-column>
 
             <!-- 序號欄位 -->
-            <el-table-column label="#" width="40" align="center">
+            <el-table-column label="#" width="50" align="center">
                 <template #default="scope">
                     {{ (currentPage - 1) * pageSize + scope.$index + 1 }}
                 </template>
@@ -123,7 +123,7 @@
             <el-table-column prop="stock" label="庫存" min-width="70">
                 <template #default="{ row }">
                     <span>
-                        <span style="color: #fff; font-size: 24px; font-weight: bold;">
+                        <span class="darkThemeColor" style="font-size: 24px; font-weight: bold;">
                             {{ row.stock }}
                         </span>
                     </span>
@@ -426,12 +426,12 @@
 
 
         <!-- 掃描器彈窗 -->
-        <el-dialog title="掃描條碼" v-model="showScannerDialog" width="400px" destroy-on-close>
+        <el-dialog title="掃描條碼" v-model="showScannerDialog" :width="'90%'" destroy-on-close>
             <Scanner @onScan="handleScanResult" />
         </el-dialog>
 
         <!-- 條碼預覽彈窗 -->
-        <el-dialog v-model="showBarcodeDialog" title="條碼預覽" width="500px" center>
+        <el-dialog v-model="showBarcodeDialog" title="條碼預覽" :width="'100%'" center>
             <div v-if="barcodeDataUrl" class="barcode-preview">
                 <img :src="barcodeDataUrl" alt="Barcode" />
             </div>
@@ -1238,6 +1238,16 @@ onMounted(() => {
 </script>
 
 <style scoped>
+.table-dark .darkThemeColor {
+    color: #ffffff;
+    /* ✅ 深色模式：白字 */
+}
+
+.table-light .darkThemeColor {
+    color: #000000;
+    /* ✅ 淺色模式：黑字 */
+}
+
 .titleBar {
     margin: 0 0 10px 0;
 }

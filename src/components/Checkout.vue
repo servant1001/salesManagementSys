@@ -29,6 +29,13 @@
 
         <h3 style="margin-top: 20px;">購物車商品</h3>
         <el-table v-if="cart.length" :data="cart" border style="width: 100%; margin-top: 10px;">
+            <!-- ✅ 序號欄位 -->
+            <el-table-column label="#" width="50" align="center">
+                <template #default="{ $index }">
+                    {{ $index + 1 }}
+                </template>
+            </el-table-column>
+
             <el-table-column label="商品圖片" width="120" align="center">
                 <template #default="{ row }">
                     <div
@@ -41,7 +48,16 @@
                     </div>
                 </template>
             </el-table-column>
-            <el-table-column prop="name" label="商品名稱" width="180" />
+            <!-- ✅ 商品名稱欄位：可點擊開啟連結 -->
+            <el-table-column prop="name" label="商品名稱" width="180">
+                <template #default="{ row }">
+                    <a v-if="row.website" :href="row.website" target="_blank" rel="noopener noreferrer"
+                        style="color: #409eff; text-decoration: none; font-weight: 500;">
+                        {{ row.name }}
+                    </a>
+                    <span v-else>{{ row.name }}</span>
+                </template>
+            </el-table-column>
             <el-table-column prop="code" label="商品編號" width="180" />
             <el-table-column prop="gtin" label="GTIN" width="180" />
             <el-table-column label="售價" width="100">
@@ -91,7 +107,7 @@
 
             <el-table-column prop="supplierName" label="廠商名稱" width="120" />
 
-            <el-table-column prop="supplierCode" label="廠商編號" />
+            <el-table-column prop="supplierCode" label="廠商編號" width="120" />
 
             <el-table-column prop="website" label="網站" width="200">
                 <template #default="{ row }">

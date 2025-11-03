@@ -6,7 +6,7 @@ import JsBarcode from 'jsbarcode'
  * @param gtin 商品 GTIN
  * @returns Promise<string> Base64 圖片資料 (dataURL)
  */
-export function generateBarcodeImage(name: string, gtin: string): Promise<string> {
+export function generateBarcodeImage(name: string, gtin: string, price: number): Promise<string> {
     return new Promise((resolve, reject) => {
         try {
             // 先畫出條碼
@@ -16,6 +16,7 @@ export function generateBarcodeImage(name: string, gtin: string): Promise<string
                 width: 2.9,
                 height: 80,
                 displayValue: true,
+                text: `${gtin}-${price.toString().padStart(4, '0')}`,
                 fontSize: 18,
                 margin: 5,
                 textMargin: -3,

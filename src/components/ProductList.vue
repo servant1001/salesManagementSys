@@ -15,7 +15,9 @@
             <el-select v-model="selectedVendor" placeholder="選擇廠商" clearable class="vendor-select">
                 <el-option label="全部" :value="null" />
                 <el-option v-for="vendor in vendorList" :key="vendor.vendorId" :label="vendor.vendorName"
-                    :value="vendor.vendorId" />
+                    :value="vendor.vendorId">
+                    {{ vendor.vendorId }} {{ vendor.vendorName }}
+                </el-option>
             </el-select>
 
             <!-- 掃描 + 編輯模式 -->
@@ -197,27 +199,27 @@
                 </el-form-item>
 
                 <el-form-item label="廠商名稱" prop="supplierName">
-                    <el-input v-model="newProduct.supplierName" />
+                    <el-input v-model="newProduct.supplierName" disabled />
                 </el-form-item>
 
                 <el-form-item label="廠商編號" prop="supplierCode">
-                    <div style="display: flex; gap: 10px;">
-                        <el-input v-model="newProduct.supplierCode" placeholder="請輸入廠商編號" />
-                        <el-button type="primary" @click="findVendorByCode">查詢</el-button>
-                    </div>
+                    <el-select v-model="newProduct.supplierCode" placeholder="請輸入或選擇廠商" filterable clearable
+                        :filter-method="filterVendors" @change="findVendorByCode('add')" style="max-width: 250px;">
+                        <el-option v-for="vendor in filteredVendors" :key="vendor.vendorId"
+                            :label="`${vendor.vendorId} - ${vendor.vendorName}`" :value="vendor.vendorId" />
+                    </el-select>
                 </el-form-item>
 
                 <el-form-item label="商品圖片網址">
-                    <div style="display: flex; align-items: center; gap: 10px;">
+                    <div style="display: flex; flex-direction: column; gap: 10px; width: 250px;">
                         <!-- 輸入框 -->
-                        <el-input v-model="newProduct.imageUrl" placeholder="請輸入圖片網址" style="flex: 1;"></el-input>
+                        <el-input v-model="newProduct.imageUrl" placeholder="請輸入圖片網址" style="width: 100%;"></el-input>
 
                         <!-- 圖片預覽 -->
                         <img v-if="newProduct.imageUrl" :src="newProduct.imageUrl" alt="預覽"
-                            style="width: 80px; height: 80px; object-fit: cover; border-radius: 6px; border: 1px solid #ccc;" />
+                            style="width: 100%; height: 150px; object-fit: contain; border-radius: 6px; border: 1px solid #ccc;" />
                     </div>
                 </el-form-item>
-
 
                 <!-- 🆕 網站 -->
                 <el-form-item label="網站">
@@ -274,21 +276,25 @@
                 </el-form-item>
 
                 <el-form-item label="廠商名稱">
-                    <el-input v-model="editProduct.supplierName" />
+                    <el-input v-model="editProduct.supplierName" disabled />
                 </el-form-item>
 
-                <el-form-item label="廠商編號">
-                    <el-input v-model="editProduct.supplierCode" />
+                <el-form-item label="廠商編號" prop="supplierCode">
+                    <el-select v-model="editProduct.supplierCode" placeholder="請輸入或選擇廠商" filterable clearable
+                        :filter-method="filterVendors" @change="findVendorByCode('edit')" style="max-width: 250px;">
+                        <el-option v-for="vendor in filteredVendors" :key="vendor.vendorId"
+                            :label="`${vendor.vendorId} - ${vendor.vendorName}`" :value="vendor.vendorId" />
+                    </el-select>
                 </el-form-item>
 
                 <el-form-item label="商品圖片網址">
-                    <div style="display: flex; align-items: center; gap: 10px;">
+                    <div style="display: flex; flex-direction: column; gap: 10px; width: 250px;">
                         <!-- 輸入框 -->
-                        <el-input v-model="editProduct.imageUrl" placeholder="請輸入圖片網址" style="flex: 1;"></el-input>
+                        <el-input v-model="editProduct.imageUrl" placeholder="請輸入圖片網址" style="width: 100%;"></el-input>
 
                         <!-- 圖片預覽 -->
                         <img v-if="editProduct.imageUrl" :src="editProduct.imageUrl" alt="預覽"
-                            style="width: 80px; height: 80px; object-fit: cover; border-radius: 6px; border: 1px solid #ccc;" />
+                            style="width: 100%; height: 150px; object-fit: contain; border-radius: 6px; border: 1px solid #ccc;" />
                     </div>
                 </el-form-item>
 
@@ -333,14 +339,15 @@
                 </el-form-item>
 
                 <el-form-item label="廠商名稱">
-                    <el-input v-model="batchBase.supplierName" />
+                    <el-input v-model="batchBase.supplierName" disabled />
                 </el-form-item>
 
-                <el-form-item label="廠商編號">
-                    <div style="display: flex; gap: 10px;">
-                        <el-input v-model="batchBase.supplierCode" placeholder="請輸入廠商編號" />
-                        <el-button type="primary" @click="findVendorByCodeBatch">查詢</el-button>
-                    </div>
+                <el-form-item label="廠商編號" prop="supplierCode">
+                    <el-select v-model="batchBase.supplierCode" placeholder="請輸入或選擇廠商" filterable clearable
+                        :filter-method="filterVendors" @change="findVendorByCodeBatch" style="max-width: 250px;">
+                        <el-option v-for="vendor in filteredVendors" :key="vendor.vendorId"
+                            :label="`${vendor.vendorId} - ${vendor.vendorName}`" :value="vendor.vendorId" />
+                    </el-select>
                 </el-form-item>
 
                 <el-form-item label="網站">
@@ -821,9 +828,42 @@ interface Vendor {
     updatedAt?: number;
 }
 
+// 篩選後的結果
+const filteredVendors = ref<Vendor[]>([])
+
+// 搜尋過濾方法
+function filterVendors(query: string) {
+    if (!query) {
+        filteredVendors.value = vendorList.value
+        return
+    }
+    const lowerQuery = query.toLowerCase()
+    filteredVendors.value = vendorList.value.filter(
+        v =>
+            v.vendorId.toLowerCase().includes(lowerQuery) ||
+            v.vendorName.toLowerCase().includes(lowerQuery)
+    )
+}
+
+
 // 查詢廠商名稱
-async function findVendorByCode() {
-    const code = newProduct.value.supplierCode.trim();
+// 支援從 <el-select @change="findVendorByCode"> 傳入的值（可被忽略）
+// 以及從複製/編輯模式呼叫時傳入 'edit' 作為 context
+async function findVendorByCode(arg?: string) {
+    // 若傳入 'edit'，代表要用 editProduct；否則預設使用 newProduct（el-select 的 change 會傳 vendorId，但我們使用 v-model 的值）
+    const context: 'new' | 'edit' = arg === 'edit' ? 'edit' : 'new';
+
+    let code = "";
+    if (context === 'edit') {
+        if (!editProduct.value) {
+            ElMessage.warning("編輯的商品資料不存在");
+            return;
+        }
+        code = (editProduct.value.supplierCode || "").trim();
+    } else {
+        code = (newProduct.value.supplierCode || "").trim();
+    }
+
     if (!code) {
         ElMessage.warning("請先輸入廠商編號");
         return;
@@ -843,10 +883,18 @@ async function findVendorByCode() {
     );
 
     if (matched) {
-        newProduct.value.supplierName = matched.vendorName;
+        if (context === 'edit' && editProduct.value) {
+            editProduct.value.supplierName = matched.vendorName;
+        } else {
+            newProduct.value.supplierName = matched.vendorName;
+        }
         ElMessage.success(`已找到廠商：${matched.vendorName}`);
     } else {
-        newProduct.value.supplierName = "";
+        if (context === 'edit' && editProduct.value) {
+            editProduct.value.supplierName = "";
+        } else {
+            newProduct.value.supplierName = "";
+        }
         ElMessage.warning("找不到對應的廠商");
     }
 }
@@ -1186,8 +1234,11 @@ async function fetchVendors() {
     if (snapshot.exists()) {
         const data = snapshot.val() as Record<string, Vendor>;
         vendorList.value = Object.values(data);
+        // 同步更新篩選用的清單
+        filteredVendors.value = vendorList.value;
     } else {
         vendorList.value = [];
+        filteredVendors.value = [];
     }
 }
 

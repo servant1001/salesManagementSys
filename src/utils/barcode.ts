@@ -16,7 +16,7 @@ export function generateBarcodeImage(name: string, gtin: string, price: number):
                 width: 2.9,
                 height: 80,
                 displayValue: true,
-                text: `${gtin}-${price.toString().padStart(4, '0')}`,
+                text: `${gtin}`,//`${gtin}-${price.toString().padStart(4, '0')}`,
                 fontSize: 18,
                 margin: 5,
                 textMargin: -3,
@@ -48,7 +48,7 @@ export function generateBarcodeImage(name: string, gtin: string, price: number):
                 }
 
                 ctx.fillStyle = '#000'
-                drawTextFit(name, 32)
+                drawTextFit(`${name} 特價$${price}`, 32)
 
                 // 貼上條碼
                 ctx.drawImage(img, 0, 35)

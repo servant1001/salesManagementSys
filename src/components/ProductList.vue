@@ -1266,14 +1266,14 @@ const barcodeDataUrl = ref('')
 const currentProduct = ref<{ name: string; gtin: string; price?: number } | null>(null)
 
 // 點擊「生成條碼」
-async function handleGenerateBarcode(product: { name: string; gtin: string; price?: number }) {
+async function handleGenerateBarcode(product: { name: string; gtin: string; sellingPrice?: number }) {
     try {
         if (!product.gtin) {
             ElMessage.warning('該商品沒有 GTIN')
             return
         }
         currentProduct.value = product
-        barcodeDataUrl.value = await generateBarcodeImage(product.name, product.gtin, product.price ?? 0)
+        barcodeDataUrl.value = await generateBarcodeImage(product.name, product.gtin, product.sellingPrice ?? 0)
         showBarcodeDialog.value = true
     } catch (error) {
         console.error(error)

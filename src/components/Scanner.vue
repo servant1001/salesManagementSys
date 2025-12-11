@@ -42,6 +42,21 @@ const emit = defineEmits(["onScan"]); // 向父元件傳遞掃描結果
 const beepSound = new Audio("/scanner-beep.mp3");
 // 請把 scanner-beep.mp3 放在 /public 資料夾下，例如：public/scanner-beep.mp3
 
+// 顯示授權提示
+const permissionMessage = ref<string | null>(null);
+
+// 先請求攝像頭權限
+async function requestCameraPermission() {
+    try {
+        await navigator.mediaDevices.getUserMedia({ video: true });
+        permissionMessage.value = null; // 已授權，清除提示
+        await getCameras(); // 授權成功後再抓鏡頭
+    } catch (err) {
+        console.error("攝像頭授權失敗:", err);
+        permissionMessage.value = "請允許使用攝像頭，才能掃描條碼";
+    }
+}
+
 // 取得可用攝像頭
 async function getCameras() {
     try {
@@ -110,6 +125,6 @@ function switchCamera() {
     }
 }
 
-onMounted(() => getCameras());
+onMounted(() => requestCameraPermission());
 onBeforeUnmount(() => stopScanner());
 </script>

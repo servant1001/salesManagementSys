@@ -49,7 +49,7 @@
 
             <!-- 掃描視窗 -->
             <el-dialog v-model="scannerVisible" title="掃描 GTIN 查詢" width="400px">
-                <Scanner @onScan="handleScanGTIN" />
+                <Scanner ref="scannerRef" @onScan="handleScanGTIN" />
             </el-dialog>
         </div>
 
@@ -171,6 +171,7 @@
                     <div style="display: flex; gap: 10px;">
                         <el-input v-model="newProduct.gtin" placeholder="請輸入 GTIN" />
                         <el-button type="primary" @click="startScanNewProduct">掃描</el-button>
+                        <el-button type="success" @click="syncGtinToCode">同步到商品編號</el-button>
                     </div>
                 </el-form-item>
 
@@ -523,6 +524,13 @@ const rules = {
     stock: [{ required: true, message: "請輸入庫存", trigger: "change" }],
 };
 
+// GTIN 同步到 商品編號
+function syncGtinToCode() {
+    if (newProduct.value.gtin) {
+        newProduct.value.code = newProduct.value.gtin;
+    }
+}
+
 // 編輯彈窗
 const showEditDialog = ref(false);
 const editProduct = ref<Product | null>(null);
@@ -596,6 +604,7 @@ const filteredProducts = computed(() => {
     return list;
 });
 
+const scannerRef = ref<InstanceType<typeof Scanner> | null>(null);
 // 打開掃描框
 function openScanner() {
     scannerVisible.value = true;
@@ -603,6 +612,7 @@ function openScanner() {
 
 // 處理掃描結果
 function handleScanGTIN(gtin: string) {
+    scannerRef.value?.stopScanner();
     scannerVisible.value = false;
     searchQuery.value = gtin;
 

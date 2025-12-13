@@ -37,12 +37,12 @@ export function generateBarcodeImage(name: string, gtin: string, price: number):
 
                 // 商品名稱自動縮放函數
                 function drawTextFit(text: string, y: number) {
-                    let fontSize = 16
+                    let fontSize = 22
                     ctx.font = `${fontSize}px sans-serif`
                     ctx.textAlign = 'center'
                     while (ctx.measureText(text).width > finalCanvas.width - 20 && fontSize > 8) {
                         fontSize--
-                        ctx.font = `bold ${fontSize}px sans-serif`
+                        ctx.font = `${fontSize}px sans-serif`
                     }
                     ctx.fillText(text, finalCanvas.width / 2, y)
                 }

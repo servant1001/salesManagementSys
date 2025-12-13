@@ -36,6 +36,10 @@ const scanMessage = ref<string | null>(null); // 掃描成功訊息
 let lastScanTime = 0;
 const scanCooldown = 2000; // 2秒冷卻
 
+defineExpose({
+    stopScanner
+});
+
 const emit = defineEmits(["onScan"]); // 向父元件傳遞掃描結果
 
 // 🔊 掃描提示音

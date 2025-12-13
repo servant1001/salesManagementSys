@@ -63,14 +63,18 @@
             </el-table-column>
 
             <!-- 序號欄位 -->
-            <el-table-column label="#" width="50" align="center">
+            <el-table-column class-name="no-padding-cell" label="#" width="25" align="center" >
                 <template #default="scope">
-                    {{ (currentPage - 1) * pageSize + scope.$index + 1 }}
+                    <span style="
+                        font-size: 12px;  /* 調整字體大小 */
+                    ">
+                        {{ (currentPage - 1) * pageSize + scope.$index + 1 }}
+                    </span>
                 </template>
             </el-table-column>
 
             <!-- 操作欄整欄隨編輯模式顯示 -->
-            <el-table-column v-if="editMode" label="操作" width="90">
+            <el-table-column v-if="editMode" class-name="no-padding-cell" label="操作" width="90" align="center">
                 <template #default="{ row }">
                     <div style="display: flex; flex-direction: column; align-items: center;">
                         <el-button type="primary" size="small" style="width: 70px;"
@@ -83,10 +87,10 @@
                 </template>
             </el-table-column>
 
-            <el-table-column label="商品圖片" width="120" align="center">
+            <el-table-column label="商品圖片" class-name="no-padding-cell" width="90" align="center">
                 <template #default="{ row }">
                     <div
-                        style="width: 100px; height: 100px; border-radius: 8px; overflow: hidden; display: flex; align-items: center; justify-content: center; background: #f5f5f5;">
+                        style="width: 70px; height: 70px; margin: 0 auto; border-radius: 8px; overflow: hidden; display: flex; align-items: center; justify-content: center; background: #f5f5f5;">
                         <img v-if="row.imageUrl" :src="row.imageUrl" alt="商品圖片"
                             style="width: 100%; height: 100%; object-fit: cover;" />
                         <el-icon v-else style="font-size: 32px; color: #ccc;">
@@ -1404,5 +1408,9 @@ onMounted(() => {
     display: flex;
     justify-content: center;
     align-items: center;
+}
+
+::v-deep(.no-padding-cell .cell) {
+  padding: 0 !important;
 }
 </style>

@@ -30,22 +30,33 @@
         <h3 style="margin-top: 20px;">購物車商品</h3>
         <el-table v-if="cart.length" :data="cart" border style="width: 100%; margin-top: 10px;">
             <!-- ✅ 序號欄位 -->
-            <el-table-column label="#" width="50" align="center">
+            <el-table-column class-name="no-padding-cell" label="#" width="25" align="center" >
                 <template #default="{ $index }">
-                    {{ $index + 1 }}
+                    <span style="
+                        font-size: 12px;  /* 調整字體大小 */
+                    ">
+                        {{ $index + 1 }}
+                    </span>
                 </template>
             </el-table-column>
 
-            <el-table-column label="商品圖片" width="120" align="center">
+            <el-table-column class-name="no-padding-cell" label="商品圖片" width="90" align="center">
                 <template #default="{ row }">
                     <div
-                        style="width: 100px; height: 100px; border-radius: 8px; overflow: hidden; display: flex; align-items: center; justify-content: center; background: #f5f5f5;">
+                        style="width: 70px; height: 70px; margin: 0 auto; border-radius: 8px; overflow: hidden; display: flex; align-items: center; justify-content: center; background: #f5f5f5;">
                         <img v-if="row.imageUrl" :src="row.imageUrl" alt="商品圖片"
                             style="width: 100%; height: 100%; object-fit: cover;" />
                         <el-icon v-else style="font-size: 32px; color: #ccc;">
                             <Picture />
                         </el-icon>
                     </div>
+                </template>
+            </el-table-column>
+            <el-table-column class-name="no-padding-cell" label="數量" width="100" align="center">
+                <template #default="{ row }">
+                    <el-input-number v-if="row.editing" v-model.number="row.quantity" size="small" style="width: 80px;"
+                        min="0" />
+                    <span v-else>{{ row.quantity }}</span>
                 </template>
             </el-table-column>
             <!-- ✅ 商品名稱欄位：可點擊開啟連結 -->
@@ -58,26 +69,19 @@
                     <span v-else>{{ row.name }}</span>
                 </template>
             </el-table-column>
-            <el-table-column prop="code" label="商品編號" width="180" />
-            <el-table-column prop="gtin" label="GTIN" width="180" />
-            <el-table-column label="售價" width="100">
+            <el-table-column prop="code" label="商品編號" width="100" align="center"/>
+            <el-table-column prop="gtin" label="GTIN" width="100" align="center"/>
+            <el-table-column label="售價" width="80" align="center">
                 <template #default="{ row }">
                     <el-input v-if="row.editing" v-model.number="row.sellingPrice" size="small" />
                     <span v-else>{{ row.sellingPrice }} 元</span>
                 </template>
             </el-table-column>
-            <el-table-column label="數量" width="110">
-                <template #default="{ row }">
-                    <el-input-number v-if="row.editing" v-model.number="row.quantity" size="small" style="width: 80px;"
-                        min="0" />
-                    <span v-else>{{ row.quantity }}</span>
-                </template>
-            </el-table-column>
-            <el-table-column label="小計" width="120">
+            <el-table-column label="小計" width="80" align="center">
                 <template #default="{ row }">{{ row.sellingPrice * row.quantity }} 元</template>
             </el-table-column>
 
-            <el-table-column label="操作" width="170">
+            <el-table-column label="操作" width="170" align="center">
                 <template #default="{ row, $index }">
                     <el-button type="primary" size="mini" @click="toggleEdit(row)">
                         {{ row.editing ? "完成" : "編輯" }}
@@ -88,15 +92,15 @@
                 </template>
             </el-table-column>
 
-            <el-table-column prop="price" label="定價" width="100">
+            <el-table-column prop="price" label="定價" width="80" align="center">
                 <template #default="{ row }">{{ row.price }} 元</template>
             </el-table-column>
 
-            <el-table-column prop="cost" label="成本" width="80">
+            <el-table-column prop="cost" label="成本" width="80" align="center">
                 <template #default="{ row }">{{ row.cost }} 元</template>
             </el-table-column>
 
-            <el-table-column prop="estimatedProfit" label="預估毛利" width="100">
+            <el-table-column prop="estimatedProfit" label="預估毛利" width="100" align="center">
                 <template #default="{ row }">
                     <span
                         :style="{ color: (row.sellingPrice - row.cost) >= 0 ? '#00fc2a' : '#fc0000', fontWeight: 'bold' }">
@@ -105,11 +109,11 @@
                 </template>
             </el-table-column>
 
-            <el-table-column prop="supplierName" label="廠商名稱" width="120" />
+            <el-table-column prop="supplierName" label="廠商名稱" width="120" align="center"/>
 
-            <el-table-column prop="supplierCode" label="廠商編號" width="120" />
+            <el-table-column prop="supplierCode" label="廠商編號" width="120" align="center"/>
 
-            <el-table-column prop="website" label="網站" width="200">
+            <el-table-column prop="website" label="網站" align="center">
                 <template #default="{ row }">
                     <a v-if="row.website" :href="row.website" target="_blank" rel="noopener noreferrer"
                         style="color: #409eff; text-decoration: underline;">連結</a>
@@ -464,5 +468,20 @@ function confirmAddManualItem() {
     align-items: center;
     gap: 8px;
     margin-bottom: 10px;
+}
+
+::v-deep(.el-table th) {
+    /* font-size: 10px; */
+    /* 調整大小 */
+    font-weight: 600;
+    /* 調整粗細 */
+    color: #333;
+    /* 可選：文字顏色 */
+    text-align: center;
+    /* 置中，可根據需要 */
+}
+
+::v-deep(.no-padding-cell .cell) {
+  padding: 0 !important;
 }
 </style>

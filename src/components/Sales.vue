@@ -224,7 +224,21 @@
                 </el-table-column>
 
                 <el-table-column prop="price" label="定價" width="100" />
-                <el-table-column prop="cost" label="成本" width="100" />
+                <el-table-column prop="cost" label="成本" width="120">
+                <template #default="{ row }">
+                    <div v-if="editingDetailRow === row">
+                    <el-input-number
+                        style="width: 100px"
+                        v-model="row.cost"
+                        :min="0"
+                        size="small"
+                    />
+                    </div>
+                    <div v-else>
+                    {{ row.cost ?? 0 }} 元
+                    </div>
+                </template>
+                </el-table-column>
                 <el-table-column prop="estimatedProfit" label="毛利(單個)" width="120">
                     <template #default="{ row }">
                         <span :style="{ color: (row.sellingPrice - row.cost) >= 0 ? '#67c23a' : '#fc0000' }">

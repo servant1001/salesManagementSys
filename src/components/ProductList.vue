@@ -12,12 +12,20 @@
             <el-input v-model="searchQuery" placeholder="搜尋商品名稱或編號" clearable class="search-input" />
 
             <!-- 廠商選擇 -->
-            <el-select v-model="selectedVendor" placeholder="選擇廠商" clearable class="vendor-select">
+            <el-select
+                v-model="selectedVendor"
+                placeholder="選擇廠商"
+                clearable
+                filterable
+                class="vendor-select"
+            >
                 <el-option label="全部" :value="null" />
-                <el-option v-for="vendor in vendorList" :key="vendor.vendorId" :label="vendor.vendorName"
-                    :value="vendor.vendorId">
-                    {{ vendor.vendorId }} {{ vendor.vendorName }}
-                </el-option>
+                <el-option
+                    v-for="vendor in vendorList"
+                    :key="vendor.vendorId"
+                    :label="`${vendor.vendorId} ${vendor.vendorName}`"
+                    :value="vendor.vendorId"
+                />
             </el-select>
 
             <!-- 掃描 + 編輯模式 -->

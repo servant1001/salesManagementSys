@@ -40,6 +40,7 @@
             font-size: 1.1rem;
             justify-content: flex-start; /* 整個 row 靠左 */
         ">
+            <div>銷售筆數：{{ totalSalesCount }} 筆</div>
             <div>總銷售額：{{ totalFilteredSales }} 元</div>
             <div>總毛利：{{ totalFilteredProfit }} 元</div>
         </el-row>
@@ -57,14 +58,52 @@
             </el-table-column>
 
             <!-- ✅ 操作欄（只有在編輯模式時顯示） -->
-            <el-table-column v-if="showActions" fixed="left" label="操作" width="80">
+            <el-table-column v-if="showActions" fixed="left" label="操作" width="140">
                 <template #default="{ row }">
-                    <el-button size="small" type="danger" @click="deleteSale(row)">刪除</el-button>
+                    <el-button
+                    size="small"
+                    type="primary"
+                    @click="startEditTime(row)"
+                    >
+                    編輯
+                    </el-button>
+
+                    <el-button
+                    size="small"
+                    type="danger"
+                    @click="deleteSale(row)"
+                    >
+                    刪除
+                    </el-button>
                 </template>
             </el-table-column>
 
-            <el-table-column prop="timestamp" label="時間" width="100">
-                <template #default="{ row }">{{ formatDate(row.timestamp) }}</template>
+            <el-table-column prop="timestamp" label="時間" width="200">
+                <template #default="{ row }">
+                    <!-- 編輯狀態 -->
+                    <div v-if="editingRow === row">
+                    <el-date-picker
+                        v-model="editingTimestamp"
+                        type="datetime"
+                        format="YYYY-MM-DD HH:mm"
+                        value-format="x"
+                        size="small"
+                    />
+                    <div style="margin-top:4px;">
+                        <el-button size="small" type="primary" @click="saveEditTime(row)">
+                        儲存
+                        </el-button>
+                        <el-button size="small" @click="cancelEditTime">
+                        取消
+                        </el-button>
+                    </div>
+                    </div>
+
+                    <!-- 非編輯狀態 -->
+                    <div v-else>
+                        {{ formatDate(row.timestamp) }}
+                    </div>
+                </template>
             </el-table-column>
 
             <el-table-column prop="total" label="總金額" width="100">
@@ -352,6 +391,36 @@ function getDeviceInfoShort(): string {
     return `${browser} / ${platform}`;
 }
 
+// 編輯時間
+const editingTimestamp = ref<number | null>(null)
+
+function startEditTime(row: Sale) {
+    editingRow.value = row
+    editingTimestamp.value = row.timestamp
+}
+
+function cancelEditTime() {
+    editingRow.value = null
+    editingTimestamp.value = null
+}
+
+async function saveEditTime(row: Sale) {
+    if (!row.id || !editingTimestamp.value) return
+
+    await update(dbRef(db, `sales/${row.id}`), {
+        timestamp: editingTimestamp.value,
+        updater: user.value?.displayName + "(" + getDeviceInfoShort() + ")",
+    })
+
+    ElMessage.success("時間已更新")
+
+    editingRow.value = null
+    editingTimestamp.value = null
+
+    // 重新載入，確保排序正確
+    await loadSalesByDate(selectedDate.value)
+}
+
 // ✅ 刪除銷售紀錄
 async function deleteSale(sale: Sale) {
     try {
@@ -472,6 +541,7 @@ async function loadSalesByDate(date: string | null) {
       id: key,
       ...(val as Sale),
     }))
+    .sort((a, b) => b.timestamp - a.timestamp) // 新 → 舊
   } else {
     sales.value = []
   }
@@ -480,7 +550,10 @@ async function loadSalesByDate(date: string | null) {
   filterSales()
 }
 
+// 總銷售筆數（根據篩選結果）
+const totalSalesCount = computed(() => filteredSales.value.length)
 
+// 總銷售額（根據篩選結果）
 const totalFilteredSales = computed(() =>
     filteredSales.value.reduce((sum, sale) => sum + sale.total, 0)
 );

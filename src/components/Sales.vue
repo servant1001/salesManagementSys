@@ -40,6 +40,13 @@
             font-size: 1.1rem;
             justify-content: flex-start; /* 整個 row 靠左 */
         ">
+            <el-button 
+                type="primary" 
+                size="mini" 
+                @click="showPaymentStats()"
+            >
+                銷售分析
+            </el-button>
             <div>銷售筆數：{{ totalSalesCount }} 筆</div>
             <div>總銷售額：{{ totalFilteredSales }} 元</div>
             <div>總毛利：{{ totalFilteredProfit }} 元</div>
@@ -61,13 +68,19 @@
             <el-table-column v-if="showActions" fixed="left" label="操作" width="140">
                 <template #default="{ row }">
                     <el-button
+                    v-if="editingRow !== row"
                     size="small"
                     type="primary"
                     @click="startEditTime(row)"
                     >
                     編輯
                     </el-button>
-
+                    <el-button v-if="editingRow === row" size="small" type="primary" @click="saveEditTime(row)">
+                    儲存
+                    </el-button>
+                    <el-button v-if="editingRow === row" size="small" @click="cancelEditTime">
+                    取消
+                    </el-button>
                     <el-button
                     size="small"
                     type="danger"
@@ -89,14 +102,6 @@
                         value-format="x"
                         size="small"
                     />
-                    <div style="margin-top:4px;">
-                        <el-button size="small" type="primary" @click="saveEditTime(row)">
-                        儲存
-                        </el-button>
-                        <el-button size="small" @click="cancelEditTime">
-                        取消
-                        </el-button>
-                    </div>
                     </div>
 
                     <!-- 非編輯狀態 -->
@@ -106,30 +111,53 @@
                 </template>
             </el-table-column>
 
-            <el-table-column prop="total" label="總金額" width="100">
+            <el-table-column prop="total" label="總金額" width="120" align="right">
                 <template #default="{ row }">
-                    <div v-if="editingRow === row">
-                        <el-input-number v-model="row.total" :min="0" size="small" />
-                    </div>
-                    <div v-else style="font-size: 20px; font-weight: bold;">
+                    <span style="font-size: 20px; font-weight: bold;">
                         {{ row.total }} 元
+                    </span>
+                </template>
+            </el-table-column>
+
+            <el-table-column prop="totalProfit" label="總毛利" width="120" align="right">
+                <template #default="{ row }">
+                    <span
+                        :style="{
+                            color: (row.totalProfit ?? 0) >= 0 ? '#67c23a' : '#fc0000',
+                            fontWeight: 'bold',
+                            fontSize: '20px'
+                    }">
+                        {{ row.totalProfit ?? 0 }} 元
+                    </span>
+                </template>
+            </el-table-column>
+            
+            <el-table-column prop="paymentMethod" label="付款方式" width="120" align="center">
+                <template #default="{ row }">
+                    <!-- 編輯模式 -->
+                    <div v-if="editingRow === row">
+                        <el-select
+                            v-model="row.paymentMethod"
+                            size="small"
+                            placeholder="選擇付款方式"
+                            style="width: 100%;"
+                        >
+                            <el-option
+                                v-for="opt in paymentMethodOptions"
+                                :key="opt"
+                                :label="opt.label"
+                                :value="opt.value"
+                            />
+                        </el-select>
+                    </div>
+
+                    <!-- 非編輯模式 -->
+                    <div v-else>
+                        {{ paymentMethodMap[row.paymentMethod] || '-' }}
                     </div>
                 </template>
             </el-table-column>
 
-            <el-table-column prop="totalProfit" label="總毛利" width="100">
-                <template #default="{ row }">
-                    <div v-if="editingRow === row">
-                        <el-input-number v-model="row.totalProfit" size="small" />
-                    </div>
-                    <div v-else>
-                        <span
-                            :style="{ color: (row.totalProfit ?? 0) >= 0 ? '#67c23a' : '#fc0000', fontWeight: 'bold', fontSize: '20px' }">
-                            {{ row.totalProfit ?? 0 }} 元
-                        </span>
-                    </div>
-                </template>
-            </el-table-column>
 
             <el-table-column prop="operator" label="操作人員" width="100" />
             <el-table-column label="商品明細" width="120">
@@ -322,6 +350,43 @@
             </el-table>
         </el-dialog>
 
+        <el-dialog 
+            v-model="salesAnalysisDialog" 
+            width="400px"
+        >
+            <template #title>
+                <span style="font-weight: bold; font-size: 1.2rem; color: #666;">銷售分析</span>
+                <span style=" margin-left: 10px; font-weight: normal; font-size: 1rem; color: #666;">
+                    {{ paymentStatsDateRangeText }}
+                </span>
+            </template>
+            <!-- 總額與毛利率 -->
+            <div style="margin-bottom: 10px; font-weight: bold; font-size: 1.1rem;">
+                <div>總銷售額：<span :style="{ fontWeight: 'bold' }">{{ paymentStatsTotal }}</span> 元</div>
+                <div>總毛利：<span :style="{ color: paymentStatsTotalProfit >= 0 ? '#67c23a' : '#fc0000', fontWeight: 'bold' }">{{ paymentStatsTotalProfit }}</span> 元({{ paymentStatsProfitRate }}%)</div>
+            </div>
+            <el-table :data="paymentStats" border size="small">
+                <el-table-column prop="method" label="付款方式" width="80" align="center">
+                    <template #default="{ row }">
+                        {{ paymentMethodMap[row.method] || row.method }}
+                    </template>
+                </el-table-column>
+                <el-table-column prop="count" label="筆數" width="50" align="center"/>
+                <el-table-column prop="total" label="總金額" width="100" align="center">
+                    <template #default="{ row }">
+                        {{ row.total }} 元
+                    </template>
+                </el-table-column>
+                <el-table-column prop="profit" label="總毛利" align="left">
+                    <template #default="{ row }">
+                        <span :style="{ color: row.profit >= 0 ? '#67c23a' : '#fc0000' }">
+                            {{ row.profit }} 元
+                        </span>
+                    </template>
+                </el-table-column>
+            </el-table>
+        </el-dialog>
+
     </div>
 </template>
 
@@ -355,7 +420,27 @@ interface Sale {
     totalProfit?: number;
     items: SaleItem[];
     operator: string;
+    paymentMethod?: string;
 }
+
+const paymentMethodMap: Record<string, string> = {
+    cash: '現金',
+    credit_card: '信用卡',
+    line_pay: 'Line Pay',
+    px_pay: '全支付',
+};
+
+interface PaymentOption {
+  label: string;
+  value: string;
+}
+
+const paymentMethodOptions: PaymentOption[] = [
+    { label: "現金", value: "cash" },
+    { label: "信用卡", value: "credit_card" },
+    { label: "Line Pay", value: "line_pay" },
+    { label: "全支付", value: "px_pay" },
+];
 
 const sales = ref<Sale[]>([]);
 const filteredSales = ref<Sale[]>([]);
@@ -405,20 +490,34 @@ function cancelEditTime() {
 }
 
 async function saveEditTime(row: Sale) {
-    if (!row.id || !editingTimestamp.value) return
+    if (!row.id) return;
+
+    // 計算商品明細毛利總和
+    const itemProfitSum = row.items.reduce(
+        (sum, item) => sum + ((item.sellingPrice - (item.cost ?? 0)) * item.quantity),
+        0
+    );
+
+    let newTotalProfit = itemProfitSum;
+
+    // 如果付款方式是信用卡、LINE PAY或全支付，扣除 2% 手續費
+    if (needHandlingFee(row.paymentMethod)) {
+        newTotalProfit = itemProfitSum - Math.round(row.total * 0.02);
+    }
 
     await update(dbRef(db, `sales/${row.id}`), {
         timestamp: editingTimestamp.value,
+        paymentMethod: row.paymentMethod || null,
+        totalProfit: newTotalProfit,
         updater: user.value?.displayName + "(" + getDeviceInfoShort() + ")",
-    })
+    });
 
-    ElMessage.success("時間已更新")
+    ElMessage.success('訂單已更新');
 
-    editingRow.value = null
-    editingTimestamp.value = null
+    editingRow.value = null;
+    editingTimestamp.value = null;
 
-    // 重新載入，確保排序正確
-    await loadSalesByDate(selectedDate.value)
+    await loadSalesByDate(selectedDate.value);
 }
 
 // ✅ 刪除銷售紀錄
@@ -563,11 +662,68 @@ const totalFilteredProfit = computed(() =>
     filteredSales.value.reduce((sum, sale) => sum + (sale.totalProfit ?? 0), 0)
 );
 
-// 計算今天零時零分零秒
-function getTodayStart(): number {
-    const now = new Date();
-    return new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+/* 彈窗顯示付款方式統計 Start */
+const salesAnalysisDialog = ref(false); // 彈窗顯示
+const paymentStats = ref<{ method: string; count: number; total: number; profit: number }[]>([]);
+const paymentStatsTotal = ref(0);
+const paymentStatsTotalProfit = ref(0); // 總毛利金額
+const paymentStatsProfitRate = ref(0); // 百分比
+function calculatePaymentStats() {
+    const statsMap: Record<string, { count: number; total: number; profit: number }> = {};
+    let totalSum = 0;
+    let profitSum = 0;
+
+    filteredSales.value.forEach(sale => {
+        const method = sale.paymentMethod || 'unknown';
+        if (!statsMap[method]) {
+            statsMap[method] = { count: 0, total: 0, profit: 0 };
+        }
+        statsMap[method].count += 1;
+        statsMap[method].total += sale.total;
+        statsMap[method].profit += sale.totalProfit ?? 0;
+
+        totalSum += sale.total;
+        profitSum += sale.totalProfit ?? 0;
+    });
+
+    paymentStats.value = Object.entries(statsMap).map(([method, data]) => ({
+        method,
+        count: data.count,
+        total: data.total,
+        profit: data.profit,
+    }));
+
+    paymentStatsTotal.value = totalSum;
+    paymentStatsTotalProfit.value = profitSum;
+    paymentStatsProfitRate.value = totalSum ? parseFloat(((profitSum / totalSum) * 100).toFixed(2)) : 0;
 }
+
+function showPaymentStats() {
+    calculatePaymentStats();
+    salesAnalysisDialog.value = true;
+}
+
+const paymentStatsDateRangeText = computed(() => {
+  if (!selectedDate.value) return "";
+
+  if (dateFilterMode.value === "day") {
+    return selectedDate.value; // 單日 YYYY-MM-DD
+  } else {
+    // 月範圍：顯示 YYYY-MM
+    const parts = selectedDate.value.split("-").map(Number);
+    const y = parts[0] ?? new Date().getFullYear();
+    const m = parts[1] ?? new Date().getMonth() + 1;
+    const lastDay = new Date(y, m, 0).getDate(); // 該月最後一天
+    return `${selectedDate.value}-01 ~ ${selectedDate.value}-${lastDay.toString().padStart(2, '0')}`;
+  }
+});
+
+// 判斷是否需要扣除手續費
+function needHandlingFee(paymentMethod?: string) {
+  return ['credit_card', 'line_pay', 'px_pay'].includes(paymentMethod || '')
+}
+
+/* 彈窗顯示付款方式統計 End */
 
 // ----明細編輯相關----
 const showDetailActions = ref(false); // 彈窗編輯模式開關

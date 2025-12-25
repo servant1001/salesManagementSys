@@ -132,9 +132,18 @@
             全部清空
         </el-button>
 
-        <el-button type="success" style="margin-top: 20px;" :disabled="cart.length === 0" @click="confirmCheckout">
-            確認結帳
-        </el-button>
+        <div style="margin-top: 20px; display: flex; align-items: center; gap: 10px;">
+            <el-button type="success" :disabled="cart.length === 0" @click="confirmCheckout">
+                確認結帳
+            </el-button>
+
+            <el-select v-model="selectedPayment" placeholder="選擇付款方式" style="width: 150px;">
+                <el-option label="現金" value="cash" />
+                <el-option label="信用卡" value="credit_card" />
+                <el-option label="Line Pay" value="line_pay" />
+                <el-option label="全支付" value="px_pay" />
+            </el-select>
+        </div>
 
         <!-- 🔹手動添加商品的彈窗 -->
         <el-dialog title="手動添加商品" v-model="showAddDialog" :width="'90%'">
@@ -303,6 +312,12 @@ function toggleEdit(item: CartItem) {
     item.editing = !item.editing;
 }
 
+const selectedPayment = ref(""); // 預設空
+
+function needHandlingFee(paymentMethod?: string) {
+  return ['credit_card', 'line_pay', 'px_pay'].includes(paymentMethod || '')
+}
+
 // 確認結帳
 async function confirmCheckout() {
     if (!cart.length) return;
@@ -331,13 +346,15 @@ async function confirmCheckout() {
     }
 
     const newSaleRef = push(salesRef);
-    const totalProfit = cart.reduce(
-        (sum, item) => sum + (item.sellingPrice - item.cost) * item.quantity,
-        0
-    );
+    const totalProfit = cart.reduce((sum, item) => {
+    const handlingFeeRate = needHandlingFee(selectedPayment.value) ? 0.02 : 0;
+        return sum + (item.sellingPrice - item.cost - (item.sellingPrice * handlingFeeRate)) * item.quantity;
+    }, 0);
+
     const saleData = {
         timestamp: Date.now(),
         operator: user.value?.displayName || user.value?.email || "",
+        paymentMethod: selectedPayment.value,
         items: cart.map(item => ({
             barcode: item.barcode,
             gtin: item.gtin,

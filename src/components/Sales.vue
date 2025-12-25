@@ -11,10 +11,21 @@
             <el-input v-model="searchKeyword" placeholder="搜尋商品名稱" clearable @input="filterSales"
                 class="search-input" />
             <div class="action-row">
-                <el-date-picker style="margin-right: 10px; width: 100%;" v-model="selectedMonth" type="month"
-                    placeholder="選擇年月" format="YYYY-MM" value-format="YYYY-MM" clearable
-                    @change="() => loadSalesByMonth(selectedMonth)" class="date-picker" />
-                <el-button style="max-width: 120px;" :type="showActions ? 'warning' : 'info'" @click="toggleEditMode">
+                <el-select
+                    v-model="dateFilterMode"
+                    style="width: 120px; margin-right: 10px;"
+                >
+                    <el-option label="月" value="month" />
+                    <el-option label="日" value="day" />
+                </el-select>
+                <el-date-picker
+                    v-model="selectedDate"
+                    :type="dateFilterMode === 'day' ? 'date' : 'month'"
+                    :format="dateFilterMode === 'day' ? 'YYYY-MM-DD' : 'YYYY-MM'"
+                    :value-format="dateFilterMode === 'day' ? 'YYYY-MM-DD' : 'YYYY-MM'"
+                    clearable
+                />
+                <el-button style="max-width: 120px; margin-left: 10px;" :type="showActions ? 'warning' : 'info'" @click="toggleEditMode">
                     {{ showActions ? '退出編輯模式' : '進入編輯模式' }}
                 </el-button>
             </div>
@@ -31,15 +42,17 @@
         ">
             <div>總銷售額：{{ totalFilteredSales }} 元</div>
             <div>總毛利：{{ totalFilteredProfit }} 元</div>
-            <div>今日銷售額：{{ todaySales }} 元</div>
-            <div>今日毛利：{{ todayProfit }} 元</div>
         </el-row>
 
         <el-table v-if="filteredSales.length" :data="filteredSales" border style="width:100%">
-            <!-- ✅ 序號欄 -->
-            <el-table-column label="#" width="50" align="center" fixed="left">
+            <!-- ✅ 序號欄位 -->
+            <el-table-column class-name="no-padding-cell" label="#" width="25" align="center" >
                 <template #default="{ $index }">
-                    {{ $index + 1 }}
+                    <span style="
+                        font-size: 12px;  /* 調整字體大小 */
+                    ">
+                        {{ $index + 1 }}
+                    </span>
                 </template>
             </el-table-column>
 
@@ -50,7 +63,7 @@
                 </template>
             </el-table-column>
 
-            <el-table-column prop="timestamp" label="時間" width="170">
+            <el-table-column prop="timestamp" label="時間" width="100">
                 <template #default="{ row }">{{ formatDate(row.timestamp) }}</template>
             </el-table-column>
 
@@ -274,7 +287,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, computed } from "vue";
+import { ref, onMounted, computed, watch } from "vue";
 import { db } from "@/firebase";
 import { query, orderByChild, startAt, endAt, get, child, ref as dbRef, remove, update } from "firebase/database";
 import { ElMessage, ElMessageBox } from "element-plus";
@@ -351,7 +364,7 @@ async function deleteSale(sale: Sale) {
         if (sale.id) {
             await remove(child(dbRef(db), `sales/${sale.id}`));
             ElMessage.success("刪除成功");
-            await loadSalesByMonth(selectedMonth.value);
+            await loadSalesByDate(selectedDate.value);
         } else {
             ElMessage.error("找不到紀錄 ID，無法刪除");
         }
@@ -373,6 +386,35 @@ const selectedMonth = ref<string>(getCurrentYearMonth());
 function formatDate(ts: number) {
     return new Date(ts).toLocaleString();
 }
+
+const dateFilterMode = ref<'month' | 'day'>('day');
+const selectedDate = ref<string | null>(getCurrentYearMonth());
+
+function getToday() {
+  const d = new Date()
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+}
+
+function getCurrentMonth() {
+  const d = new Date()
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
+}
+
+watch(dateFilterMode, (mode) => {
+  if (mode === 'day') {
+    selectedDate.value = getToday()
+  } else {
+    selectedDate.value = getCurrentMonth()
+  }
+
+  loadSalesByDate(selectedDate.value)
+})
+
+watch(selectedDate, (val) => {
+  if (!val) return
+  loadSalesByDate(val)
+})
+
 
 // 篩選函式：商品名稱 + 年月
 function filterSales() {
@@ -397,53 +439,48 @@ function filterSales() {
     });
 }
 
-async function loadSalesByMonth(selectedMonth: string | null) {
-    const salesRef = child(dbRef(db), "sales");
-    let salesQuery;
+async function loadSalesByDate(date: string | null) {
+  if (!date) return
 
-    if (selectedMonth) {
-        console.log(selectedMonth)
-        const parts = selectedMonth.split("-");
-        const year = Number(parts[0]);
-        const month = Number(parts[1]);
+  let startTime = 0
+  let endTime = 0
 
-        // 型別安全檢查
-        if (isNaN(year) || isNaN(month)) {
-            console.warn("選擇的月份格式不正確:", selectedMonth);
-            return;
-        }
+  if (dateFilterMode.value === 'day') {
+    const [y, m, d] = date.split('-').map(Number) as [number, number, number]
+    startTime = new Date(y, m - 1, d).getTime()
+    endTime = new Date(y, m - 1, d, 23, 59, 59, 999).getTime()
+  } else {
+    const [y, m] = date.split('-').map(Number) as [number, number]
+    startTime = new Date(y, m - 1, 1).getTime()
+    endTime = new Date(y, m, 0, 23, 59, 59, 999).getTime()
+  }
 
-        // 計算當月起迄 timestamp
-        const monthStart = new Date(year, month - 1, 1).getTime();
-        const monthEnd = new Date(year, month, 0, 23, 59, 59, 999).getTime();
+  const salesRef = child(dbRef(db), "sales")
 
-        salesQuery = query(
-            salesRef,
-            orderByChild("timestamp"),
-            startAt(monthStart),
-            endAt(monthEnd)
-        );
-    } else {
-        // 如果沒選月份，抓全部
-        salesQuery = query(salesRef, orderByChild("timestamp"));
-    }
+  const salesQuery = query(
+    salesRef,
+    orderByChild("timestamp"),
+    startAt(startTime),
+    endAt(endTime)
+  )
 
-    const snapshot = await get(salesQuery);
-    if (snapshot.exists()) {
-        const data = snapshot.val();
-        sales.value = Object.entries(data).map(([key, val]) => ({
-            id: key,   // <- 這裡存 key
-            ...(val as Sale)
-        })).sort((a, b) => b.timestamp - a.timestamp) as Sale[];
+  const snapshot = await get(salesQuery)
 
-        filterSales();
-    } else {
-        sales.value = [];
-        filteredSales.value = [];
-    }
+  if (snapshot.exists()) {
+    const data = snapshot.val()
+    sales.value = Object.entries(data).map(([key, val]) => ({
+      id: key,
+      ...(val as Sale),
+    }))
+  } else {
+    sales.value = []
+  }
+
+  // ✅ 查完資料後再做前端搜尋
+  filterSales()
 }
 
-// 總銷售額（根據篩選結果）
+
 const totalFilteredSales = computed(() =>
     filteredSales.value.reduce((sum, sale) => sum + sale.total, 0)
 );
@@ -458,23 +495,6 @@ function getTodayStart(): number {
     const now = new Date();
     return new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
 }
-
-// 今日銷售額
-const todaySales = computed(() => {
-    const start = getTodayStart();
-    return sales.value
-        .filter(sale => sale.timestamp >= start)
-        .reduce((sum, sale) => sum + sale.total, 0);
-});
-
-// 今日毛利
-const todayProfit = computed(() => {
-    const start = getTodayStart();
-    return sales.value
-        .filter(sale => sale.timestamp >= start)
-        .reduce((sum, sale) => sum + (sale.totalProfit ?? 0), 0);
-});
-
 
 // ----明細編輯相關----
 const showDetailActions = ref(false); // 彈窗編輯模式開關
@@ -543,7 +563,7 @@ async function saveDetailEdit(item: SaleItem) {
     selectedProfit.value = newProfit;
 
     // 更新主表格
-    await loadSalesByMonth(selectedMonth.value);
+    await loadSalesByDate(selectedDate.value);
 
     ElMessage.success('明細已儲存');
     editingDetailRow.value = null;
@@ -593,7 +613,7 @@ async function updateDetailItemsInFirebase() {
     });
 
     // 更新主表格
-    await loadSalesByMonth(selectedMonth.value);
+    await loadSalesByDate(selectedDate.value);
 }
 
 function onDetailDialogClose() {
@@ -613,7 +633,10 @@ function toggleDetailEditMode() {
     }
 }
 
-onMounted(() => loadSalesByMonth(selectedMonth.value));
+onMounted(() => {
+  selectedDate.value = getToday()
+  loadSalesByDate(selectedDate.value)
+})
 
 </script>
 
@@ -701,6 +724,21 @@ onMounted(() => loadSalesByMonth(selectedMonth.value));
     align-items: center;
     gap: 8px;
     flex-wrap: wrap;
+}
+
+::v-deep(.el-table th) {
+    /* font-size: 10px; */
+    /* 調整大小 */
+    font-weight: 600;
+    /* 調整粗細 */
+    color: #333;
+    /* 可選：文字顏色 */
+    text-align: center;
+    /* 置中，可根據需要 */
+}
+
+::v-deep(.no-padding-cell .cell) {
+  padding: 0 !important;
 }
 
 /* 手機排版：上下排列 */

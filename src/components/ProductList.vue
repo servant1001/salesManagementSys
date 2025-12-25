@@ -180,10 +180,20 @@
         <el-dialog title="新增商品" v-model="showAddDialog" :width="'90%'" class="add-product-dialog">
             <el-form :model="newProduct" :rules="rules" ref="addForm" label-width="120px">
                 <el-form-item label="GTIN" prop="gtin">
-                    <div style="display: flex; gap: 10px;">
-                        <el-input v-model="newProduct.gtin" placeholder="請輸入 GTIN" />
-                        <el-button type="primary" @click="startScanNewProduct">掃描</el-button>
-                        <el-button type="success" @click="syncGtinToCode">同步到商品編號</el-button>
+                    <div class="gtin-row">
+                        <el-input
+                            v-model="newProduct.gtin"
+                            placeholder="請輸入 GTIN"
+                        />
+                        <!-- 🔹 按鈕群組 -->
+                        <div class="gtin-actions">
+                            <el-button type="primary" @click="startScanNewProduct">
+                                掃描
+                            </el-button>
+                            <el-button type="success" @click="syncGtinToCode">
+                                同步編號
+                            </el-button>
+                        </div>
                     </div>
                 </el-form-item>
 
@@ -1421,4 +1431,24 @@ onMounted(() => {
 ::v-deep(.no-padding-cell .cell) {
   padding: 0 !important;
 }
+
+/* GTIN 輸入區整體 */
+.gtin-row {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;           /* ✅ 允許換行 */
+  width: 100%;
+}
+
+/* 📱 手機版優化 */
+@media (max-width: 768px) {
+  .gtin-input {
+    flex: 0 0 100%;          /* ✅ 手機時輸入框滿版 */
+  }
+
+  .gtin-row .el-button {
+    flex: 1;                 /* ✅ 按鈕平均分配 */
+  }
+}
+
 </style>

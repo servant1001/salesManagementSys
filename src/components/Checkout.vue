@@ -30,7 +30,7 @@
         <h3 style="margin-top: 20px;">購物車商品</h3>
         <el-table v-if="cart.length" :data="cart" border style="width: 100%; margin-top: 10px;">
             <!-- ✅ 序號欄位 -->
-            <el-table-column class-name="no-padding-cell" label="#" width="25" align="center" >
+            <el-table-column class-name="no-padding-cell" label="#" width="25" align="center">
                 <template #default="{ $index }">
                     <span style="
                         font-size: 12px;  /* 調整字體大小 */
@@ -69,8 +69,8 @@
                     <span v-else>{{ row.name }}</span>
                 </template>
             </el-table-column>
-            <el-table-column prop="code" label="商品編號" width="100" align="center"/>
-            <el-table-column prop="gtin" label="GTIN" width="100" align="center"/>
+            <el-table-column prop="code" label="商品編號" width="100" align="center" />
+            <el-table-column prop="gtin" label="GTIN" width="100" align="center" />
             <el-table-column label="售價" width="80" align="center">
                 <template #default="{ row }">
                     <el-input v-if="row.editing" v-model.number="row.sellingPrice" size="small" />
@@ -109,9 +109,9 @@
                 </template>
             </el-table-column>
 
-            <el-table-column prop="supplierName" label="廠商名稱" width="120" align="center"/>
+            <el-table-column prop="supplierName" label="廠商名稱" width="120" align="center" />
 
-            <el-table-column prop="supplierCode" label="廠商編號" width="120" align="center"/>
+            <el-table-column prop="supplierCode" label="廠商編號" width="120" align="center" />
 
             <el-table-column prop="website" label="網站" align="center">
                 <template #default="{ row }">
@@ -315,7 +315,7 @@ function toggleEdit(item: CartItem) {
 const selectedPayment = ref(""); // 預設空
 
 function needHandlingFee(paymentMethod?: string) {
-  return ['credit_card', 'line_pay', 'px_pay'].includes(paymentMethod || '')
+    return ['credit_card', 'line_pay', 'px_pay'].includes(paymentMethod || '')
 }
 
 // 確認結帳
@@ -347,7 +347,7 @@ async function confirmCheckout() {
 
     const newSaleRef = push(salesRef);
     const totalProfit = cart.reduce((sum, item) => {
-    const handlingFeeRate = needHandlingFee(selectedPayment.value) ? 0.02 : 0;
+        const handlingFeeRate = needHandlingFee(selectedPayment.value) ? 0.02 : 0;
         return sum + (item.sellingPrice - item.cost - (item.sellingPrice * handlingFeeRate)) * item.quantity;
     }, 0);
 
@@ -499,6 +499,6 @@ function confirmAddManualItem() {
 }
 
 ::v-deep(.no-padding-cell .cell) {
-  padding: 0 !important;
+    padding: 0 !important;
 }
 </style>

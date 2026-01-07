@@ -12,20 +12,10 @@
             <el-input v-model="searchQuery" placeholder="搜尋商品名稱或編號" clearable class="search-input" />
 
             <!-- 廠商選擇 -->
-            <el-select
-                v-model="selectedVendor"
-                placeholder="選擇廠商"
-                clearable
-                filterable
-                class="vendor-select"
-            >
+            <el-select v-model="selectedVendor" placeholder="選擇廠商" clearable filterable class="vendor-select">
                 <el-option label="全部" :value="null" />
-                <el-option
-                    v-for="vendor in vendorList"
-                    :key="vendor.vendorId"
-                    :label="`${vendor.vendorId} ${vendor.vendorName}`"
-                    :value="vendor.vendorId"
-                />
+                <el-option v-for="vendor in vendorList" :key="vendor.vendorId"
+                    :label="`${vendor.vendorId} ${vendor.vendorName}`" :value="vendor.vendorId" />
             </el-select>
 
             <!-- 掃描 + 編輯模式 -->
@@ -71,7 +61,7 @@
             </el-table-column>
 
             <!-- 序號欄位 -->
-            <el-table-column class-name="no-padding-cell" label="#" width="25" align="center" >
+            <el-table-column class-name="no-padding-cell" label="#" width="25" align="center">
                 <template #default="scope">
                     <span style="
                         font-size: 12px;  /* 調整字體大小 */
@@ -181,10 +171,7 @@
             <el-form :model="newProduct" :rules="rules" ref="addForm" label-width="120px">
                 <el-form-item label="GTIN" prop="gtin">
                     <div class="gtin-row">
-                        <el-input
-                            v-model="newProduct.gtin"
-                            placeholder="請輸入 GTIN"
-                        />
+                        <el-input v-model="newProduct.gtin" placeholder="請輸入 GTIN" />
                         <!-- 🔹 按鈕群組 -->
                         <div class="gtin-actions">
                             <el-button type="primary" @click="startScanNewProduct">
@@ -1429,26 +1416,28 @@ onMounted(() => {
 }
 
 ::v-deep(.no-padding-cell .cell) {
-  padding: 0 !important;
+    padding: 0 !important;
 }
 
 /* GTIN 輸入區整體 */
 .gtin-row {
-  display: flex;
-  gap: 10px;
-  flex-wrap: wrap;           /* ✅ 允許換行 */
-  width: 100%;
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    /* ✅ 允許換行 */
+    width: 100%;
 }
 
 /* 📱 手機版優化 */
 @media (max-width: 768px) {
-  .gtin-input {
-    flex: 0 0 100%;          /* ✅ 手機時輸入框滿版 */
-  }
+    .gtin-input {
+        flex: 0 0 100%;
+        /* ✅ 手機時輸入框滿版 */
+    }
 
-  .gtin-row .el-button {
-    flex: 1;                 /* ✅ 按鈕平均分配 */
-  }
+    .gtin-row .el-button {
+        flex: 1;
+        /* ✅ 按鈕平均分配 */
+    }
 }
-
 </style>

@@ -11,21 +11,15 @@
             <el-input v-model="searchKeyword" placeholder="搜尋商品名稱" clearable @input="filterSales"
                 class="search-input" />
             <div class="action-row">
-                <el-select
-                    v-model="dateFilterMode"
-                    style="width: 120px; margin-right: 10px;"
-                >
+                <el-select v-model="dateFilterMode" style="width: 120px; margin-right: 10px;">
                     <el-option label="月" value="month" />
                     <el-option label="日" value="day" />
                 </el-select>
-                <el-date-picker
-                    v-model="selectedDate"
-                    :type="dateFilterMode === 'day' ? 'date' : 'month'"
+                <el-date-picker v-model="selectedDate" :type="dateFilterMode === 'day' ? 'date' : 'month'"
                     :format="dateFilterMode === 'day' ? 'YYYY-MM-DD' : 'YYYY-MM'"
-                    :value-format="dateFilterMode === 'day' ? 'YYYY-MM-DD' : 'YYYY-MM'"
-                    clearable
-                />
-                <el-button style="max-width: 120px; margin-left: 10px;" :type="showActions ? 'warning' : 'info'" @click="toggleEditMode">
+                    :value-format="dateFilterMode === 'day' ? 'YYYY-MM-DD' : 'YYYY-MM'" clearable />
+                <el-button style="max-width: 120px; margin-left: 10px;" :type="showActions ? 'warning' : 'info'"
+                    @click="toggleEditMode">
                     {{ showActions ? '退出編輯模式' : '進入編輯模式' }}
                 </el-button>
             </div>
@@ -40,11 +34,7 @@
             font-size: 1.1rem;
             justify-content: flex-start; /* 整個 row 靠左 */
         ">
-            <el-button 
-                type="primary" 
-                size="mini" 
-                @click="showPaymentStats()"
-            >
+            <el-button type="primary" size="mini" @click="showPaymentStats()">
                 銷售分析
             </el-button>
             <div>銷售筆數：{{ totalSalesCount }} 筆</div>
@@ -54,7 +44,7 @@
 
         <el-table v-if="filteredSales.length" :data="filteredSales" border style="width:100%">
             <!-- ✅ 序號欄位 -->
-            <el-table-column class-name="no-padding-cell" label="#" width="25" align="center" >
+            <el-table-column class-name="no-padding-cell" label="#" width="25" align="center">
                 <template #default="{ $index }">
                     <span style="
                         font-size: 12px;  /* 調整字體大小 */
@@ -67,26 +57,17 @@
             <!-- ✅ 操作欄（只有在編輯模式時顯示） -->
             <el-table-column v-if="showActions" fixed="left" label="操作" width="140">
                 <template #default="{ row }">
-                    <el-button
-                    v-if="editingRow !== row"
-                    size="small"
-                    type="primary"
-                    @click="startEditTime(row)"
-                    >
-                    編輯
+                    <el-button v-if="editingRow !== row" size="small" type="primary" @click="startEditTime(row)">
+                        編輯
                     </el-button>
                     <el-button v-if="editingRow === row" size="small" type="primary" @click="saveEditTime(row)">
-                    儲存
+                        儲存
                     </el-button>
                     <el-button v-if="editingRow === row" size="small" @click="cancelEditTime">
-                    取消
+                        取消
                     </el-button>
-                    <el-button
-                    size="small"
-                    type="danger"
-                    @click="deleteSale(row)"
-                    >
-                    刪除
+                    <el-button size="small" type="danger" @click="deleteSale(row)">
+                        刪除
                     </el-button>
                 </template>
             </el-table-column>
@@ -95,13 +76,8 @@
                 <template #default="{ row }">
                     <!-- 編輯狀態 -->
                     <div v-if="editingRow === row">
-                    <el-date-picker
-                        v-model="editingTimestamp"
-                        type="datetime"
-                        format="YYYY-MM-DD HH:mm"
-                        value-format="x"
-                        size="small"
-                    />
+                        <el-date-picker v-model="editingTimestamp" type="datetime" format="YYYY-MM-DD HH:mm"
+                            value-format="x" size="small" />
                     </div>
 
                     <!-- 非編輯狀態 -->
@@ -121,33 +97,23 @@
 
             <el-table-column prop="totalProfit" label="總毛利" width="120" align="right">
                 <template #default="{ row }">
-                    <span
-                        :style="{
-                            color: (row.totalProfit ?? 0) >= 0 ? '#67c23a' : '#fc0000',
-                            fontWeight: 'bold',
-                            fontSize: '20px'
+                    <span :style="{
+                        color: (row.totalProfit ?? 0) >= 0 ? '#67c23a' : '#fc0000',
+                        fontWeight: 'bold',
+                        fontSize: '20px'
                     }">
                         {{ row.totalProfit ?? 0 }} 元
                     </span>
                 </template>
             </el-table-column>
-            
+
             <el-table-column prop="paymentMethod" label="付款方式" width="120" align="center">
                 <template #default="{ row }">
                     <!-- 編輯模式 -->
                     <div v-if="editingRow === row">
-                        <el-select
-                            v-model="row.paymentMethod"
-                            size="small"
-                            placeholder="選擇付款方式"
-                            style="width: 100%;"
-                        >
-                            <el-option
-                                v-for="opt in paymentMethodOptions"
-                                :key="opt"
-                                :label="opt.label"
-                                :value="opt.value"
-                            />
+                        <el-select v-model="row.paymentMethod" size="small" placeholder="選擇付款方式" style="width: 100%;">
+                            <el-option v-for="opt in paymentMethodOptions" :key="opt" :label="opt.label"
+                                :value="opt.value" />
                         </el-select>
                     </div>
 
@@ -305,19 +271,14 @@
 
                 <el-table-column prop="price" label="定價" width="100" />
                 <el-table-column prop="cost" label="成本" width="120">
-                <template #default="{ row }">
-                    <div v-if="editingDetailRow === row">
-                    <el-input-number
-                        style="width: 100px"
-                        v-model="row.cost"
-                        :min="0"
-                        size="small"
-                    />
-                    </div>
-                    <div v-else>
-                    {{ row.cost ?? 0 }} 元
-                    </div>
-                </template>
+                    <template #default="{ row }">
+                        <div v-if="editingDetailRow === row">
+                            <el-input-number style="width: 100px" v-model="row.cost" :min="0" size="small" />
+                        </div>
+                        <div v-else>
+                            {{ row.cost ?? 0 }} 元
+                        </div>
+                    </template>
                 </el-table-column>
                 <el-table-column prop="estimatedProfit" label="毛利(單個)" width="120">
                     <template #default="{ row }">
@@ -350,10 +311,7 @@
             </el-table>
         </el-dialog>
 
-        <el-dialog 
-            v-model="salesAnalysisDialog" 
-            width="400px"
-        >
+        <el-dialog v-model="salesAnalysisDialog" width="400px">
             <template #title>
                 <span style="font-weight: bold; font-size: 1.2rem; color: #666;">銷售分析</span>
                 <span style=" margin-left: 10px; font-weight: normal; font-size: 1rem; color: #666;">
@@ -363,7 +321,9 @@
             <!-- 總額與毛利率 -->
             <div style="margin-bottom: 10px; font-weight: bold; font-size: 1.1rem;">
                 <div>總銷售額：<span :style="{ fontWeight: 'bold' }">{{ paymentStatsTotal }}</span> 元</div>
-                <div>總毛利：<span :style="{ color: paymentStatsTotalProfit >= 0 ? '#67c23a' : '#fc0000', fontWeight: 'bold' }">{{ paymentStatsTotalProfit }}</span> 元({{ paymentStatsProfitRate }}%)</div>
+                <div>總毛利：<span
+                        :style="{ color: paymentStatsTotalProfit >= 0 ? '#67c23a' : '#fc0000', fontWeight: 'bold' }">{{
+                        paymentStatsTotalProfit }}</span> 元({{ paymentStatsProfitRate }}%)</div>
             </div>
             <el-table :data="paymentStats" border size="small">
                 <el-table-column prop="method" label="付款方式" width="80" align="center">
@@ -371,7 +331,7 @@
                         {{ paymentMethodMap[row.method] || row.method }}
                     </template>
                 </el-table-column>
-                <el-table-column prop="count" label="筆數" width="50" align="center"/>
+                <el-table-column prop="count" label="筆數" width="50" align="center" />
                 <el-table-column prop="total" label="總金額" width="100" align="center">
                     <template #default="{ row }">
                         {{ row.total }} 元
@@ -431,8 +391,8 @@ const paymentMethodMap: Record<string, string> = {
 };
 
 interface PaymentOption {
-  label: string;
-  value: string;
+    label: string;
+    value: string;
 }
 
 const paymentMethodOptions: PaymentOption[] = [
@@ -559,28 +519,28 @@ const dateFilterMode = ref<'month' | 'day'>('day');
 const selectedDate = ref<string | null>(getCurrentYearMonth());
 
 function getToday() {
-  const d = new Date()
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+    const d = new Date()
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
 }
 
 function getCurrentMonth() {
-  const d = new Date()
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
+    const d = new Date()
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
 }
 
 watch(dateFilterMode, (mode) => {
-  if (mode === 'day') {
-    selectedDate.value = getToday()
-  } else {
-    selectedDate.value = getCurrentMonth()
-  }
+    if (mode === 'day') {
+        selectedDate.value = getToday()
+    } else {
+        selectedDate.value = getCurrentMonth()
+    }
 
-  loadSalesByDate(selectedDate.value)
+    loadSalesByDate(selectedDate.value)
 })
 
 watch(selectedDate, (val) => {
-  if (!val) return
-  loadSalesByDate(val)
+    if (!val) return
+    loadSalesByDate(val)
 })
 
 
@@ -608,45 +568,45 @@ function filterSales() {
 }
 
 async function loadSalesByDate(date: string | null) {
-  if (!date) return
+    if (!date) return
 
-  let startTime = 0
-  let endTime = 0
+    let startTime = 0
+    let endTime = 0
 
-  if (dateFilterMode.value === 'day') {
-    const [y, m, d] = date.split('-').map(Number) as [number, number, number]
-    startTime = new Date(y, m - 1, d).getTime()
-    endTime = new Date(y, m - 1, d, 23, 59, 59, 999).getTime()
-  } else {
-    const [y, m] = date.split('-').map(Number) as [number, number]
-    startTime = new Date(y, m - 1, 1).getTime()
-    endTime = new Date(y, m, 0, 23, 59, 59, 999).getTime()
-  }
+    if (dateFilterMode.value === 'day') {
+        const [y, m, d] = date.split('-').map(Number) as [number, number, number]
+        startTime = new Date(y, m - 1, d).getTime()
+        endTime = new Date(y, m - 1, d, 23, 59, 59, 999).getTime()
+    } else {
+        const [y, m] = date.split('-').map(Number) as [number, number]
+        startTime = new Date(y, m - 1, 1).getTime()
+        endTime = new Date(y, m, 0, 23, 59, 59, 999).getTime()
+    }
 
-  const salesRef = child(dbRef(db), "sales")
+    const salesRef = child(dbRef(db), "sales")
 
-  const salesQuery = query(
-    salesRef,
-    orderByChild("timestamp"),
-    startAt(startTime),
-    endAt(endTime)
-  )
+    const salesQuery = query(
+        salesRef,
+        orderByChild("timestamp"),
+        startAt(startTime),
+        endAt(endTime)
+    )
 
-  const snapshot = await get(salesQuery)
+    const snapshot = await get(salesQuery)
 
-  if (snapshot.exists()) {
-    const data = snapshot.val()
-    sales.value = Object.entries(data).map(([key, val]) => ({
-      id: key,
-      ...(val as Sale),
-    }))
-    .sort((a, b) => b.timestamp - a.timestamp) // 新 → 舊
-  } else {
-    sales.value = []
-  }
+    if (snapshot.exists()) {
+        const data = snapshot.val()
+        sales.value = Object.entries(data).map(([key, val]) => ({
+            id: key,
+            ...(val as Sale),
+        }))
+            .sort((a, b) => b.timestamp - a.timestamp) // 新 → 舊
+    } else {
+        sales.value = []
+    }
 
-  // ✅ 查完資料後再做前端搜尋
-  filterSales()
+    // ✅ 查完資料後再做前端搜尋
+    filterSales()
 }
 
 // 總銷售筆數（根據篩選結果）
@@ -704,23 +664,23 @@ function showPaymentStats() {
 }
 
 const paymentStatsDateRangeText = computed(() => {
-  if (!selectedDate.value) return "";
+    if (!selectedDate.value) return "";
 
-  if (dateFilterMode.value === "day") {
-    return selectedDate.value; // 單日 YYYY-MM-DD
-  } else {
-    // 月範圍：顯示 YYYY-MM
-    const parts = selectedDate.value.split("-").map(Number);
-    const y = parts[0] ?? new Date().getFullYear();
-    const m = parts[1] ?? new Date().getMonth() + 1;
-    const lastDay = new Date(y, m, 0).getDate(); // 該月最後一天
-    return `${selectedDate.value}-01 ~ ${selectedDate.value}-${lastDay.toString().padStart(2, '0')}`;
-  }
+    if (dateFilterMode.value === "day") {
+        return selectedDate.value; // 單日 YYYY-MM-DD
+    } else {
+        // 月範圍：顯示 YYYY-MM
+        const parts = selectedDate.value.split("-").map(Number);
+        const y = parts[0] ?? new Date().getFullYear();
+        const m = parts[1] ?? new Date().getMonth() + 1;
+        const lastDay = new Date(y, m, 0).getDate(); // 該月最後一天
+        return `${selectedDate.value}-01 ~ ${selectedDate.value}-${lastDay.toString().padStart(2, '0')}`;
+    }
 });
 
 // 判斷是否需要扣除手續費
 function needHandlingFee(paymentMethod?: string) {
-  return ['credit_card', 'line_pay', 'px_pay'].includes(paymentMethod || '')
+    return ['credit_card', 'line_pay', 'px_pay'].includes(paymentMethod || '')
 }
 
 /* 彈窗顯示付款方式統計 End */
@@ -863,8 +823,8 @@ function toggleDetailEditMode() {
 }
 
 onMounted(() => {
-  selectedDate.value = getToday()
-  loadSalesByDate(selectedDate.value)
+    selectedDate.value = getToday()
+    loadSalesByDate(selectedDate.value)
 })
 
 </script>
@@ -967,7 +927,7 @@ onMounted(() => {
 }
 
 ::v-deep(.no-padding-cell .cell) {
-  padding: 0 !important;
+    padding: 0 !important;
 }
 
 /* 手機排版：上下排列 */

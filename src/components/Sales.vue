@@ -547,17 +547,32 @@ watch(selectedDate, (val) => {
 // 篩選函式：商品名稱 + 年月
 function filterSales() {
     filteredSales.value = sales.value.filter(sale => {
-        if (!selectedDate.value) return true
+        if (!selectedDate.value) return true;
 
-        const saleDate = new Date(sale.timestamp)
+        const saleDate = new Date(sale.timestamp);
+
+        // 日期篩選
+        let dateMatch = false;
         if (dateFilterMode.value === 'day') {
-            const [y, m, d] = selectedDate.value.split('-').map(Number)
-            return saleDate.getFullYear() === y && saleDate.getMonth() + 1 === m && saleDate.getDate() === d
+            const [y, m, d] = selectedDate.value.split('-').map(Number);
+            dateMatch =
+                saleDate.getFullYear() === y &&
+                saleDate.getMonth() + 1 === m &&
+                saleDate.getDate() === d;
         } else {
-            const [y, m] = selectedDate.value.split('-').map(Number)
-            return saleDate.getFullYear() === y && saleDate.getMonth() + 1 === m
+            const [y, m] = selectedDate.value.split('-').map(Number);
+            dateMatch = saleDate.getFullYear() === y && saleDate.getMonth() + 1 === m;
         }
-    })
+
+        // 商品名稱模糊搜尋
+        const keywordMatch = searchKeyword.value
+            ? sale.items.some(item =>
+                item.name.toLowerCase().includes(searchKeyword.value.toLowerCase())
+            )
+            : true;
+
+        return dateMatch && keywordMatch;
+    });
 }
 
 async function loadSalesByDate(date: string | null) {

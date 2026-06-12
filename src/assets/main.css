@@ -4,37 +4,59 @@
   margin: 0;
   padding: 0;
   font-weight: normal;
-  color: #000;
+  color: var(--text-color);
 }
 
-/* 全局主題變數 */
 body.dark-theme {
-  --bg-color: #1e1e2f;
-  --sidebar-color: #2c2c3e;
-  --text-color: #eee;
-  --link-hover: #3b3b55;
-  --link-active: #444566;
-  --btn-bg: #2c2c3e;
-  --btn-hover: #3b3b55;
-  --table-header-bg: #3a3a3a;
-  --table-header-text: #fff;
+  --bg-color: #091626;
+  --bg-color-soft: #10243c;
+  --sidebar-color: #081322;
+  --sidebar-color-strong: #0d1f34;
+  --sidebar-border: rgba(255, 255, 255, 0.06);
+  --sidebar-text: #dde6f1;
+  --heading-color: #f3f7fc;
+  --text-color: #d9e2ef;
+  --muted-text: #95a7bb;
+  --link-hover: rgba(255, 255, 255, 0.06);
+  --link-active: linear-gradient(135deg, rgba(35, 83, 129, 0.96), rgba(18, 47, 77, 0.96));
+  --btn-bg: rgba(255, 255, 255, 0.08);
+  --btn-hover: rgba(255, 255, 255, 0.12);
+  --table-header-bg: #16314d;
+  --table-header-text: #eef4fb;
+  --surface-card: rgba(12, 28, 47, 0.9);
+  --surface-muted: rgba(255, 255, 255, 0.05);
+  --surface-border: rgba(255, 255, 255, 0.06);
+  --surface-shadow: 0 20px 54px rgba(2, 10, 22, 0.28);
+  --accent-color: #d6a46b;
+  --accent-soft: #f0c998;
 }
 
 body.light-theme {
-  --bg-color: #f7f7f7;
-  --sidebar-color: #ffffff;
-  --text-color: #333;
-  --link-hover: #ddd;
-  --link-active: #bbb;
-  --btn-bg: #f0f0f0;
-  --btn-hover: #ddd;
-  --table-header-bg: #f0f0f0;
-  --table-header-text: #333;
+  --bg-color: #eef3f8;
+  --bg-color-soft: #e4ebf3;
+  --sidebar-color: #102741;
+  --sidebar-color-strong: #173350;
+  --sidebar-border: rgba(255, 255, 255, 0.08);
+  --sidebar-text: #edf3fb;
+  --heading-color: #14243a;
+  --text-color: #32465b;
+  --muted-text: #72859a;
+  --link-hover: rgba(255, 255, 255, 0.08);
+  --link-active: linear-gradient(135deg, rgba(40, 94, 144, 0.98), rgba(22, 58, 93, 0.98));
+  --btn-bg: rgba(255, 255, 255, 0.62);
+  --btn-hover: rgba(255, 255, 255, 0.82);
+  --table-header-bg: #dce6f1;
+  --table-header-text: #203248;
+  --surface-card: rgba(255, 255, 255, 0.9);
+  --surface-muted: #f4f7fa;
+  --surface-border: rgba(20, 36, 58, 0.08);
+  --surface-shadow: 0 20px 54px rgba(39, 62, 90, 0.12);
+  --accent-color: #b97a37;
+  --accent-soft: #cf9d6a;
 }
 
 @media (max-width: 468px) {
   .title-col {
     text-align: center !important;
-    /* 水平置中 */
   }
 }

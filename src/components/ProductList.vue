@@ -42,9 +42,6 @@
                         掃描 GTIN
                     </el-button>
 
-                    <el-button class="mode-btn" :type="editMode ? 'warning' : 'info'" @click="toggleEditMode">
-                        {{ editMode ? "關閉編輯模式" : "開啟編輯模式" }}
-                    </el-button>
                 </div>
 
                 <div class="button-group">
@@ -56,11 +53,11 @@
                     </el-button>
                 </div>
 
-                <div v-if="editMode" class="danger-zone">
+                <div v-if="selectedProducts.length" class="danger-zone">
                     <span class="selection-hint">
                         {{ selectedProducts.length ? `已選取 ${selectedProducts.length} 筆商品` : "請先勾選要刪除的商品" }}
                     </span>
-                    <el-button type="danger" @click="deleteSelectedProducts" :disabled="!selectedProducts.length">
+                    <el-button type="danger" @click="deleteSelectedProducts">
                         刪除已選商品
                     </el-button>
                 </div>
@@ -82,16 +79,38 @@
 
                 <div class="table-meta">
                     <span>{{ filteredProducts.length }} 筆符合條件</span>
-                    <span v-if="editMode">已選取 {{ selectedProducts.length }} 筆</span>
+                    <span v-if="activeProduct">已選取 1 筆</span>
                 </div>
             </div>
 
+            <transition name="action-dock">
+                <div v-if="activeProduct" class="floating-action-dock">
+                    <div class="floating-action-copy">
+                        <span class="dock-eyebrow">SELECTED PRODUCT</span>
+                        <strong>{{ activeProduct.name }}</strong>
+                        <span class="dock-meta">{{ activeProduct.code || activeProduct.gtin }}</span>
+                    </div>
+
+                    <div class="floating-action-buttons">
+                        <el-button type="warning" @click="copyProduct(activeProduct)">複製</el-button>
+                        <el-button type="primary" @click="openEditDialog(activeProduct)">編輯</el-button>
+                        <el-button type="danger" @click="deleteProduct(activeProduct)">刪除</el-button>
+                    </div>
+
+                    <el-button text class="floating-action-clear" @click="clearActiveProductSelection">
+                        取消選取
+                    </el-button>
+                </div>
+            </transition>
+
             <el-table :data="pagedProducts" style="width: 100%" border :class="['product-table', tableThemeClass]"
                 :header-cell-style="{ background: `var(--table-header-bg)`, color: `var(--table-header-text)` }"
-                @selection-change="handleSelectionChange" @sort-change="handleSortChange" ref="productTable">
+                @selection-change="handleSelectionChange" @sort-change="handleSortChange" ref="productTable" row-key="id" highlight-current-row
+                :row-class-name="getRowClassName"
+                @row-click="handleRowClick" @current-change="handleCurrentProductChange">
 
             <!-- checkbox欄位 -->
-            <el-table-column v-if="editMode" type="selection" width="55" align="center">
+            <el-table-column type="selection" width="40" align="center" class-name="selection-column" label-class-name="selection-column">
             </el-table-column>
 
             <!-- 序號欄位 -->
@@ -104,7 +123,7 @@
             </el-table-column>
 
             <!-- 操作欄整欄隨編輯模式顯示 -->
-            <el-table-column v-if="editMode" class-name="no-padding-cell" label="操作" width="148" align="center">
+            <el-table-column v-if="editMode" class-name="no-padding-cell" label="操作" width="96" align="center">
                 <template #default="{ row }">
                     <div class="row-action-stack">
                         <el-button type="primary" size="small" class="row-action-btn"
@@ -788,7 +807,12 @@ function deleteProduct(product: Product) {
         .then(() => {
             const productRef = dbRef(db, `products/${product.id}`);
             remove(productRef)
-                .then(() => ElMessage.success("刪除成功"))
+                .then(() => {
+                    if (activeProductId.value === product.id) {
+                        clearActiveProductSelection();
+                    }
+                    ElMessage.success("刪除成功");
+                })
                 .catch(console.error);
         })
         .catch(() => { });
@@ -1179,10 +1203,34 @@ async function submitBatchProducts() {
 // 用於存放已勾選的商品
 const selectedProducts = ref<Product[]>([]);
 const productTable = ref<any>(null);
+const activeProductId = ref<string | null>(null);
+const selectedProductIds = computed(() => new Set(selectedProducts.value.map((product) => product.id)));
+const activeProduct = computed<Product | null>(() => {
+    if (!activeProductId.value) return null;
+    return products.value[activeProductId.value] ?? null;
+});
 
 // 監聽勾選變化
 function handleSelectionChange(val: Product[]) {
     selectedProducts.value = val;
+}
+
+function handleCurrentProductChange(product: Product | null) {
+    activeProductId.value = product?.id ?? null;
+}
+
+function handleRowClick(row: Product) {
+    activeProductId.value = row.id;
+    productTable.value?.setCurrentRow?.(row);
+}
+
+function clearActiveProductSelection() {
+    activeProductId.value = null;
+    productTable.value?.setCurrentRow?.(undefined);
+}
+
+function getRowClassName({ row }: { row: Product }) {
+    return selectedProductIds.value.has(row.id) ? "multi-selected-row" : "";
 }
 
 // ✅ 當 GTIN 改變時，如果「使用為編號」有勾選，立即同步更新商品編號
@@ -1316,6 +1364,15 @@ async function fetchVendors() {
 watch(selectedVendor, () => {
     // 每次切換廠商，排序重置為商品編號由小到大
     sortState.value = { prop: "code", order: "ascending" };
+});
+
+watch(pagedProducts, (rows) => {
+    if (!activeProductId.value) return;
+
+    const stillVisible = rows.some((row) => row.id === activeProductId.value);
+    if (!stillVisible) {
+        clearActiveProductSelection();
+    }
 });
 
 function syncBatchStock() {
@@ -1621,6 +1678,107 @@ onMounted(() => {
     background: var(--surface-muted);
 }
 
+.floating-action-dock {
+    position: fixed;
+    right: 24px;
+    bottom: 24px;
+    z-index: 80;
+    display: flex;
+    align-items: center;
+    gap: 18px;
+    padding: 16px 18px;
+    border: 1px solid rgba(185, 120, 55, 0.22);
+    border-radius: 22px;
+    background:
+        linear-gradient(135deg, rgba(12, 27, 46, 0.96), rgba(24, 46, 73, 0.94));
+    box-shadow:
+        0 22px 48px rgba(8, 18, 32, 0.28),
+        0 0 0 1px rgba(255, 255, 255, 0.04) inset;
+    backdrop-filter: blur(14px);
+}
+
+.floating-action-copy {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 0;
+    color: rgba(255, 248, 235, 0.92);
+}
+
+.dock-eyebrow {
+    font-size: 0.72rem;
+    letter-spacing: 0.18em;
+    color: rgba(232, 190, 123, 0.86);
+}
+
+.floating-action-copy strong {
+    font-size: 1rem;
+    color: #fffaf0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.dock-meta {
+    color: rgba(255, 248, 235, 0.72);
+    font-size: 0.82rem;
+}
+
+.floating-action-buttons {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.floating-action-buttons :deep(.el-button + .el-button) {
+    margin-left: 0;
+}
+
+.floating-action-buttons :deep(.el-button) {
+    min-height: 42px;
+    border-radius: 14px;
+    font-weight: 600;
+}
+
+.floating-action-clear {
+    color: rgba(255, 248, 235, 0.78);
+}
+
+.floating-action-clear:hover {
+    color: #fffaf0;
+}
+
+.action-dock-enter-active,
+.action-dock-leave-active {
+    transition: opacity 0.22s ease, transform 0.22s ease;
+}
+
+.action-dock-enter-from,
+.action-dock-leave-to {
+    opacity: 0;
+    transform: translateY(10px) scale(0.98);
+}
+
+:deep(.product-table .el-table__body tr.current-row > td.el-table__cell) {
+    background: rgba(185, 120, 55, 0.12) !important;
+}
+
+:deep(.product-table .el-table__body tr.current-row:hover > td.el-table__cell) {
+    background: rgba(185, 120, 55, 0.16) !important;
+}
+
+:deep(.product-table .el-table__body tr.multi-selected-row > td.el-table__cell) {
+    background: rgba(185, 120, 55, 0.08) !important;
+}
+
+:deep(.product-table .el-table__body tr.multi-selected-row:hover > td.el-table__cell) {
+    background: rgba(185, 120, 55, 0.12) !important;
+}
+
+:deep(.product-table .el-table__body tr.multi-selected-row > td.selection-column) {
+    box-shadow: inset 3px 0 0 rgba(185, 120, 55, 0.9);
+}
+
 .pagination-bar {
     display: flex;
     justify-content: flex-end;
@@ -1704,23 +1862,49 @@ onMounted(() => {
     padding: 0 !important;
 }
 
+:deep(.selection-column .cell) {
+    padding-left: 4px !important;
+    padding-right: 4px !important;
+}
+
+:deep(.selection-column .el-checkbox) {
+    opacity: 0.28;
+    transform: scale(0.9);
+    transform-origin: center;
+    transition:
+        opacity 0.18s ease,
+        transform 0.18s ease;
+}
+
+:deep(.product-table .el-table__header-wrapper th.selection-column:hover .el-checkbox),
+:deep(.product-table .el-table__body tr:hover td.selection-column .el-checkbox),
+:deep(.product-table .el-table__body tr.multi-selected-row td.selection-column .el-checkbox),
+:deep(.product-table .el-table__body tr.current-row td.selection-column .el-checkbox),
+:deep(.selection-column .el-checkbox.is-checked),
+:deep(.selection-column .el-checkbox.is-indeterminate) {
+    opacity: 1;
+}
+
 .index-text {
     font-size: 12px;
 }
 
 .row-action-stack {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 6px;
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
     width: 100%;
+    max-width: 76px;
+    margin: 0 auto;
+}
+
+.row-action-stack :deep(.el-button + .el-button) {
+    margin-left: 0;
 }
 
 .row-action-btn {
     width: 100%;
-}
-
-.row-action-btn--full {
-    grid-column: 1 / -1;
 }
 
 .product-image-box {
@@ -1883,6 +2067,26 @@ onMounted(() => {
     .danger-zone {
         width: 100%;
         flex-basis: 100%;
+    }
+
+    .floating-action-dock {
+        left: 12px;
+        right: 12px;
+        bottom: 16px;
+        flex-direction: column;
+        align-items: stretch;
+        gap: 14px;
+        padding: 16px;
+        border-radius: 20px;
+    }
+
+    .floating-action-buttons {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    .floating-action-clear {
+        align-self: flex-end;
     }
 
     .action-row,

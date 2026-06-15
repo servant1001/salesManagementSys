@@ -1,5 +1,5 @@
 <template>
-    <div>
+    <div class="product-page">
         <el-row class="titleBar">
             <el-col :span="24" class="title-col">
                 <h2>商品列表</h2>
@@ -52,7 +52,7 @@
         </div>
 
         <!-- 商品列表表格 -->
-        <el-table :data="pagedProducts" style="width: 100%" border :class="tableThemeClass"
+        <el-table :data="pagedProducts" style="width: 100%" border :class="['product-table', tableThemeClass]"
             :header-cell-style="{ background: `var(--table-header-bg)`, color: `var(--table-header-text)` }"
             @selection-change="handleSelectionChange" @sort-change="handleSortChange" ref="productTable">
 
@@ -161,7 +161,7 @@
         <!-- 分頁 -->
         <el-pagination background layout="prev, pager, next, sizes, total" :total="totalProducts" :page-size="pageSize"
             :current-page.sync="currentPage" :page-sizes="[10, 20, 50, 100]" @size-change="handlePageSizeChange"
-            @current-change="handlePageChange" style="margin-top: 20px; text-align: right;">
+            @current-change="handlePageChange" class="pagination-bar">
         </el-pagination>
 
         <div v-if="!filteredProducts.length" style="margin-top: 1rem">暫無商品資料</div>
@@ -1308,18 +1308,35 @@ onMounted(() => {
 </script>
 
 <style scoped>
+.product-page {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    min-width: 0;
+}
+
 .table-dark .darkThemeColor {
     color: #ffffff;
-    /* ✅ 深色模式：白字 */
 }
 
 .table-light .darkThemeColor {
     color: #000000;
-    /* ✅ 淺色模式：黑字 */
+}
+
+.titleBar,
+.top-bar {
+    border: 1px solid var(--surface-border);
+    border-radius: 28px;
+    background: var(--surface-card);
+    box-shadow: var(--surface-shadow);
 }
 
 .titleBar {
-    margin: 0 0 10px 0;
+    margin: 0;
+    padding: 30px 32px;
+    background:
+        radial-gradient(circle at top right, rgba(77, 131, 180, 0.18), transparent 28%),
+        linear-gradient(135deg, rgba(12, 31, 54, 0.96), rgba(26, 64, 99, 0.9));
 }
 
 .title-col {
@@ -1328,61 +1345,189 @@ onMounted(() => {
 
 .title-col h2 {
     margin: 0;
-    font-weight: 600;
+    color: transparent;
+    font-size: 0;
+    line-height: 1;
+}
+
+.title-col h2::before {
+    content: 'PRODUCT DIRECTORY';
+    display: block;
+    margin-bottom: 10px;
+    color: var(--accent-color);
+    font-size: 0.76rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+}
+
+.title-col h2::after {
+    content: '商品列表';
+    display: block;
+    margin-top: 10px;
+    color: #f5f8fc;
+    font-size: clamp(1.9rem, 3vw, 2.7rem);
+    line-height: 1.08;
+    font-weight: 700;
+    letter-spacing: -0.04em;
+}
+
+.title-col::after {
+    content: '集中管理商品資料、價格、庫存與供應商資訊，讓商品維護與日常查詢更流暢。';
+    display: block;
+    margin-top: 14px;
+    max-width: 640px;
+    color: rgba(232, 238, 246, 0.8);
+    line-height: 1.8;
 }
 
 .top-bar {
     display: flex;
     flex-wrap: wrap;
     align-items: center;
-    gap: 8px;
-    margin-bottom: 10px;
+    gap: 14px;
+    padding: 24px;
 }
 
 .search-input {
-    flex: 1;
-    width: 180px;
+    flex: 1 1 280px;
+    min-width: 220px;
 }
 
 .vendor-select {
-    width: 180px;
+    flex: 0 0 220px;
+}
+
+.action-row,
+.button-group {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    align-items: center;
 }
 
 .action-row {
-    display: flex;
+    margin-left: auto;
 }
 
 .button-group {
-    display: flex;
+    width: 100%;
 }
 
-/* 手機模式下讓搜尋與廠商各自佔一行 */
-@media (max-width: 768px) {
-    .top-bar {
-        flex-direction: column;
-        align-items: stretch;
-    }
+.action-row :deep(.el-button + .el-button),
+.button-group :deep(.el-button + .el-button),
+.gtin-actions :deep(.el-button + .el-button),
+.stock-field :deep(.el-button + .el-button) {
+    margin-left: 0;
+}
 
-    .search-input,
-    .vendor-select {
-        width: 100%;
-    }
+.action-row :deep(.el-button),
+.button-group :deep(.el-button) {
+    min-height: 44px;
+    border-radius: 14px;
+    font-weight: 600;
+}
 
-    .action-row,
-    .button-group {
-        width: 100%;
-        justify-content: space-between;
-    }
+.button-group :deep(.el-button) {
+    min-width: 132px;
+}
 
-    .action-row .el-button,
-    .button-group .el-button {
-        flex: 1;
-    }
+.button-icon {
+    margin-right: 4px;
+}
+
+:deep(.el-input__wrapper),
+:deep(.el-select__wrapper),
+:deep(.el-textarea__inner) {
+    border-radius: 14px;
+    box-shadow: 0 0 0 1px rgba(31, 47, 70, 0.08) inset;
+}
+
+:deep(.el-input__wrapper.is-focus),
+:deep(.el-select__wrapper.is-focused),
+:deep(.el-textarea__inner:focus) {
+    box-shadow:
+        0 0 0 1px #b97837 inset,
+        0 0 0 4px rgba(185, 120, 55, 0.12);
+}
+
+.product-table {
+    margin-top: 0;
+    border: 1px solid var(--surface-border);
+    border-radius: 24px;
+    overflow: hidden;
+    box-shadow: var(--surface-shadow);
+}
+
+.pagination-bar {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 20px;
+}
+
+.empty-state,
+.product-page > div[style*='margin-top: 1rem'] {
+    margin-top: 16px;
+    padding: 18px 20px;
+    border: 1px dashed var(--surface-border);
+    border-radius: 18px;
+    color: var(--muted-text);
+    background: var(--surface-muted);
+}
+
+.price-text {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 4px;
+}
+
+.price-value {
+    color: #d94e4e;
+    font-size: 1.4rem;
+    font-weight: 700;
+}
+
+.stock-value {
+    font-size: 1.3rem;
+    font-weight: 700;
+}
+
+.product-link,
+.site-link {
+    color: #2f6fa8;
+    text-decoration: none;
+    font-weight: 500;
+}
+
+.product-link:hover,
+.site-link:hover {
+    text-decoration: underline;
+}
+
+.barcode-preview {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+:deep(.no-padding-cell .cell) {
+    padding: 0 !important;
+}
+
+.gtin-row {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    width: 100%;
+}
+
+.gtin-actions {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
 }
 
 .batch-add-dialog {
     overflow: hidden;
-    /* 避免內容撐出 dialog */
 }
 
 .stock-item {
@@ -1397,8 +1542,75 @@ onMounted(() => {
     max-width: 100%;
 }
 
-/* 小螢幕自動換行確保不超出 */
+:deep(.add-product-dialog .el-dialog),
+:deep(.edit-product-dialog .el-dialog),
+:deep(.batch-add-dialog .el-dialog) {
+    border-radius: 28px;
+    background: rgba(255, 255, 255, 0.98);
+}
+
+:deep(.add-product-dialog .el-dialog__header),
+:deep(.edit-product-dialog .el-dialog__header),
+:deep(.batch-add-dialog .el-dialog__header) {
+    margin-right: 0;
+    padding: 24px 24px 0;
+}
+
+:deep(.add-product-dialog .el-dialog__body),
+:deep(.edit-product-dialog .el-dialog__body),
+:deep(.batch-add-dialog .el-dialog__body) {
+    padding: 20px 24px 24px;
+}
+
+@media (max-width: 1024px) {
+    .search-input {
+        flex-basis: 100%;
+    }
+
+    .action-row {
+        margin-left: 0;
+    }
+}
+
 @media (max-width: 768px) {
+    .product-page {
+        gap: 16px;
+    }
+
+    .titleBar {
+        padding: 22px 20px;
+    }
+
+    .title-col::after {
+        font-size: 0.95rem;
+        line-height: 1.65;
+    }
+
+    .top-bar {
+        padding: 18px;
+        gap: 10px;
+    }
+
+    .search-input,
+    .vendor-select,
+    .action-row,
+    .button-group {
+        width: 100%;
+        flex-basis: 100%;
+    }
+
+    .action-row,
+    .button-group {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .action-row :deep(.el-button),
+    .button-group :deep(.el-button) {
+        width: 100%;
+        min-width: 0;
+    }
+
     .stock-field {
         flex-direction: column;
         align-items: stretch;
@@ -1409,35 +1621,23 @@ onMounted(() => {
     }
 }
 
-.barcode-preview {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-}
-
-::v-deep(.no-padding-cell .cell) {
-    padding: 0 !important;
-}
-
-/* GTIN 輸入區整體 */
-.gtin-row {
-    display: flex;
-    gap: 10px;
-    flex-wrap: wrap;
-    /* ✅ 允許換行 */
-    width: 100%;
-}
-
-/* 📱 手機版優化 */
-@media (max-width: 768px) {
-    .gtin-input {
-        flex: 0 0 100%;
-        /* ✅ 手機時輸入框滿版 */
+@media (max-width: 640px) {
+    .action-row,
+    .button-group {
+        grid-template-columns: 1fr;
     }
 
-    .gtin-row .el-button {
+    .gtin-actions {
+        width: 100%;
+    }
+
+    .gtin-row .el-button,
+    .gtin-actions .el-button {
         flex: 1;
-        /* ✅ 按鈕平均分配 */
+    }
+
+    .pagination-bar {
+        justify-content: center;
     }
 }
 </style>

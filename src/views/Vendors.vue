@@ -443,6 +443,10 @@ onUnmounted(() => {
   flex-wrap: wrap;
 }
 
+.action-buttons :deep(.el-button + .el-button) {
+  margin-left: 0;
+}
+
 .primary-btn,
 .secondary-btn {
   min-height: 44px;

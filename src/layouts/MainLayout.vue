@@ -66,9 +66,12 @@ onUnmounted(() => {
 
 <template>
   <div class="layout">
-    <button class="mobile-menu-btn" @click="isMobileMenuVisible = !isMobileMenuVisible">
+    <button
+      :class="['mobile-menu-btn', { active: isMobileMenuVisible }]"
+      @click="isMobileMenuVisible = !isMobileMenuVisible"
+    >
       <el-icon>
-        <Menu />
+        <component :is="isMobileMenuVisible ? Close : Menu" />
       </el-icon>
     </button>
 
@@ -404,6 +407,10 @@ onUnmounted(() => {
   color: #f8fbff;
   background: rgba(11, 29, 52, 0.84);
   backdrop-filter: blur(12px);
+  transition:
+    left 0.28s ease,
+    background-color 0.2s ease,
+    color 0.2s ease;
 }
 
 .main {
@@ -417,6 +424,12 @@ onUnmounted(() => {
   .mobile-menu-btn {
     display: grid;
     place-items: center;
+  }
+
+  .mobile-menu-btn.active {
+    left: 246px;
+    background: rgba(248, 239, 230, 0.96);
+    color: #163554;
   }
 
   .sidebar {

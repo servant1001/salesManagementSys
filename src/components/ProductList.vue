@@ -1,48 +1,69 @@
 <template>
     <div class="product-page">
         <el-row class="titleBar">
-            <el-col :span="24" class="title-col">
-                <h2>商品列表</h2>
+            <el-col :span="24">
+                <div class="title-shell">
+                    <div class="title-col">
+                        <span class="page-eyebrow">PRODUCT DIRECTORY</span>
+                        <h2>商品列表</h2>
+                        <p class="page-description">
+                            集中管理商品資料、價格、庫存與供應商資訊，讓商品維護與日常查詢更流暢。
+                        </p>
+                    </div>
+
+                    <div class="title-meta">
+                        <div class="hero-badge">
+                            <strong>{{ totalProducts }}</strong>
+                            <span>目前商品筆數</span>
+                        </div>
+                    </div>
+                </div>
             </el-col>
         </el-row>
 
         <!-- 查詢 + 按鈕區 -->
         <div class="top-bar">
-            <!-- 搜尋框 -->
-            <el-input v-model="searchQuery" placeholder="搜尋商品名稱或編號" clearable class="search-input" />
+            <div class="filters-group">
+                <el-input v-model="searchQuery" placeholder="搜尋商品名稱或商品編號" clearable class="search-input" />
 
-            <!-- 廠商選擇 -->
-            <el-select v-model="selectedVendor" placeholder="選擇廠商" clearable filterable class="vendor-select">
-                <el-option label="全部" :value="null" />
-                <el-option v-for="vendor in vendorList" :key="vendor.vendorId"
-                    :label="`${vendor.vendorId} ${vendor.vendorName}`" :value="vendor.vendorId" />
-            </el-select>
-
-            <!-- 掃描 + 編輯模式 -->
-            <div class="action-row">
-                <el-button type="primary" @click="openScanner">
-                    <el-icon style="margin-right: 3px;">
-                        <Camera />
-                    </el-icon>
-                    掃描GTIN
-                </el-button>
-
-                <el-button :type="editMode ? 'warning' : 'info'" @click="toggleEditMode">
-                    {{ editMode ? "退出編輯模式" : "進入編輯模式" }}
-                </el-button>
+                <el-select v-model="selectedVendor" placeholder="選擇廠商" clearable filterable class="vendor-select">
+                    <el-option label="全部廠商" :value="null" />
+                    <el-option v-for="vendor in vendorList" :key="vendor.vendorId"
+                        :label="`${vendor.vendorId} ${vendor.vendorName}`" :value="vendor.vendorId" />
+                </el-select>
             </div>
 
-            <!-- 商品操作 -->
-            <div class="button-group">
-                <el-button type="success" @click="showAddDialog = true">
-                    新增商品
-                </el-button>
-                <el-button type="warning" @click="showBatchDialog = true">
-                    批量新增
-                </el-button>
-                <el-button type="danger" @click="deleteSelectedProducts" :disabled="!selectedProducts.length">
-                    刪除商品
-                </el-button>
+            <div class="secondary-row">
+                <div class="action-row">
+                    <el-button type="primary" class="scanner-btn" @click="openScanner">
+                        <el-icon class="button-icon">
+                            <Camera />
+                        </el-icon>
+                        掃描 GTIN
+                    </el-button>
+
+                    <el-button class="mode-btn" :type="editMode ? 'warning' : 'info'" @click="toggleEditMode">
+                        {{ editMode ? "關閉編輯模式" : "開啟編輯模式" }}
+                    </el-button>
+                </div>
+
+                <div class="button-group">
+                    <el-button type="success" @click="showAddDialog = true">
+                        新增商品
+                    </el-button>
+                    <el-button type="warning" @click="showBatchDialog = true">
+                        批量新增
+                    </el-button>
+                </div>
+
+                <div v-if="editMode" class="danger-zone">
+                    <span class="selection-hint">
+                        {{ selectedProducts.length ? `已選取 ${selectedProducts.length} 筆商品` : "請先勾選要刪除的商品" }}
+                    </span>
+                    <el-button type="danger" @click="deleteSelectedProducts" :disabled="!selectedProducts.length">
+                        刪除已選商品
+                    </el-button>
+                </div>
             </div>
 
             <!-- 掃描視窗 -->
@@ -52,57 +73,70 @@
         </div>
 
         <!-- 商品列表表格 -->
-        <el-table :data="pagedProducts" style="width: 100%" border :class="['product-table', tableThemeClass]"
-            :header-cell-style="{ background: `var(--table-header-bg)`, color: `var(--table-header-text)` }"
-            @selection-change="handleSelectionChange" @sort-change="handleSortChange" ref="productTable">
+        <section class="table-card">
+            <div class="table-header">
+                <div>
+                    <span class="section-eyebrow">LIST</span>
+                    <h3>商品資料清單</h3>
+                </div>
+
+                <div class="table-meta">
+                    <span>{{ filteredProducts.length }} 筆符合條件</span>
+                    <span v-if="editMode">已選取 {{ selectedProducts.length }} 筆</span>
+                </div>
+            </div>
+
+            <el-table :data="pagedProducts" style="width: 100%" border :class="['product-table', tableThemeClass]"
+                :header-cell-style="{ background: `var(--table-header-bg)`, color: `var(--table-header-text)` }"
+                @selection-change="handleSelectionChange" @sort-change="handleSortChange" ref="productTable">
 
             <!-- checkbox欄位 -->
             <el-table-column v-if="editMode" type="selection" width="55" align="center">
             </el-table-column>
 
             <!-- 序號欄位 -->
-            <el-table-column class-name="no-padding-cell" label="#" width="25" align="center">
+            <el-table-column class-name="no-padding-cell" label="#" width="36" align="center">
                 <template #default="scope">
-                    <span style="
-                        font-size: 12px;  /* 調整字體大小 */
-                    ">
+                    <span class="index-text">
                         {{ (currentPage - 1) * pageSize + scope.$index + 1 }}
                     </span>
                 </template>
             </el-table-column>
 
             <!-- 操作欄整欄隨編輯模式顯示 -->
-            <el-table-column v-if="editMode" class-name="no-padding-cell" label="操作" width="90" align="center">
+            <el-table-column v-if="editMode" class-name="no-padding-cell" label="操作" width="148" align="center">
                 <template #default="{ row }">
-                    <div style="display: flex; flex-direction: column; align-items: center;">
-                        <el-button type="primary" size="small" style="width: 70px;"
+                    <div class="row-action-stack">
+                        <el-button type="primary" size="small" class="row-action-btn"
                             @click="openEditDialog(row)">編輯</el-button>
-                        <el-button type="warning" size="small" style="width: 70px; margin: 10px 0 10px 0;"
+                        <el-button type="warning" size="small" class="row-action-btn"
                             @click="copyProduct(row)">複製</el-button>
-                        <el-button type="danger" size="small" style="width: 70px; margin: 0;"
+                        <el-button type="danger" size="small" class="row-action-btn row-action-btn--full"
                             @click="deleteProduct(row)">刪除</el-button>
                     </div>
                 </template>
             </el-table-column>
 
-            <el-table-column label="商品圖片" class-name="no-padding-cell" width="90" align="center">
+            <el-table-column label="商品圖片" class-name="no-padding-cell" width="98" align="center">
                 <template #default="{ row }">
-                    <div
-                        style="width: 70px; height: 70px; margin: 0 auto; border-radius: 8px; overflow: hidden; display: flex; align-items: center; justify-content: center; background: #f5f5f5;">
-                        <img v-if="row.imageUrl" :src="row.imageUrl" alt="商品圖片"
-                            style="width: 100%; height: 100%; object-fit: cover;" />
-                        <el-icon v-else style="font-size: 32px; color: #ccc;">
+                    <button
+                        type="button"
+                        class="product-image-box product-image-button"
+                        :disabled="!row.imageUrl"
+                        @click="openImagePreview(row)"
+                    >
+                        <img v-if="row.imageUrl" :src="row.imageUrl" alt="商品圖片" class="product-image" />
+                        <el-icon v-else class="product-image-fallback">
                             <Picture />
                         </el-icon>
-                    </div>
+                    </button>
                 </template>
             </el-table-column>
 
             <el-table-column prop="name" label="商品名稱" min-width="180">
                 <template #default="{ row }">
                     <template v-if="row.website">
-                        <a :href="row.website" target="_blank" rel="noopener noreferrer"
-                            style="color: #409eff; font-weight: 500; text-decoration: underline;">
+                        <a :href="row.website" target="_blank" rel="noopener noreferrer" class="product-link">
                             {{ row.name }}
                         </a>
                     </template>
@@ -115,8 +149,8 @@
             <el-table-column prop="price" label="定價" min-width="70" />
             <el-table-column prop="sellingPrice" label="售價" min-width="100">
                 <template #default="{ row }">
-                    <span>
-                        <span style="color: red; font-size: 24px; font-weight: bold;">
+                    <span class="price-text">
+                        <span class="price-value">
                             {{ row.sellingPrice }}
                         </span>
                         元
@@ -126,8 +160,8 @@
             <el-table-column prop="cost" label="成本" min-width="70" />
             <el-table-column prop="stock" label="庫存" min-width="70">
                 <template #default="{ row }">
-                    <span>
-                        <span class="darkThemeColor" style="font-size: 24px; font-weight: bold;">
+                    <span class="stock-text">
+                        <span class="darkThemeColor stock-value">
                             {{ row.stock }}
                         </span>
                     </span>
@@ -147,7 +181,7 @@
             <el-table-column prop="website" label="網站" min-width="70">
                 <template #default="{ row }">
                     <a v-if="row.website" :href="row.website" target="_blank" rel="noopener noreferrer"
-                        style="color: #409eff; text-decoration: underline;">連結</a>
+                        class="site-link">連結</a>
                     <span v-else>-</span>
                 </template>
             </el-table-column>
@@ -159,12 +193,20 @@
         </el-table>
 
         <!-- 分頁 -->
-        <el-pagination background layout="prev, pager, next, sizes, total" :total="totalProducts" :page-size="pageSize"
-            :current-page.sync="currentPage" :page-sizes="[10, 20, 50, 100]" @size-change="handlePageSizeChange"
-            @current-change="handlePageChange" class="pagination-bar">
-        </el-pagination>
+            <el-pagination background layout="prev, pager, next, sizes, total" :total="totalProducts" :page-size="pageSize"
+                :current-page.sync="currentPage" :page-sizes="[10, 20, 50, 100]" @size-change="handlePageSizeChange"
+                @current-change="handlePageChange" class="pagination-bar">
+            </el-pagination>
 
-        <div v-if="!filteredProducts.length" style="margin-top: 1rem">暫無商品資料</div>
+            <div v-if="!filteredProducts.length" class="empty-state">
+                <strong>目前沒有商品資料</strong>
+                <p>你可以先新增單筆商品，或使用批量新增快速建立商品清單。</p>
+                <div class="empty-actions">
+                    <el-button type="primary" @click="showAddDialog = true">新增商品</el-button>
+                    <el-button type="warning" @click="showBatchDialog = true">批量新增</el-button>
+                </div>
+            </div>
+        </section>
 
         <!-- 新增商品對話框 -->
         <el-dialog title="新增商品" v-model="showAddDialog" :width="'90%'" class="add-product-dialog">
@@ -456,6 +498,16 @@
                 <el-button
                     @click="downloadBarcode(currentProduct?.name, currentProduct?.gtin, barcodeDataUrl)">下載圖片</el-button>
                 <el-button type="primary" @click="showBarcodeDialog = false">關閉</el-button>
+            </template>
+        </el-dialog>
+
+        <el-dialog v-model="showImagePreviewDialog" title="商品圖片預覽" width="min(92vw, 760px)" center>
+            <div v-if="previewImageUrl" class="image-preview-dialog">
+                <img :src="previewImageUrl" :alt="previewImageName || '商品圖片預覽'" class="image-preview-full" />
+                <p v-if="previewImageName" class="image-preview-caption">{{ previewImageName }}</p>
+            </div>
+            <template #footer>
+                <el-button type="primary" @click="showImagePreviewDialog = false">關閉</el-button>
             </template>
         </el-dialog>
     </div>
@@ -1283,6 +1335,9 @@ function syncBatchStock() {
 const showBarcodeDialog = ref(false)
 const barcodeDataUrl = ref('')
 const currentProduct = ref<{ name: string; gtin: string; price?: number } | null>(null)
+const showImagePreviewDialog = ref(false)
+const previewImageUrl = ref('')
+const previewImageName = ref('')
 
 // 點擊「生成條碼」
 async function handleGenerateBarcode(product: { name: string; gtin: string; sellingPrice?: number }) {
@@ -1298,6 +1353,14 @@ async function handleGenerateBarcode(product: { name: string; gtin: string; sell
         console.error(error)
         ElMessage.error('生成條碼時發生錯誤')
     }
+}
+
+function openImagePreview(product: { imageUrl?: string; name?: string }) {
+    if (!product.imageUrl) return
+
+    previewImageUrl.value = product.imageUrl
+    previewImageName.value = product.name || ''
+    showImagePreviewDialog.value = true
 }
 
 // 在 onMounted 中呼叫
@@ -1343,27 +1406,24 @@ onMounted(() => {
     text-align: left;
 }
 
-.title-col h2 {
-    margin: 0;
-    color: transparent;
-    font-size: 0;
-    line-height: 1;
+.title-shell {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 20px;
 }
 
-.title-col h2::before {
-    content: 'PRODUCT DIRECTORY';
-    display: block;
-    margin-bottom: 10px;
+.page-eyebrow,
+.section-eyebrow {
+    display: inline-flex;
     color: var(--accent-color);
     font-size: 0.76rem;
     letter-spacing: 0.15em;
     text-transform: uppercase;
 }
 
-.title-col h2::after {
-    content: '商品列表';
-    display: block;
-    margin-top: 10px;
+.title-col h2 {
+    margin: 10px 0 0;
     color: #f5f8fc;
     font-size: clamp(1.9rem, 3vw, 2.7rem);
     line-height: 1.08;
@@ -1371,13 +1431,38 @@ onMounted(() => {
     letter-spacing: -0.04em;
 }
 
-.title-col::after {
-    content: '集中管理商品資料、價格、庫存與供應商資訊，讓商品維護與日常查詢更流暢。';
-    display: block;
+.page-description {
     margin-top: 14px;
     max-width: 640px;
     color: rgba(232, 238, 246, 0.8);
     line-height: 1.8;
+}
+
+.title-meta {
+    display: flex;
+    justify-content: flex-end;
+    flex-shrink: 0;
+}
+
+.hero-badge {
+    min-width: 160px;
+    padding: 20px 22px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 22px;
+    background: rgba(255, 255, 255, 0.06);
+}
+
+.hero-badge strong {
+    display: block;
+    color: #f5f8fc;
+    font-size: 2rem;
+    font-weight: 700;
+}
+
+.hero-badge span {
+    display: block;
+    margin-top: 6px;
+    color: rgba(232, 238, 246, 0.68);
 }
 
 .top-bar {
@@ -1388,13 +1473,28 @@ onMounted(() => {
     padding: 24px;
 }
 
+.filters-group {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 14px;
+    width: 100%;
+}
+
 .search-input {
-    flex: 1 1 280px;
+    flex: 1 1 320px;
     min-width: 220px;
 }
 
 .vendor-select {
     flex: 0 0 220px;
+}
+
+.secondary-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 14px;
+    width: 100%;
+    align-items: center;
 }
 
 .action-row,
@@ -1406,11 +1506,31 @@ onMounted(() => {
 }
 
 .action-row {
-    margin-left: auto;
+    flex: 0 1 auto;
 }
 
 .button-group {
+    flex: 0 1 auto;
+    margin-left: auto;
+    justify-content: flex-end;
+}
+
+.danger-zone {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
     width: 100%;
+    padding: 14px 16px;
+    border: 1px solid rgba(217, 78, 78, 0.14);
+    border-radius: 16px;
+    background: rgba(217, 78, 78, 0.06);
+}
+
+.selection-hint {
+    color: var(--muted-text);
+    font-size: 0.92rem;
 }
 
 .action-row :deep(.el-button + .el-button),
@@ -1429,6 +1549,12 @@ onMounted(() => {
 
 .button-group :deep(.el-button) {
     min-width: 132px;
+}
+
+.danger-zone :deep(.el-button) {
+    min-height: 44px;
+    border-radius: 14px;
+    font-weight: 600;
 }
 
 .button-icon {
@@ -1458,6 +1584,43 @@ onMounted(() => {
     box-shadow: var(--surface-shadow);
 }
 
+.table-card {
+    border: 1px solid var(--surface-border);
+    border-radius: 28px;
+    background: var(--surface-card);
+    box-shadow: var(--surface-shadow);
+    padding: 24px;
+}
+
+.table-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 14px;
+    margin-bottom: 18px;
+}
+
+.table-header h3 {
+    margin-top: 8px;
+    color: var(--heading-color);
+    font-size: 1.45rem;
+    font-weight: 700;
+}
+
+.table-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.table-meta span {
+    padding: 8px 12px;
+    border-radius: 999px;
+    color: var(--muted-text);
+    font-size: 0.84rem;
+    background: var(--surface-muted);
+}
+
 .pagination-bar {
     display: flex;
     justify-content: flex-end;
@@ -1474,6 +1637,29 @@ onMounted(() => {
     background: var(--surface-muted);
 }
 
+.empty-state strong {
+    display: block;
+    color: var(--heading-color);
+    font-size: 1rem;
+    font-weight: 700;
+}
+
+.empty-state p {
+    margin-top: 8px;
+    line-height: 1.7;
+}
+
+.empty-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-top: 14px;
+}
+
+.empty-actions :deep(.el-button + .el-button) {
+    margin-left: 0;
+}
+
 .price-text {
     display: inline-flex;
     align-items: baseline;
@@ -1482,12 +1668,17 @@ onMounted(() => {
 
 .price-value {
     color: #d94e4e;
-    font-size: 1.4rem;
+    font-size: 1.2rem;
     font-weight: 700;
 }
 
+.stock-text {
+    display: inline-flex;
+    align-items: center;
+}
+
 .stock-value {
-    font-size: 1.3rem;
+    font-size: 1.15rem;
     font-weight: 700;
 }
 
@@ -1511,6 +1702,89 @@ onMounted(() => {
 
 :deep(.no-padding-cell .cell) {
     padding: 0 !important;
+}
+
+.index-text {
+    font-size: 12px;
+}
+
+.row-action-stack {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 6px;
+    width: 100%;
+}
+
+.row-action-btn {
+    width: 100%;
+}
+
+.row-action-btn--full {
+    grid-column: 1 / -1;
+}
+
+.product-image-box {
+    width: 70px;
+    height: 70px;
+    margin: 0 auto;
+    border-radius: 10px;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #f5f5f5;
+}
+
+.product-image-button {
+    padding: 0;
+    border: 1px solid rgba(20, 36, 58, 0.08);
+    cursor: pointer;
+    transition:
+        transform 0.2s ease,
+        box-shadow 0.2s ease,
+        border-color 0.2s ease;
+}
+
+.product-image-button:hover:not(:disabled) {
+    transform: scale(1.03);
+    border-color: rgba(47, 111, 168, 0.28);
+    box-shadow: 0 10px 24px rgba(20, 36, 58, 0.14);
+}
+
+.product-image-button:disabled {
+    cursor: default;
+}
+
+.product-image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.product-image-fallback {
+    font-size: 32px;
+    color: #ccc;
+}
+
+.image-preview-dialog {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 14px;
+}
+
+.image-preview-full {
+    max-width: 100%;
+    max-height: min(70vh, 720px);
+    border-radius: 20px;
+    object-fit: contain;
+    box-shadow: 0 18px 36px rgba(20, 36, 58, 0.18);
+}
+
+.image-preview-caption {
+    color: var(--muted-text);
+    text-align: center;
+    line-height: 1.6;
 }
 
 .gtin-row {
@@ -1563,11 +1837,22 @@ onMounted(() => {
 }
 
 @media (max-width: 1024px) {
-    .search-input {
-        flex-basis: 100%;
+    .title-shell {
+        flex-direction: column;
+        align-items: flex-start;
     }
 
-    .action-row {
+    .title-meta {
+        width: 100%;
+        justify-content: flex-start;
+    }
+
+    .filters-group,
+    .secondary-row {
+        align-items: stretch;
+    }
+
+    .button-group {
         margin-left: 0;
     }
 }
@@ -1594,21 +1879,33 @@ onMounted(() => {
     .search-input,
     .vendor-select,
     .action-row,
-    .button-group {
+    .button-group,
+    .danger-zone {
         width: 100%;
         flex-basis: 100%;
     }
 
     .action-row,
-    .button-group {
+    .button-group,
+    .empty-actions {
         display: grid;
         grid-template-columns: repeat(2, minmax(0, 1fr));
     }
 
     .action-row :deep(.el-button),
-    .button-group :deep(.el-button) {
+    .button-group :deep(.el-button),
+    .empty-actions :deep(.el-button) {
         width: 100%;
         min-width: 0;
+    }
+
+    .table-card {
+        padding: 18px;
+    }
+
+    .table-header {
+        flex-direction: column;
+        align-items: flex-start;
     }
 
     .stock-field {
@@ -1623,7 +1920,8 @@ onMounted(() => {
 
 @media (max-width: 640px) {
     .action-row,
-    .button-group {
+    .button-group,
+    .empty-actions {
         grid-template-columns: 1fr;
     }
 

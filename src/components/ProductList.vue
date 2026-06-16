@@ -45,6 +45,7 @@
                 </div>
 
                 <div class="button-group">
+                    <el-button type="primary" @click="openProductImportDialog">匯入校園書房商品</el-button>
                     <el-button type="success" @click="showAddDialog = true">
                         新增商品
                     </el-button>
@@ -105,122 +106,120 @@
 
             <el-table :data="pagedProducts" style="width: 100%" border :class="['product-table', tableThemeClass]"
                 :header-cell-style="{ background: `var(--table-header-bg)`, color: `var(--table-header-text)` }"
-                @selection-change="handleSelectionChange" @sort-change="handleSortChange" ref="productTable" row-key="id" highlight-current-row
-                :row-class-name="getRowClassName"
-                @row-click="handleRowClick" @current-change="handleCurrentProductChange">
+                @selection-change="handleSelectionChange" @sort-change="handleSortChange" ref="productTable"
+                row-key="id" highlight-current-row :row-class-name="getRowClassName" @row-click="handleRowClick"
+                @current-change="handleCurrentProductChange">
 
-            <!-- checkbox欄位 -->
-            <el-table-column type="selection" width="40" align="center" class-name="selection-column" label-class-name="selection-column">
-            </el-table-column>
+                <!-- checkbox欄位 -->
+                <el-table-column type="selection" width="40" align="center" class-name="selection-column"
+                    label-class-name="selection-column">
+                </el-table-column>
 
-            <!-- 序號欄位 -->
-            <el-table-column class-name="no-padding-cell" label="#" width="36" align="center">
-                <template #default="scope">
-                    <span class="index-text">
-                        {{ (currentPage - 1) * pageSize + scope.$index + 1 }}
-                    </span>
-                </template>
-            </el-table-column>
+                <!-- 序號欄位 -->
+                <el-table-column class-name="no-padding-cell" label="#" width="36" align="center">
+                    <template #default="scope">
+                        <span class="index-text">
+                            {{ (currentPage - 1) * pageSize + scope.$index + 1 }}
+                        </span>
+                    </template>
+                </el-table-column>
 
-            <!-- 操作欄整欄隨編輯模式顯示 -->
-            <el-table-column v-if="editMode" class-name="no-padding-cell" label="操作" width="96" align="center">
-                <template #default="{ row }">
-                    <div class="row-action-stack">
-                        <el-button type="primary" size="small" class="row-action-btn"
-                            @click="openEditDialog(row)">編輯</el-button>
-                        <el-button type="warning" size="small" class="row-action-btn"
-                            @click="copyProduct(row)">複製</el-button>
-                        <el-button type="danger" size="small" class="row-action-btn row-action-btn--full"
-                            @click="deleteProduct(row)">刪除</el-button>
-                    </div>
-                </template>
-            </el-table-column>
+                <!-- 操作欄整欄隨編輯模式顯示 -->
+                <el-table-column v-if="editMode" class-name="no-padding-cell" label="操作" width="96" align="center">
+                    <template #default="{ row }">
+                        <div class="row-action-stack">
+                            <el-button type="primary" size="small" class="row-action-btn"
+                                @click="openEditDialog(row)">編輯</el-button>
+                            <el-button type="warning" size="small" class="row-action-btn"
+                                @click="copyProduct(row)">複製</el-button>
+                            <el-button type="danger" size="small" class="row-action-btn row-action-btn--full"
+                                @click="deleteProduct(row)">刪除</el-button>
+                        </div>
+                    </template>
+                </el-table-column>
 
-            <el-table-column label="商品圖片" class-name="no-padding-cell" width="98" align="center">
-                <template #default="{ row }">
-                    <button
-                        type="button"
-                        class="product-image-box product-image-button"
-                        :disabled="!row.imageUrl"
-                        @click="openImagePreview(row)"
-                    >
-                        <img v-if="row.imageUrl" :src="row.imageUrl" alt="商品圖片" class="product-image" />
-                        <el-icon v-else class="product-image-fallback">
-                            <Picture />
-                        </el-icon>
-                    </button>
-                </template>
-            </el-table-column>
+                <el-table-column label="商品圖片" class-name="no-padding-cell" width="98" align="center">
+                    <template #default="{ row }">
+                        <button type="button" class="product-image-box product-image-button" :disabled="!row.imageUrl"
+                            @click="openImagePreview(row)">
+                            <img v-if="row.imageUrl" :src="row.imageUrl" alt="商品圖片" class="product-image" />
+                            <el-icon v-else class="product-image-fallback">
+                                <Picture />
+                            </el-icon>
+                        </button>
+                    </template>
+                </el-table-column>
 
-            <el-table-column prop="name" label="商品名稱" min-width="180">
-                <template #default="{ row }">
-                    <template v-if="row.website">
-                        <a :href="row.website" target="_blank" rel="noopener noreferrer" class="product-link">
+                <el-table-column prop="name" label="商品名稱" min-width="180">
+                    <template #default="{ row }">
+                        <template v-if="row.website">
+                            <a :href="row.website" target="_blank" rel="noopener noreferrer" class="product-link">
+                                {{ row.name }}
+                            </a>
+                        </template>
+                        <template v-else>
                             {{ row.name }}
-                        </a>
+                        </template>
                     </template>
-                    <template v-else>
-                        {{ row.name }}
+                </el-table-column>
+
+                <el-table-column prop="price" label="定價" min-width="70" />
+                <el-table-column prop="sellingPrice" label="售價" min-width="100">
+                    <template #default="{ row }">
+                        <span class="price-text">
+                            <span class="price-value">
+                                {{ row.sellingPrice }}
+                            </span>
+                            元
+                        </span>
                     </template>
-                </template>
-            </el-table-column>
-
-            <el-table-column prop="price" label="定價" min-width="70" />
-            <el-table-column prop="sellingPrice" label="售價" min-width="100">
-                <template #default="{ row }">
-                    <span class="price-text">
-                        <span class="price-value">
-                            {{ row.sellingPrice }}
+                </el-table-column>
+                <el-table-column prop="cost" label="成本" min-width="70" />
+                <el-table-column prop="stock" label="庫存" min-width="70">
+                    <template #default="{ row }">
+                        <span class="stock-text">
+                            <span class="darkThemeColor stock-value">
+                                {{ row.stock }}
+                            </span>
                         </span>
-                        元
-                    </span>
-                </template>
-            </el-table-column>
-            <el-table-column prop="cost" label="成本" min-width="70" />
-            <el-table-column prop="stock" label="庫存" min-width="70">
-                <template #default="{ row }">
-                    <span class="stock-text">
-                        <span class="darkThemeColor stock-value">
-                            {{ row.stock }}
-                        </span>
-                    </span>
-                </template>
-            </el-table-column>
-            <el-table-column prop="code" label="商品編號" sortable min-width="120" />
-            <el-table-column prop="supplierName" label="廠商名稱" min-width="120" />
-            <el-table-column prop="supplierCode" label="廠商編號" min-width="120" />
-            <el-table-column prop="gtin" label="GTIN" min-width="120" />
-            <el-table-column label="條碼" width="100">
-                <template #default="scope">
-                    <el-button type="primary" size="small" @click="handleGenerateBarcode(scope.row)">
-                        生成條碼
-                    </el-button>
-                </template>
-            </el-table-column>
-            <el-table-column prop="website" label="網站" min-width="70">
-                <template #default="{ row }">
-                    <a v-if="row.website" :href="row.website" target="_blank" rel="noopener noreferrer"
-                        class="site-link">連結</a>
-                    <span v-else>-</span>
-                </template>
-            </el-table-column>
-            <el-table-column prop="note" label="備註" min-width="120" />
-            <el-table-column prop="createdBy" label="創建者" min-width="100" />
-            <el-table-column prop="updatedBy" label="更新者" min-width="100" />
-            <el-table-column prop="created" label="新增時間" min-width="190" :formatter="formatDate" />
-            <el-table-column prop="updated" label="更新時間" min-width="190" :formatter="formatDate" />
-        </el-table>
+                    </template>
+                </el-table-column>
+                <el-table-column prop="code" label="商品編號" sortable min-width="120" />
+                <el-table-column prop="supplierName" label="廠商名稱" min-width="120" />
+                <el-table-column prop="supplierCode" label="廠商編號" min-width="120" />
+                <el-table-column prop="gtin" label="GTIN" min-width="120" />
+                <el-table-column label="條碼" width="100">
+                    <template #default="scope">
+                        <el-button type="primary" size="small" @click="handleGenerateBarcode(scope.row)">
+                            生成條碼
+                        </el-button>
+                    </template>
+                </el-table-column>
+                <el-table-column prop="website" label="網站" min-width="70">
+                    <template #default="{ row }">
+                        <a v-if="row.website" :href="row.website" target="_blank" rel="noopener noreferrer"
+                            class="site-link">連結</a>
+                        <span v-else>-</span>
+                    </template>
+                </el-table-column>
+                <el-table-column prop="note" label="備註" min-width="120" />
+                <el-table-column prop="createdBy" label="創建者" min-width="100" />
+                <el-table-column prop="updatedBy" label="更新者" min-width="100" />
+                <el-table-column prop="created" label="新增時間" min-width="190" :formatter="formatDate" />
+                <el-table-column prop="updated" label="更新時間" min-width="190" :formatter="formatDate" />
+            </el-table>
 
-        <!-- 分頁 -->
-            <el-pagination background layout="prev, pager, next, sizes, total" :total="totalProducts" :page-size="pageSize"
-                :current-page.sync="currentPage" :page-sizes="[10, 20, 50, 100]" @size-change="handlePageSizeChange"
-                @current-change="handlePageChange" class="pagination-bar">
+            <!-- 分頁 -->
+            <el-pagination background layout="prev, pager, next, sizes, total" :total="totalProducts"
+                :page-size="pageSize" :current-page.sync="currentPage" :page-sizes="[10, 20, 50, 100]"
+                @size-change="handlePageSizeChange" @current-change="handlePageChange" class="pagination-bar">
             </el-pagination>
 
             <div v-if="!filteredProducts.length" class="empty-state">
                 <strong>目前沒有商品資料</strong>
                 <p>你可以先新增單筆商品，或使用批量新增快速建立商品清單。</p>
                 <div class="empty-actions">
+                    <el-button type="primary" @click="openProductImportDialog">匯入校園書房商品</el-button>
                     <el-button type="primary" @click="showAddDialog = true">新增商品</el-button>
                     <el-button type="warning" @click="showBatchDialog = true">批量新增</el-button>
                 </div>
@@ -309,6 +308,23 @@
             </template>
         </el-dialog>
 
+        <!-- 校園書房商品匯入彈窗 -->
+        <el-dialog v-model="showProductImportDialog" title="匯入校園書房商品" width="600px">
+            <el-form label-width="110px">
+                <el-form-item label="校園書房網址">
+                    <el-input v-model="shopeeUrl" placeholder="請貼上 校園書房 商品網址" clearable />
+                </el-form-item>
+            </el-form>
+
+            <template #footer>
+                <el-button @click="showProductImportDialog = false">
+                    取消
+                </el-button>
+                <el-button type="primary" :loading="shopeeImportLoading" @click="importProduct">
+                    抓取商品資料
+                </el-button>
+            </template>
+        </el-dialog>
 
         <!-- 編輯商品彈窗 -->
         <el-dialog :title="isCopyMode ? '複製商品' : '編輯商品'" v-model="showEditDialog" :width="'90%'"
@@ -534,6 +550,7 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from "vue";
+import axios from "axios";
 import { db } from "@/firebase";
 import { ref as dbRef, onValue, update, push, remove, get, child } from "firebase/database";
 import { ElMessage, ElMessageBox } from "element-plus";
@@ -592,6 +609,61 @@ const newProduct = ref<Omit<Product, "id" | "createdBy" | "updatedBy">>({
     note: "",
     created: Date.now(),
 });
+
+// 匯入校園書房商品
+const showProductImportDialog = ref(false);
+const shopeeUrl = ref("");
+const shopeeImportLoading = ref(false);
+
+function openProductImportDialog() {
+    shopeeUrl.value = "";
+    showProductImportDialog.value = true;
+}
+
+async function importProduct() {
+    const url = shopeeUrl.value.trim();
+
+    if (!url) {
+        ElMessage.warning("請先輸入商品網址");
+        return;
+    }
+
+    shopeeImportLoading.value = true;
+
+    try {
+        const res = await axios.get("https://product-worker.servant1001.workers.dev/api/campus-product", {
+            params: {
+                url,
+            },
+        });
+
+        const data = res.data;
+
+        newProduct.value.name = data.name || "";
+        newProduct.value.gtin = data.isbn || "";
+        newProduct.value.code = data.isbn || "";
+        newProduct.value.price = data.price ?? 0;
+        newProduct.value.sellingPrice = data.sellingPrice ?? 0;
+        newProduct.value.stock = 0;
+        newProduct.value.imageUrl = data.imageUrl || "";
+        newProduct.value.website = data.website || url;
+        newProduct.value.note = "由校園書房商品匯入";
+
+        showProductImportDialog.value = false;
+        showAddDialog.value = true;
+
+        ElMessage.success("已抓取商品資料，請確認後新增");
+    } catch (error: any) {
+        console.error(error);
+        ElMessage.error(
+            error.response?.data?.message ||
+            error.response?.data?.error ||
+            "商品抓取失敗"
+        );
+    } finally {
+        shopeeImportLoading.value = false;
+    }
+}
 
 // 驗證規則
 const rules = {
@@ -1786,7 +1858,7 @@ onMounted(() => {
 }
 
 .empty-state,
-.product-page > div[style*='margin-top: 1rem'] {
+.product-page>div[style*='margin-top: 1rem'] {
     margin-top: 16px;
     padding: 18px 20px;
     border: 1px dashed var(--surface-border);
@@ -2123,6 +2195,7 @@ onMounted(() => {
 }
 
 @media (max-width: 640px) {
+
     .action-row,
     .button-group,
     .empty-actions {

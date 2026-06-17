@@ -60,7 +60,7 @@
                         <strong>付款方式分析</strong>
                     </div>
                     <el-button type="primary" class="analysis-trigger-btn" @click="showPaymentStats">
-                        開啟分析
+                        圖表分析
                     </el-button>
                 </div>
 
@@ -184,8 +184,15 @@
             </div>
         </section>
 
-        <el-dialog v-model="dialogVisible" title="商品明細" width="min(94vw, 1380px)" class="detail-dialog"
+        <el-dialog v-model="dialogVisible" width="min(94vw, 1380px)" class="detail-dialog"
             @close="onDetailDialogClose">
+            <template #title>
+                <div class="detail-dialog-title">
+                    <strong>商品明細</strong>
+                    <span>{{ selectedItems.length }} 項商品{{ selectedOperator ? ` / ${selectedOperator}` : "" }}</span>
+                </div>
+            </template>
+
             <div class="detail-header">
                 <div class="detail-summary-card">
                     <div class="detail-summary-item">
@@ -204,38 +211,39 @@
                 </div>
 
                 <div class="detail-actions">
-                    <el-button type="primary" size="small" @click="addNewDetailItem">新增商品</el-button>
-                    <el-button size="small" :type="showDetailActions ? 'warning' : 'info'"
+                    <el-button type="primary" size="small" class="detail-toolbar-btn detail-toolbar-btn--primary" @click="addNewDetailItem">新增商品</el-button>
+                    <el-button size="small" class="detail-toolbar-btn detail-toolbar-btn--secondary"
                         @click="toggleDetailEditMode">
                         {{ showDetailActions ? "關閉編輯模式" : "開啟編輯模式" }}
                     </el-button>
                 </div>
             </div>
 
+            <div class="detail-table-wrap">
             <el-table :data="selectedItems" border size="small" class="detail-table" :class="tableThemeClass"
                 :header-cell-style="{ background: 'var(--table-header-bg)', color: 'var(--table-header-text)' }">
                 <el-table-column label="#" width="48" align="center">
                     <template #default="{ $index }">{{ $index + 1 }}</template>
                 </el-table-column>
 
-                <el-table-column v-if="showDetailActions" label="操作" width="150" align="center">
+                <el-table-column v-if="showDetailActions" label="操作" width="108" align="center">
                     <template #default="{ row }">
                         <div class="row-action-stack">
                             <template v-if="editingDetailRow === row">
-                                <el-button size="small" type="primary" class="row-action-btn"
+                                <el-button size="small" type="primary" class="row-action-btn detail-row-btn detail-row-btn--save"
                                     @click="saveDetailEdit(row)">
                                     儲存
                                 </el-button>
-                                <el-button size="small" class="row-action-btn" @click="editingDetailRow = null">
+                                <el-button size="small" class="row-action-btn detail-row-btn detail-row-btn--cancel" @click="editingDetailRow = null">
                                     取消
                                 </el-button>
                             </template>
                             <template v-else>
-                                <el-button size="small" type="primary" class="row-action-btn"
+                                <el-button size="small" type="primary" class="row-action-btn detail-row-btn detail-row-btn--edit"
                                     @click="editingDetailRow = row">
                                     編輯
                                 </el-button>
-                                <el-button size="small" type="danger" class="row-action-btn"
+                                <el-button size="small" type="danger" class="row-action-btn detail-row-btn detail-row-btn--delete"
                                     @click="deleteDetailItem(row)">
                                     刪除
                                 </el-button>
@@ -246,12 +254,16 @@
 
                 <el-table-column label="商品圖片" width="120" align="center">
                     <template #default="{ row }">
-                        <div class="product-image-box product-image-box--large">
+                        <button
+                            type="button"
+                            :class="['product-image-box', 'product-image-box--large', { 'product-image-box--clickable': !!row.imageUrl }]"
+                            @click="row.imageUrl && openDetailImagePreview(row.imageUrl, row.name)"
+                        >
                             <img v-if="row.imageUrl" :src="row.imageUrl" alt="商品圖片" class="product-image" />
                             <el-icon v-else class="product-image-fallback">
                                 <Picture />
                             </el-icon>
-                        </div>
+                        </button>
                     </template>
                 </el-table-column>
 
@@ -347,6 +359,25 @@
                     </template>
                 </el-table-column>
             </el-table>
+            </div>
+        </el-dialog>
+
+        <el-dialog v-model="detailImagePreviewVisible" width="min(92vw, 760px)" class="image-preview-dialog" append-to-body>
+            <template #title>
+                <div class="image-preview-title">
+                    <strong>{{ detailImagePreviewName || "商品圖片" }}</strong>
+                    <span>點擊外部區域即可關閉</span>
+                </div>
+            </template>
+
+            <div class="image-preview-frame">
+                <img
+                    v-if="detailImagePreviewUrl"
+                    :src="detailImagePreviewUrl"
+                    :alt="detailImagePreviewName || '商品圖片'"
+                    class="image-preview-full"
+                />
+            </div>
         </el-dialog>
 
         <el-dialog v-model="salesAnalysisDialog" width="min(94vw, 860px)" class="analysis-dialog">
@@ -532,6 +563,9 @@ const selectedOperator = ref("");
 const selectedTotal = ref(0);
 const selectedProfit = ref(0);
 const dialogVisible = ref(false);
+const detailImagePreviewVisible = ref(false);
+const detailImagePreviewUrl = ref("");
+const detailImagePreviewName = ref("");
 const searchKeyword = ref("");
 const showActions = ref(false);
 const editingRow = ref<Sale | null>(null);
@@ -1104,6 +1138,12 @@ function showDetails(rowItems: SaleItem[], operator: string, total: number, tota
     currentEditingSaleId = saleId || null;
 }
 
+function openDetailImagePreview(imageUrl: string, productName?: string) {
+    detailImagePreviewUrl.value = imageUrl;
+    detailImagePreviewName.value = productName || "商品圖片";
+    detailImagePreviewVisible.value = true;
+}
+
 function addNewDetailItem() {
     if (!currentEditingSaleId) {
         ElMessage.error("找不到這筆交易的 ID。");
@@ -1195,6 +1235,9 @@ function onDetailDialogClose() {
     dialogVisible.value = false;
     showDetailActions.value = false;
     editingDetailRow.value = null;
+    detailImagePreviewVisible.value = false;
+    detailImagePreviewUrl.value = "";
+    detailImagePreviewName.value = "";
 }
 
 function toggleDetailEditMode() {
@@ -1422,7 +1465,38 @@ onBeforeUnmount(() => {
 
 .analysis-trigger-btn {
     min-height: 42px;
+    padding: 0 18px;
     border-radius: 14px;
+    border: 1px solid rgba(214, 164, 107, 0.38);
+    background:
+        radial-gradient(circle at top right, rgba(255, 214, 153, 0.24), transparent 42%),
+        linear-gradient(135deg, #b97837 0%, #d6a46b 52%, #f0c998 100%);
+    color: #10243c;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.28),
+        0 16px 28px rgba(185, 122, 55, 0.26);
+    transition:
+        transform 0.18s ease,
+        box-shadow 0.18s ease,
+        filter 0.18s ease,
+        border-color 0.18s ease;
+}
+
+.analysis-trigger-btn:hover,
+.analysis-trigger-btn:focus-visible {
+    transform: translateY(-1px);
+    border-color: rgba(214, 164, 107, 0.62);
+    color: #10243c;
+    filter: saturate(1.05);
+    box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.34),
+        0 20px 32px rgba(185, 122, 55, 0.32);
+}
+
+.analysis-trigger-btn:active {
+    transform: translateY(0);
 }
 
 .analysis-preview-metrics {
@@ -1560,7 +1634,9 @@ onBeforeUnmount(() => {
 }
 
 .row-action-btn {
-    width: 100%;
+    width: auto;
+    min-width: 72px;
+    align-self: center;
 }
 
 .row-action-stack :deep(.el-button + .el-button),
@@ -1597,7 +1673,8 @@ onBeforeUnmount(() => {
     padding: 18px;
     border: 1px solid var(--surface-border);
     border-radius: 22px;
-    background: linear-gradient(180deg, rgba(248, 250, 252, 0.96), rgba(243, 246, 249, 0.96));
+    background: linear-gradient(180deg, rgba(248, 250, 252, 0.98), rgba(241, 246, 251, 0.96));
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7);
 }
 
 .detail-summary-item {
@@ -1607,29 +1684,206 @@ onBeforeUnmount(() => {
 }
 
 .detail-summary-item span {
-    color: var(--muted-text);
+    color: #516579;
     font-size: 0.9rem;
+    font-weight: 600;
 }
 
 .detail-summary-item strong {
-    color: var(--heading-color);
+    color: #10243c;
+}
+
+.detail-dialog-title,
+.image-preview-title {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px;
+}
+
+.detail-dialog-title strong,
+.image-preview-title strong {
+    color: #10243c;
+    font-size: 1.2rem;
+    font-weight: 700;
+}
+
+.detail-dialog-title span,
+.image-preview-title span {
+    color: #5f7388;
+    font-size: 0.9rem;
+}
+
+.detail-table-wrap {
+    margin-top: 18px;
+    overflow-x: auto;
+    border-radius: 24px;
+    border: 1px solid rgba(20, 36, 58, 0.08);
+    background: rgba(255, 255, 255, 0.78);
+    box-shadow: 0 18px 36px rgba(16, 36, 58, 0.08);
+}
+
+.detail-toolbar-btn {
+    min-height: 38px;
+    padding: 0 16px;
+    border-radius: 999px;
+    font-weight: 600;
+    letter-spacing: 0.01em;
+    transition:
+        transform 0.18s ease,
+        box-shadow 0.18s ease,
+        border-color 0.18s ease,
+        background 0.18s ease;
+}
+
+.detail-toolbar-btn:hover,
+.detail-toolbar-btn:focus-visible {
+    transform: translateY(-1px);
+}
+
+.detail-toolbar-btn--primary {
+    border-color: rgba(185, 122, 55, 0.38);
+    background:
+        radial-gradient(circle at top right, rgba(214, 164, 107, 0.24), transparent 48%),
+        linear-gradient(180deg, rgba(17, 40, 66, 0.98), rgba(24, 54, 86, 0.96));
+    color: #f7fbff;
+    box-shadow: 0 14px 28px rgba(16, 36, 58, 0.18);
+}
+
+.detail-toolbar-btn--primary:hover,
+.detail-toolbar-btn--primary:focus-visible {
+    border-color: rgba(214, 164, 107, 0.56);
+    background:
+        radial-gradient(circle at top right, rgba(214, 164, 107, 0.3), transparent 46%),
+        linear-gradient(180deg, rgba(14, 34, 58, 1), rgba(22, 49, 79, 0.98));
+    color: #ffffff;
+    box-shadow: 0 18px 32px rgba(16, 36, 58, 0.22);
+}
+
+.detail-toolbar-btn--secondary {
+    border: 1px solid rgba(20, 36, 58, 0.1);
+    background: rgba(255, 255, 255, 0.9);
+    color: #10243c;
+    box-shadow: 0 10px 20px rgba(16, 36, 58, 0.08);
+}
+
+.detail-toolbar-btn--secondary:hover,
+.detail-toolbar-btn--secondary:focus-visible {
+    border-color: rgba(77, 131, 180, 0.28);
+    background: rgba(247, 250, 252, 1);
+    color: #10243c;
+}
+
+.detail-row-btn {
+    min-height: 34px;
+    border-radius: 12px;
+    font-weight: 600;
+    letter-spacing: 0.01em;
+    transition:
+        transform 0.18s ease,
+        box-shadow 0.18s ease,
+        border-color 0.18s ease,
+        background 0.18s ease;
+}
+
+.detail-row-btn:hover,
+.detail-row-btn:focus-visible {
+    transform: translateY(-1px);
+}
+
+.detail-row-btn--save,
+.detail-row-btn--edit {
+    border-color: rgba(77, 131, 180, 0.26);
+    background: linear-gradient(180deg, rgba(24, 54, 86, 0.96), rgba(35, 74, 113, 0.94));
+    color: #f7fbff;
+    box-shadow: 0 10px 20px rgba(16, 36, 58, 0.16);
+}
+
+.detail-row-btn--save:hover,
+.detail-row-btn--save:focus-visible,
+.detail-row-btn--edit:hover,
+.detail-row-btn--edit:focus-visible {
+    border-color: rgba(77, 131, 180, 0.4);
+    background: linear-gradient(180deg, rgba(20, 46, 74, 1), rgba(31, 66, 101, 0.98));
+    color: #ffffff;
+}
+
+.detail-row-btn--cancel {
+    border: 1px solid rgba(20, 36, 58, 0.1);
+    background: rgba(255, 255, 255, 0.92);
+    color: #44596f;
+}
+
+.detail-row-btn--cancel:hover,
+.detail-row-btn--cancel:focus-visible {
+    border-color: rgba(129, 147, 168, 0.4);
+    background: rgba(244, 247, 250, 1);
+    color: #203248;
+}
+
+.detail-row-btn--delete {
+    border-color: rgba(217, 92, 92, 0.2);
+    background: linear-gradient(180deg, rgba(191, 72, 72, 0.96), rgba(170, 58, 58, 0.94));
+    color: #fff8f8;
+    box-shadow: 0 10px 20px rgba(191, 72, 72, 0.18);
+}
+
+.detail-row-btn--delete:hover,
+.detail-row-btn--delete:focus-visible {
+    border-color: rgba(217, 92, 92, 0.34);
+    background: linear-gradient(180deg, rgba(176, 60, 60, 1), rgba(155, 48, 48, 0.98));
+    color: #ffffff;
 }
 
 .product-image-box {
     width: 70px;
     height: 70px;
     margin: 0 auto;
+    padding: 0;
+    border: none;
     border-radius: 12px;
     overflow: hidden;
     display: flex;
     align-items: center;
     justify-content: center;
     background: #f5f5f5;
+    appearance: none;
 }
 
 .product-image-box--large {
     width: 92px;
     height: 92px;
+}
+
+.product-image-box--clickable {
+    position: relative;
+    cursor: zoom-in;
+    border: 1px solid rgba(20, 36, 58, 0.08);
+    box-shadow: 0 12px 24px rgba(15, 31, 49, 0.14);
+    transition:
+        transform 0.18s ease,
+        box-shadow 0.18s ease,
+        border-color 0.18s ease;
+}
+
+.product-image-box--clickable:hover,
+.product-image-box--clickable:focus-visible {
+    transform: translateY(-1px) scale(1.02);
+    border-color: rgba(185, 122, 55, 0.35);
+    box-shadow: 0 16px 30px rgba(15, 31, 49, 0.18);
+}
+
+.product-image-box--clickable::after {
+    content: "放大";
+    position: absolute;
+    right: 8px;
+    bottom: 8px;
+    padding: 3px 8px;
+    border-radius: 999px;
+    background: rgba(16, 36, 58, 0.78);
+    color: #f5f8fc;
+    font-size: 0.72rem;
+    letter-spacing: 0.04em;
 }
 
 .product-image {
@@ -1657,6 +1911,26 @@ onBeforeUnmount(() => {
 
 .detail-number {
     width: 100%;
+}
+
+.image-preview-frame {
+    display: grid;
+    place-items: center;
+    min-height: 320px;
+    padding: 8px;
+    border-radius: 24px;
+    background:
+        radial-gradient(circle at top right, rgba(214, 164, 107, 0.12), transparent 32%),
+        linear-gradient(180deg, rgba(248, 250, 252, 0.98), rgba(243, 246, 249, 0.96));
+}
+
+.image-preview-full {
+    display: block;
+    max-width: 100%;
+    max-height: min(72vh, 760px);
+    object-fit: contain;
+    border-radius: 20px;
+    box-shadow: 0 24px 48px rgba(12, 28, 47, 0.18);
 }
 
 .analysis-title {
@@ -1863,6 +2137,10 @@ onBeforeUnmount(() => {
     box-shadow: 0 24px 60px rgba(2, 10, 22, 0.28);
 }
 
+:deep(.detail-dialog .el-dialog) {
+    background: #f7fafc;
+}
+
 :deep(.detail-dialog .el-dialog__header),
 :deep(.analysis-dialog .el-dialog__header) {
     margin-right: 0;
@@ -1873,10 +2151,19 @@ onBeforeUnmount(() => {
         linear-gradient(180deg, color-mix(in srgb, var(--surface-card) 98%, transparent), var(--surface-card));
 }
 
+:deep(.detail-dialog .el-dialog__header) {
+    border-bottom: none;
+    background: transparent;
+}
+
 :deep(.detail-dialog .el-dialog__body),
 :deep(.analysis-dialog .el-dialog__body) {
     padding: 20px 24px 24px;
     background: transparent;
+}
+
+:deep(.detail-dialog .el-dialog__body) {
+    padding-top: 12px;
 }
 
 :deep(.analysis-dialog .el-dialog__title),
@@ -1904,6 +2191,29 @@ onBeforeUnmount(() => {
 .analysis-title strong,
 .analysis-title span {
     color: #000000;
+}
+
+:deep(.image-preview-dialog .el-dialog) {
+    border-radius: 28px;
+    border: 1px solid rgba(20, 36, 58, 0.08);
+    background: #f7fafc;
+    box-shadow: 0 24px 60px rgba(2, 10, 22, 0.24);
+}
+
+:deep(.image-preview-dialog .el-dialog__header) {
+    margin-right: 0;
+    padding: 24px 24px 0;
+    border-bottom: none;
+    background: transparent;
+}
+
+:deep(.image-preview-dialog .el-dialog__body) {
+    padding: 14px 24px 24px;
+}
+
+:deep(.image-preview-dialog .el-dialog__title),
+:deep(.image-preview-dialog .el-dialog__headerbtn .el-dialog__close) {
+    color: #10243c;
 }
 
 :deep(.el-input__wrapper),

@@ -338,7 +338,8 @@ onUnmounted(() => {
   flex-direction: column;
   gap: 20px;
   min-width: 0;
-  height: calc(100dvh - 44px);
+  min-height: 100%;
+  height: 100%;
   overflow: hidden;
 }
 
@@ -552,7 +553,7 @@ onUnmounted(() => {
 @media (max-width: 768px) {
   .vendor-page {
     height: auto;
-    min-height: calc(100dvh - 86px);
+    min-height: 100%;
     gap: 14px;
     overflow: visible;
   }

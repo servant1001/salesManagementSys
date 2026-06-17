@@ -77,29 +77,31 @@ onUnmounted(() => {
 
     <div v-if="isMobileMenuVisible" class="sidebar-overlay" @click="isMobileMenuVisible = false" />
 
-    <aside :class="['sidebar', { collapsed: isCollapsed, active: isMobileMenuVisible }]">
-      <div class="sidebar-content">
-        <div class="logo">
-          <div class="logo-frame">
-            <img alt="Aura logo" src="@/assets/logo.png" />
-          </div>
-          <div v-if="!isCollapsed" class="logo-text">
-            <span>AURA</span>
-            <h3>Sales Platform</h3>
-          </div>
-        </div>
+	    <aside :class="['sidebar', { collapsed: isCollapsed, active: isMobileMenuVisible }]">
+	      <div class="sidebar-content">
+	        <div class="sidebar-top">
+	          <div class="logo">
+	            <div class="logo-frame">
+	              <img alt="Aura logo" src="@/assets/logo.png" />
+	            </div>
+	            <div v-if="!isCollapsed" class="logo-text">
+	              <span>AURA</span>
+	              <h3>Sales Platform</h3>
+	            </div>
+	          </div>
 
-        <nav class="menu">
-          <RouterLink v-for="item in menuItems" :key="item.to" :to="item.to" :title="item.label"
-            @click="isMobileMenuVisible = false">
-            <el-icon>
-              <component :is="item.icon" />
-            </el-icon>
-            <span v-if="!isCollapsed" class="menu-label">{{ item.label }}</span>
-          </RouterLink>
-        </nav>
+	          <nav class="menu">
+	            <RouterLink v-for="item in menuItems" :key="item.to" :to="item.to" :title="item.label"
+	              @click="isMobileMenuVisible = false">
+	              <el-icon>
+	                <component :is="item.icon" />
+	              </el-icon>
+	              <span v-if="!isCollapsed" class="menu-label">{{ item.label }}</span>
+	            </RouterLink>
+	          </nav>
+	        </div>
 
-        <div class="bottom-section">
+	        <div class="bottom-section">
           <div class="theme-panel">
             <div v-if="!isCollapsed" class="theme-labels">
               <strong>{{ themeStore.isDarkTheme ? '深色模式' : '淺色模式' }}</strong>
@@ -144,12 +146,13 @@ onUnmounted(() => {
 <style scoped>
 .layout {
   display: flex;
-  min-height: 100vh;
-  min-height: 100dvh;
+  height: 100vh;
+  height: 100dvh;
   background:
     radial-gradient(circle at top right, rgba(83, 134, 182, 0.1), transparent 26%),
     linear-gradient(180deg, var(--bg-color), var(--bg-color-soft));
   color: var(--text-color);
+  overflow: hidden;
 }
 
 .sidebar-overlay {
@@ -165,6 +168,8 @@ onUnmounted(() => {
   width: 232px;
   display: flex;
   flex-direction: column;
+  height: 100vh;
+  height: 100dvh;
   padding: 18px 14px;
   background: linear-gradient(180deg, var(--sidebar-color), var(--sidebar-color-strong));
   border-right: 1px solid var(--sidebar-border);
@@ -186,6 +191,15 @@ onUnmounted(() => {
 .sidebar-content {
   flex: 1;
   display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.sidebar-top {
+  display: flex;
+  flex: 1;
   flex-direction: column;
   min-height: 0;
 }
@@ -245,6 +259,10 @@ onUnmounted(() => {
   gap: 10px;
   flex: 1;
   width: 100%;
+  min-height: 0;
+  overflow-y: auto;
+  padding-right: 2px;
+  scrollbar-width: thin;
 }
 
 .menu a {
@@ -296,6 +314,7 @@ onUnmounted(() => {
 .bottom-section {
   display: flex;
   flex-direction: column;
+  flex-shrink: 0;
   gap: 12px;
   width: 100%;
   margin-top: 18px;
@@ -416,6 +435,9 @@ onUnmounted(() => {
 .main {
   flex: 1;
   min-width: 0;
+  min-height: 0;
+  height: 100vh;
+  height: 100dvh;
   padding: 22px;
   overflow-y: auto;
 }
@@ -473,6 +495,8 @@ onUnmounted(() => {
 
   .main {
     width: 100%;
+    height: 100vh;
+    height: 100dvh;
     padding: 72px 14px 14px;
   }
 }

@@ -1,4 +1,4 @@
-<template>
+﻿<template>
     <div class="product-page">
         <el-row class="titleBar">
             <el-col :span="24">
@@ -45,7 +45,7 @@
                 </div>
 
                 <div class="button-group">
-                    <el-button type="primary" @click="openProductImportDialog">匯入校園書房商品</el-button>
+                    <el-button type="primary" @click="openProductImportDialog">網址匯入商品</el-button>
                     <el-button type="success" @click="showAddDialog = true">
                         新增商品
                     </el-button>
@@ -219,7 +219,7 @@
                 <strong>目前沒有商品資料</strong>
                 <p>你可以先新增單筆商品，或使用批量新增快速建立商品清單。</p>
                 <div class="empty-actions">
-                    <el-button type="primary" @click="openProductImportDialog">匯入校園書房商品</el-button>
+                    <el-button type="primary" @click="openProductImportDialog">網址匯入商品</el-button>
                     <el-button type="primary" @click="showAddDialog = true">新增商品</el-button>
                     <el-button type="warning" @click="showBatchDialog = true">批量新增</el-button>
                 </div>
@@ -308,19 +308,29 @@
             </template>
         </el-dialog>
 
-        <!-- 校園書房商品匯入彈窗 -->
-        <el-dialog v-model="showProductImportDialog" title="匯入校園書房商品" width="600px">
-            <el-form label-width="110px">
-                <el-form-item label="校園書房網址">
-                    <el-input v-model="shopeeUrl" placeholder="請貼上 校園書房 商品網址" clearable />
+        <!-- 網址匯入商品彈窗 -->
+        <el-dialog v-model="showProductImportDialog" title="網址匯入商品" width="600px">
+            <el-form label-width="120px">
+                <el-form-item label="匯入來源">
+                    <el-radio-group v-model="productImportSource">
+                        <el-radio-button label="campus">校園書房</el-radio-button>
+                        <el-radio-button label="sheep100love">百羊官網</el-radio-button>
+                    </el-radio-group>
                 </el-form-item>
+
+                <el-form-item label="網站連結">
+                    <el-input v-model="productImportUrl"
+                        :placeholder="productImportSource === 'campus' ? 'https://shop.campus.org.tw/ProductDetails.aspx?ProductID=000618779' : 'https://sheep100love.shopstore.tw'"
+                        clearable />
+                </el-form-item>
+
+                <el-alert v-if="productImportSource === 'sheep100love'" title="注意：匯入百羊官網商品時，請確保商品資訊完整且正確" type="info"
+                    :closable="false" show-icon />
             </el-form>
 
             <template #footer>
-                <el-button @click="showProductImportDialog = false">
-                    取消
-                </el-button>
-                <el-button type="primary" :loading="shopeeImportLoading" @click="importProduct">
+                <el-button @click="showProductImportDialog = false">取消</el-button>
+                <el-button type="primary" :loading="productImportLoading" @click="importProduct">
                     抓取商品資料
                 </el-button>
             </template>
@@ -405,21 +415,36 @@
             <el-form :model="batchBase" :rules="batchRules" ref="batchForm" label-width="120px"
                 style="margin-bottom: 20px;">
                 <el-form-item label="定價" prop="price">
-                    <el-input type="number" min="0" v-model.number="batchBase.price" />
+                    <div class="stock-field">
+                        <el-input type="number" min="0" v-model.number="batchBase.price" />
+                        <el-button type="primary" size="small" @click="syncBatchField('price')">
+                            定價同步
+                        </el-button>
+                    </div>
                 </el-form-item>
 
                 <el-form-item label="售價" prop="sellingPrice">
-                    <el-input type="number" min="0" v-model.number="batchBase.sellingPrice" />
+                    <div class="stock-field">
+                        <el-input type="number" min="0" v-model.number="batchBase.sellingPrice" />
+                        <el-button type="primary" size="small" @click="syncBatchField('sellingPrice')">
+                            售價同步
+                        </el-button>
+                    </div>
                 </el-form-item>
 
                 <el-form-item label="成本" prop="cost">
-                    <el-input type="number" min="0" v-model.number="batchBase.cost" />
+                    <div class="stock-field">
+                        <el-input type="number" min="0" v-model.number="batchBase.cost" />
+                        <el-button type="primary" size="small" @click="syncBatchField('cost')">
+                            成本同步
+                        </el-button>
+                    </div>
                 </el-form-item>
 
                 <el-form-item label="庫存" prop="stock" class="stock-item">
                     <div class="stock-field">
                         <el-input-number style="width: 120px;" :min="0" v-model.number="batchBase.stock" />
-                        <el-button style="width: 120px;" type="primary" size="small" @click="syncBatchStock">
+                        <el-button style="width: 120px;" type="primary" size="small" @click="syncBatchField('stock')">
                             庫存同步
                         </el-button>
                     </div>
@@ -483,7 +508,24 @@
                     </template>
                 </el-table-column>
 
-                <!-- 庫存欄位 -->
+                <el-table-column prop="price" label="售價" width="130">
+                    <template #default="{ row }">
+                        <el-input-number style="width: 110px" v-model.number="row.price" :min="0" />
+                    </template>
+                </el-table-column>
+
+                <el-table-column prop="sellingPrice" label="銷售價" width="130">
+                    <template #default="{ row }">
+                        <el-input-number style="width: 110px" v-model.number="row.sellingPrice" :min="0" />
+                    </template>
+                </el-table-column>
+
+                <el-table-column prop="cost" label="成本" width="130">
+                    <template #default="{ row }">
+                        <el-input-number style="width: 110px" v-model.number="row.cost" :min="0" />
+                    </template>
+                </el-table-column>
+
                 <el-table-column prop="stock" label="庫存" width="130">
                     <template #default="{ row }">
                         <el-input-number style="width: 100px" v-model.number="row.stock" :min="0" />
@@ -584,6 +626,40 @@ interface Product {
     updatedBy?: string;
 }
 
+interface ImportedVariant {
+    id?: number;
+    name?: string;
+    optionValues?: string;
+    sku?: string;
+    price?: number;
+    sellingPrice?: number;
+    stock?: number;
+    imageUrl?: string;
+}
+
+interface ImportedProductResponse {
+    name?: string;
+    price?: number;
+    sellingPrice?: number;
+    isbn?: string;
+    imageUrl?: string;
+    website?: string;
+    source?: "campus" | "sheep100love" | string;
+    variants?: ImportedVariant[];
+}
+
+interface BatchProductRow {
+    gtin: string;
+    code: string;
+    name: string;
+    price: number;
+    sellingPrice: number;
+    cost: number;
+    stock: number;
+    imageUrl: string;
+    useGtinAsCode: boolean;
+}
+
 const products = ref<Record<string, Product>>({});
 const editMode = ref(false);
 const searchQuery = ref("");
@@ -594,7 +670,7 @@ const showAddDialog = ref(false);
 const showScannerDialog = ref(false);
 const addForm = ref<any>(null);
 
-const newProduct = ref<Omit<Product, "id" | "createdBy" | "updatedBy">>({
+const createEmptyProduct = (): Omit<Product, "id" | "createdBy" | "updatedBy"> => ({
     gtin: "",
     code: "",
     name: "",
@@ -610,62 +686,130 @@ const newProduct = ref<Omit<Product, "id" | "createdBy" | "updatedBy">>({
     created: Date.now(),
 });
 
-// 匯入校園書房商品
+const newProduct = ref<Omit<Product, "id" | "createdBy" | "updatedBy">>(createEmptyProduct());
+
 const showProductImportDialog = ref(false);
-const shopeeUrl = ref("");
-const shopeeImportLoading = ref(false);
+const productImportSource = ref<"campus" | "sheep100love">("campus");
+const productImportUrl = ref("");
+const productImportLoading = ref(false);
 
 function openProductImportDialog() {
-    shopeeUrl.value = "";
+    productImportSource.value = "campus";
+    productImportUrl.value = "";
     showProductImportDialog.value = true;
 }
 
+function matchesImportSource(url: string, source: "campus" | "sheep100love") {
+    try {
+        const hostname = new URL(url).hostname.toLowerCase();
+        return source === "campus"
+            ? hostname.includes("campus")
+            : hostname === "sheep100love.shopstore.tw";
+    } catch {
+        return false;
+    }
+}
+
+function buildImportedProductName(product: ImportedProductResponse, variant?: ImportedVariant) {
+    const baseName = (product.name || "").trim();
+    const variantName = (variant?.name || variant?.optionValues || "").trim();
+    return variantName ? `${baseName} - ${variantName}` : baseName;
+}
+
+function openImportedProductInAddDialog(product: ImportedProductResponse, url: string) {
+    newProduct.value = {
+        ...createEmptyProduct(),
+        name: buildImportedProductName(product),
+        gtin: product.isbn || "",
+        code: product.isbn || "",
+        price: product.price ?? 0,
+        sellingPrice: product.sellingPrice ?? product.price ?? 0,
+        stock: 0,
+        imageUrl: product.imageUrl || "",
+        website: product.website || url,
+        note: `導入自 ${productImportSource.value === "campus" ? "校園網站" : "百羊官網"}`,
+    };
+
+    showProductImportDialog.value = false;
+    showAddDialog.value = true;
+}
+
+function openImportedVariantsInBatchDialog(product: ImportedProductResponse, url: string) {
+    batchBase.value = {
+        ...createEmptyBatchBase(),
+        price: product.price ?? 0,
+        sellingPrice: product.sellingPrice ?? product.price ?? 0,
+        website: product.website || url,
+        note: "",
+    };
+
+    batchList.value = (product.variants || []).map((variant) => {
+        const sku = (variant.sku || "").trim();
+        const rowName = buildImportedProductName(product, variant);
+        const price = variant.price ?? product.price ?? 0;
+        const sellingPrice = variant.sellingPrice ?? price;
+        return {
+            gtin: sku,
+            code: sku,
+            name: rowName,
+            price,
+            sellingPrice,
+            cost: 0,
+            stock: variant.stock ?? 0,
+            imageUrl: variant.imageUrl || product.imageUrl || "",
+            useGtinAsCode: Boolean(sku),
+        };
+    });
+
+    showProductImportDialog.value = false;
+    showBatchDialog.value = true;
+}
+
 async function importProduct() {
-    const url = shopeeUrl.value.trim();
+    const url = productImportUrl.value.trim();
 
     if (!url) {
         ElMessage.warning("請先輸入商品網址");
         return;
     }
 
-    shopeeImportLoading.value = true;
+    if (!matchesImportSource(url, productImportSource.value)) {
+        ElMessage.warning(productImportSource.value === "campus"
+            ? "請輸入正確的「校園網站」商品網址"
+            : "請輸入正確的「百羊官網」商品網址");
+        return;
+    }
+
+    productImportLoading.value = true;
 
     try {
-        const res = await axios.get("https://product-worker.servant1001.workers.dev/api/campus-product", {
-            params: {
-                url,
-            },
+        const res = await axios.get<ImportedProductResponse>("https://product-worker.servant1001.workers.dev/api/product", {
+            params: { url },
         });
 
         const data = res.data;
+        const variants = data.variants || [];
+        const shouldOpenBatch = data.source === "sheep100love" && variants.length > 0;
 
-        newProduct.value.name = data.name || "";
-        newProduct.value.gtin = data.isbn || "";
-        newProduct.value.code = data.isbn || "";
-        newProduct.value.price = data.price ?? 0;
-        newProduct.value.sellingPrice = data.sellingPrice ?? 0;
-        newProduct.value.stock = 0;
-        newProduct.value.imageUrl = data.imageUrl || "";
-        newProduct.value.website = data.website || url;
-        newProduct.value.note = "由校園書房商品匯入";
+        if (shouldOpenBatch) {
+            openImportedVariantsInBatchDialog(data, url);
+            ElMessage.success(`此商品共導入 ${variants.length} 筆品項`);
+            return;
+        }
 
-        showProductImportDialog.value = false;
-        showAddDialog.value = true;
-
+        openImportedProductInAddDialog(data, url);
         ElMessage.success("已抓取商品資料，請確認後新增");
     } catch (error: any) {
         console.error(error);
         ElMessage.error(
             error.response?.data?.message ||
             error.response?.data?.error ||
-            "商品抓取失敗"
+            "導入商品資料時發生錯誤"
         );
     } finally {
-        shopeeImportLoading.value = false;
+        productImportLoading.value = false;
     }
 }
-
-// 驗證規則
 const rules = {
     gtin: [{ required: true, message: "請輸入 GTIN", trigger: "blur" }],
     code: [{ required: true, message: "請輸入商品編號", trigger: "blur" }],
@@ -968,20 +1112,7 @@ function addProduct() {
     update(newRef, { ...productData, id })
         .then(() => {
             showAddDialog.value = false;
-            newProduct.value = {
-                gtin: "",
-                code: "",
-                name: "",
-                price: 0,
-                sellingPrice: 0,
-                cost: 0,
-                stock: 0,
-                supplierName: "",
-                supplierCode: "",
-                website: "",
-                note: "",
-                created: Date.now(),
-            };
+            newProduct.value = createEmptyProduct();
         })
         .catch(console.error);
 }
@@ -1068,7 +1199,8 @@ async function findVendorByCode(arg?: string) {
 
 // 🧩 批量新增商品
 const showBatchDialog = ref(false);
-const batchBase = ref({
+
+const createEmptyBatchBase = () => ({
     price: 0,
     sellingPrice: 0,
     cost: 0,
@@ -1078,7 +1210,9 @@ const batchBase = ref({
     website: "",
     note: "",
 });
-const batchList = ref<{ gtin: string; code: string; name: string, stock: number, imageUrl: string, useGtinAsCode: boolean }[]>([]);
+
+const batchBase = ref(createEmptyBatchBase());
+const batchList = ref<BatchProductRow[]>([]);
 
 const batchForm = ref<any>(null);
 
@@ -1096,7 +1230,6 @@ const addBatchRow = () => {
     let useGtinAsCode = false;
 
     if (last && last.gtin) {
-        // 找出 GTIN 結尾數字區塊並 +1
         const match = last.gtin.match(/(\d+)$/);
         if (match) {
             const prefix = last.gtin.slice(0, match.index);
@@ -1104,27 +1237,39 @@ const addBatchRow = () => {
             const nextNum = String(Number(num) + 1).padStart(num.length, "0");
             newGtin = prefix + nextNum;
         } else {
-            // 若沒有數字結尾就複製上一筆
             newGtin = last.gtin;
         }
 
-        // 若上一筆打勾，繼承勾選狀態
         useGtinAsCode = !!last.useGtinAsCode;
     } else {
-        // 第一筆預設值
         newGtin = "CN00100101";
     }
 
     batchList.value.push({
         gtin: newGtin,
-        code: useGtinAsCode ? newGtin : "", // 若繼承勾選則直接用 GTIN
+        code: useGtinAsCode ? newGtin : "",
         name: "",
-        stock: 0,
+        price: batchBase.value.price,
+        sellingPrice: batchBase.value.sellingPrice,
+        cost: batchBase.value.cost,
+        stock: batchBase.value.stock,
         imageUrl: "",
-        useGtinAsCode, // ✅ 繼承前一筆的勾選狀態
+        useGtinAsCode,
     });
 };
 
+function syncBatchField(field: "price" | "sellingPrice" | "cost" | "stock") {
+    if (!batchList.value.length) {
+        ElMessage.warning("請先輸入商品資料");
+        return;
+    }
+
+    const fieldValue = batchBase.value[field] ?? 0;
+    batchList.value.forEach((item) => {
+        item[field] = fieldValue;
+    });
+    ElMessage.success("已同步欄位值");
+}
 const clearAllBatchRows = async () => {
     try {
         await ElMessageBox.confirm(

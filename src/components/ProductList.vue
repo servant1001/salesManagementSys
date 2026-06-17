@@ -1345,13 +1345,35 @@ async function submitBatchProducts() {
         const existingCodes = new Set(Object.values(existingProducts).map(p => p.code));
         const existingGTINs = new Set(Object.values(existingProducts).map(p => p.gtin));
 
+        // 先逐筆檢查必填欄位，避免提交時默默略過不完整資料
+        const incompleteRows = batchList.value
+            .map((item, index) => {
+                const missingFields: string[] = [];
+
+                if (!item.gtin?.trim()) missingFields.push("GTIN");
+                if (!item.code?.trim()) missingFields.push("商品編號");
+                if (!item.name?.trim()) missingFields.push("商品名稱");
+
+                if (!missingFields.length) return null;
+
+                return `第 ${index + 1} 筆：${missingFields.join("、")}`;
+            })
+            .filter((row): row is string => Boolean(row));
+
+        if (incompleteRows.length > 0) {
+            ElMessage.error(`以下商品資料未填完整，請補齊後再提交：${incompleteRows.join("；")}`);
+            return;
+        }
+
         // 找出重複的編號或 GTIN
         const duplicateCodes: string[] = [];
         const duplicateGTINs: string[] = [];
         for (const item of batchList.value) {
-            if (!item.code || !item.name || !item.gtin) continue;
-            if (existingCodes.has(item.code)) duplicateCodes.push(item.code);
-            if (existingGTINs.has(item.gtin)) duplicateGTINs.push(item.gtin);
+            const code = item.code.trim();
+            const gtin = item.gtin.trim();
+
+            if (existingCodes.has(code)) duplicateCodes.push(code);
+            if (existingGTINs.has(gtin)) duplicateGTINs.push(gtin);
         }
 
         // 🚫 若有重複，不送出
@@ -1364,23 +1386,16 @@ async function submitBatchProducts() {
             return;
         }
 
-        // 檢查是否至少有一筆完整商品
-        const validList = batchList.value.filter(item => item.code && item.name && item.gtin);
-        if (!validList.length) {
-            ElMessage.warning("請至少填寫一筆完整商品（編號、名稱與 GTIN）");
-            return;
-        }
-
         // 組合資料
         const updates: Record<string, Product> = {};
-        for (const item of validList) {
+        for (const item of batchList.value) {
             const newRef = push(productsRef);
             const id = newRef.key!;
             updates[id] = {
                 id,
-                code: item.code,
-                gtin: item.gtin,           // 新增 GTIN
-                name: item.name,
+                code: item.code.trim(),
+                gtin: item.gtin.trim(),           // 新增 GTIN
+                name: item.name.trim(),
                 price: batchBase.value.price,
                 sellingPrice: batchBase.value.sellingPrice,
                 cost: batchBase.value.cost,
@@ -1397,7 +1412,7 @@ async function submitBatchProducts() {
 
         try {
             await update(productsRef, updates);
-            ElMessage.success(`成功新增 ${validList.length} 筆商品`);
+            ElMessage.success(`成功新增 ${batchList.value.length} 筆商品`);
             showBatchDialog.value = false;
             batchList.value = [];
             batchBase.value = {

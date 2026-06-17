@@ -508,13 +508,13 @@
                     </template>
                 </el-table-column>
 
-                <el-table-column prop="price" label="售價" width="130">
+                <el-table-column prop="price" label="定價" width="130">
                     <template #default="{ row }">
                         <el-input-number style="width: 110px" v-model.number="row.price" :min="0" />
                     </template>
                 </el-table-column>
 
-                <el-table-column prop="sellingPrice" label="銷售價" width="130">
+                <el-table-column prop="sellingPrice" label="售價" width="130">
                     <template #default="{ row }">
                         <el-input-number style="width: 110px" v-model.number="row.sellingPrice" :min="0" />
                     </template>

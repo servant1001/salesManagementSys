@@ -40,31 +40,45 @@
             </div>
 
             <div class="filter-grid">
-                <el-input
-                    v-model="searchKeyword"
-                    placeholder="搜尋商品名稱"
-                    clearable
-                    class="search-input"
-                    @input="filterSales"
-                />
+                <el-input v-model="searchKeyword" placeholder="搜尋商品名稱" clearable class="search-input"
+                    @input="filterSales" />
 
                 <el-select v-model="dateFilterMode" class="mode-select">
                     <el-option label="按月份" value="month" />
                     <el-option label="按日期" value="day" />
                 </el-select>
 
-                <el-date-picker
-                    v-model="selectedDate"
-                    :type="dateFilterMode === 'day' ? 'date' : 'month'"
+                <el-date-picker v-model="selectedDate" :type="dateFilterMode === 'day' ? 'date' : 'month'"
                     :format="dateFilterMode === 'day' ? 'YYYY-MM-DD' : 'YYYY-MM'"
-                    :value-format="dateFilterMode === 'day' ? 'YYYY-MM-DD' : 'YYYY-MM'"
-                    clearable
-                    class="date-picker"
-                />
+                    :value-format="dateFilterMode === 'day' ? 'YYYY-MM-DD' : 'YYYY-MM'" clearable style="width: 100%" />
+            </div>
 
-                <div class="range-badge">
-                    <span>目前區間</span>
-                    <strong>{{ paymentStatsDateRangeText || "未選擇" }}</strong>
+            <div class="analysis-preview">
+                <div class="analysis-preview-head">
+                    <div>
+                        <span class="preview-eyebrow">分析摘要</span>
+                        <strong>付款方式分析</strong>
+                    </div>
+                    <el-button type="primary" class="analysis-trigger-btn" @click="showPaymentStats">
+                        開啟分析
+                    </el-button>
+                </div>
+
+                <div class="analysis-preview-metrics">
+                    <div class="preview-metric">
+                        <span>紀錄筆數</span>
+                        <strong>{{ totalSalesCount }}</strong>
+                    </div>
+                    <div class="preview-metric">
+                        <span>付款方式數</span>
+                        <strong>{{ activePaymentMethodCount }}</strong>
+                    </div>
+                    <div class="preview-metric">
+                        <span>毛利率</span>
+                        <strong :class="{ 'profit-negative': filteredProfitRate < 0 }">
+                            {{ filteredProfitRate }}%
+                        </strong>
+                    </div>
                 </div>
             </div>
         </section>
@@ -83,14 +97,9 @@
                 </div>
             </div>
 
-            <el-table
-                v-if="filteredSales.length"
-                :data="filteredSales"
-                border
-                class="sales-table"
+            <el-table v-if="filteredSales.length" :data="filteredSales" border class="sales-table"
                 :class="tableThemeClass"
-                :header-cell-style="{ background: 'var(--table-header-bg)', color: 'var(--table-header-text)' }"
-            >
+                :header-cell-style="{ background: 'var(--table-header-bg)', color: 'var(--table-header-text)' }">
                 <el-table-column class-name="no-padding-cell" label="#" width="38" align="center">
                     <template #default="{ $index }">
                         <span class="index-text">{{ $index + 1 }}</span>
@@ -100,38 +109,19 @@
                 <el-table-column v-if="showActions" fixed="left" label="操作" width="152" align="center">
                     <template #default="{ row }">
                         <div class="row-action-stack">
-                            <el-button
-                                v-if="editingRow !== row"
-                                size="small"
-                                type="primary"
-                                class="row-action-btn"
-                                @click="startEditTime(row)"
-                            >
+                            <el-button v-if="editingRow !== row" size="small" type="primary" class="row-action-btn"
+                                @click="startEditTime(row)">
                                 編輯
                             </el-button>
-                            <el-button
-                                v-if="editingRow === row"
-                                size="small"
-                                type="primary"
-                                class="row-action-btn"
-                                @click="saveEditTime(row)"
-                            >
+                            <el-button v-if="editingRow === row" size="small" type="primary" class="row-action-btn"
+                                @click="saveEditTime(row)">
                                 儲存
                             </el-button>
-                            <el-button
-                                v-if="editingRow === row"
-                                size="small"
-                                class="row-action-btn"
-                                @click="cancelEditTime"
-                            >
+                            <el-button v-if="editingRow === row" size="small" class="row-action-btn"
+                                @click="cancelEditTime">
                                 取消
                             </el-button>
-                            <el-button
-                                size="small"
-                                type="danger"
-                                class="row-action-btn"
-                                @click="deleteSale(row)"
-                            >
+                            <el-button size="small" type="danger" class="row-action-btn" @click="deleteSale(row)">
                                 刪除
                             </el-button>
                         </div>
@@ -141,13 +131,8 @@
                 <el-table-column prop="timestamp" label="時間" width="210">
                     <template #default="{ row }">
                         <div v-if="editingRow === row">
-                            <el-date-picker
-                                v-model="editingTimestamp"
-                                type="datetime"
-                                format="YYYY-MM-DD HH:mm"
-                                value-format="x"
-                                size="small"
-                            />
+                            <el-date-picker v-model="editingTimestamp" type="datetime" format="YYYY-MM-DD HH:mm"
+                                value-format="x" size="small" />
                         </div>
                         <div v-else>{{ formatDate(row.timestamp) }}</div>
                     </template>
@@ -171,12 +156,8 @@
                     <template #default="{ row }">
                         <div v-if="editingRow === row">
                             <el-select v-model="row.paymentMethod" size="small" placeholder="選擇付款方式">
-                                <el-option
-                                    v-for="opt in paymentMethodOptions"
-                                    :key="opt.value"
-                                    :label="opt.label"
-                                    :value="opt.value"
-                                />
+                                <el-option v-for="opt in paymentMethodOptions" :key="opt.value" :label="opt.label"
+                                    :value="opt.value" />
                             </el-select>
                         </div>
                         <div v-else>{{ paymentMethodMap[row.paymentMethod || ""] || "-" }}</div>
@@ -187,11 +168,8 @@
 
                 <el-table-column label="商品明細" width="120" align="center">
                     <template #default="{ row }">
-                        <el-button
-                            type="primary"
-                            size="small"
-                            @click="showDetails(row.items, row.operator, row.total, row.totalProfit ?? 0, row.id)"
-                        >
+                        <el-button size="small" class="detail-view-btn"
+                            @click="showDetails(row.items, row.operator, row.total, row.totalProfit ?? 0, row.id)">
                             查看明細
                         </el-button>
                     </template>
@@ -206,7 +184,8 @@
             </div>
         </section>
 
-        <el-dialog v-model="dialogVisible" title="商品明細" width="min(94vw, 1380px)" class="detail-dialog" @close="onDetailDialogClose">
+        <el-dialog v-model="dialogVisible" title="商品明細" width="min(94vw, 1380px)" class="detail-dialog"
+            @close="onDetailDialogClose">
             <div class="detail-header">
                 <div class="detail-summary-card">
                     <div class="detail-summary-item">
@@ -215,7 +194,8 @@
                     </div>
                     <div class="detail-summary-item">
                         <span>總毛利</span>
-                        <strong :class="{ 'profit-negative': selectedProfit < 0 }">NT$ {{ formatCurrency(selectedProfit) }}</strong>
+                        <strong :class="{ 'profit-negative': selectedProfit < 0 }">NT$ {{ formatCurrency(selectedProfit)
+                            }}</strong>
                     </div>
                     <div class="detail-summary-item">
                         <span>操作人員</span>
@@ -225,20 +205,15 @@
 
                 <div class="detail-actions">
                     <el-button type="primary" size="small" @click="addNewDetailItem">新增商品</el-button>
-                    <el-button size="small" :type="showDetailActions ? 'warning' : 'info'" @click="toggleDetailEditMode">
+                    <el-button size="small" :type="showDetailActions ? 'warning' : 'info'"
+                        @click="toggleDetailEditMode">
                         {{ showDetailActions ? "關閉編輯模式" : "開啟編輯模式" }}
                     </el-button>
                 </div>
             </div>
 
-            <el-table
-                :data="selectedItems"
-                border
-                size="small"
-                class="detail-table"
-                :class="tableThemeClass"
-                :header-cell-style="{ background: 'var(--table-header-bg)', color: 'var(--table-header-text)' }"
-            >
+            <el-table :data="selectedItems" border size="small" class="detail-table" :class="tableThemeClass"
+                :header-cell-style="{ background: 'var(--table-header-bg)', color: 'var(--table-header-text)' }">
                 <el-table-column label="#" width="48" align="center">
                     <template #default="{ $index }">{{ $index + 1 }}</template>
                 </el-table-column>
@@ -247,7 +222,8 @@
                     <template #default="{ row }">
                         <div class="row-action-stack">
                             <template v-if="editingDetailRow === row">
-                                <el-button size="small" type="primary" class="row-action-btn" @click="saveDetailEdit(row)">
+                                <el-button size="small" type="primary" class="row-action-btn"
+                                    @click="saveDetailEdit(row)">
                                     儲存
                                 </el-button>
                                 <el-button size="small" class="row-action-btn" @click="editingDetailRow = null">
@@ -255,10 +231,12 @@
                                 </el-button>
                             </template>
                             <template v-else>
-                                <el-button size="small" type="primary" class="row-action-btn" @click="editingDetailRow = row">
+                                <el-button size="small" type="primary" class="row-action-btn"
+                                    @click="editingDetailRow = row">
                                     編輯
                                 </el-button>
-                                <el-button size="small" type="danger" class="row-action-btn" @click="deleteDetailItem(row)">
+                                <el-button size="small" type="danger" class="row-action-btn"
+                                    @click="deleteDetailItem(row)">
                                     刪除
                                 </el-button>
                             </template>
@@ -283,7 +261,8 @@
                             <el-input v-model="row.name" size="small" placeholder="輸入商品名稱" />
                         </div>
                         <div v-else>
-                            <a v-if="row.website" :href="row.website" target="_blank" rel="noopener noreferrer" class="product-link">
+                            <a v-if="row.website" :href="row.website" target="_blank" rel="noopener noreferrer"
+                                class="product-link">
                                 {{ row.name }}
                             </a>
                             <span v-else>{{ row.name }}</span>
@@ -293,28 +272,32 @@
 
                 <el-table-column prop="code" label="商品編號" width="120">
                     <template #default="{ row }">
-                        <el-input v-if="editingDetailRow === row" v-model="row.code" size="small" placeholder="輸入商品編號" />
+                        <el-input v-if="editingDetailRow === row" v-model="row.code" size="small"
+                            placeholder="輸入商品編號" />
                         <div v-else>{{ row.code }}</div>
                     </template>
                 </el-table-column>
 
                 <el-table-column prop="gtin" label="GTIN" width="120">
                     <template #default="{ row }">
-                        <el-input v-if="editingDetailRow === row" v-model="row.gtin" size="small" placeholder="輸入 GTIN" />
+                        <el-input v-if="editingDetailRow === row" v-model="row.gtin" size="small"
+                            placeholder="輸入 GTIN" />
                         <div v-else>{{ row.gtin }}</div>
                     </template>
                 </el-table-column>
 
                 <el-table-column prop="sellingPrice" label="售價" width="120">
                     <template #default="{ row }">
-                        <el-input-number v-if="editingDetailRow === row" v-model="row.sellingPrice" :min="0" size="small" class="detail-number" />
+                        <el-input-number v-if="editingDetailRow === row" v-model="row.sellingPrice" :min="0"
+                            size="small" class="detail-number" />
                         <div v-else>NT$ {{ formatCurrency(row.sellingPrice) }}</div>
                     </template>
                 </el-table-column>
 
                 <el-table-column prop="quantity" label="數量" width="110">
                     <template #default="{ row }">
-                        <el-input-number v-if="editingDetailRow === row" v-model="row.quantity" :min="0" size="small" class="detail-number" />
+                        <el-input-number v-if="editingDetailRow === row" v-model="row.quantity" :min="0" size="small"
+                            class="detail-number" />
                         <div v-else>{{ row.quantity }}</div>
                     </template>
                 </el-table-column>
@@ -329,7 +312,8 @@
 
                 <el-table-column prop="cost" label="成本" width="120">
                     <template #default="{ row }">
-                        <el-input-number v-if="editingDetailRow === row" v-model="row.cost" :min="0" size="small" class="detail-number" />
+                        <el-input-number v-if="editingDetailRow === row" v-model="row.cost" :min="0" size="small"
+                            class="detail-number" />
                         <div v-else>NT$ {{ formatCurrency(row.cost ?? 0) }}</div>
                     </template>
                 </el-table-column>
@@ -344,7 +328,8 @@
 
                 <el-table-column label="預估總毛利" width="130">
                     <template #default="{ row }">
-                        <span :class="['profit-value', { 'profit-negative': (row.sellingPrice - (row.cost ?? 0)) * row.quantity < 0 }]">
+                        <span
+                            :class="['profit-value', { 'profit-negative': (row.sellingPrice - (row.cost ?? 0)) * row.quantity < 0 }]">
                             NT$ {{ formatCurrency((row.sellingPrice - (row.cost ?? 0)) * row.quantity) }}
                         </span>
                     </template>
@@ -352,9 +337,11 @@
 
                 <el-table-column prop="website" label="網站連結" width="180">
                     <template #default="{ row }">
-                        <el-input v-if="editingDetailRow === row" v-model="row.website" size="small" placeholder="輸入網站連結" />
+                        <el-input v-if="editingDetailRow === row" v-model="row.website" size="small"
+                            placeholder="輸入網站連結" />
                         <div v-else>
-                            <a v-if="row.website" :href="row.website" target="_blank" rel="noopener noreferrer" class="site-link">連結</a>
+                            <a v-if="row.website" :href="row.website" target="_blank" rel="noopener noreferrer"
+                                class="site-link">連結</a>
                             <span v-else>-</span>
                         </div>
                     </template>
@@ -362,7 +349,7 @@
             </el-table>
         </el-dialog>
 
-        <el-dialog v-model="salesAnalysisDialog" width="min(92vw, 560px)" class="analysis-dialog">
+        <el-dialog v-model="salesAnalysisDialog" width="min(94vw, 860px)" class="analysis-dialog">
             <template #title>
                 <div class="analysis-title">
                     <strong>銷售分析</strong>
@@ -371,17 +358,17 @@
             </template>
 
             <div class="analysis-summary">
-                <div class="summary-row">
+                <div class="summary-card">
                     <span>總銷售額</span>
                     <strong>NT$ {{ formatCurrency(paymentStatsTotal) }}</strong>
                 </div>
-                <div class="summary-row">
+                <div class="summary-card">
                     <span>總毛利</span>
                     <strong :class="{ 'profit-negative': paymentStatsTotalProfit < 0 }">
                         NT$ {{ formatCurrency(paymentStatsTotalProfit) }}
                     </strong>
                 </div>
-                <div class="summary-row">
+                <div class="summary-card">
                     <span>毛利率</span>
                     <strong :class="{ 'profit-negative': paymentStatsProfitRate < 0 }">
                         {{ paymentStatsProfitRate }}%
@@ -389,37 +376,89 @@
                 </div>
             </div>
 
-            <el-table
-                :data="paymentStats"
-                border
-                size="small"
-                class="analysis-table"
-                :class="tableThemeClass"
-                :header-cell-style="{ background: 'var(--table-header-bg)', color: 'var(--table-header-text)' }"
-            >
-                <el-table-column prop="method" label="付款方式" width="110" align="center">
-                    <template #default="{ row }">
-                        {{ paymentMethodMap[row.method] || row.method }}
-                    </template>
-                </el-table-column>
-                <el-table-column prop="count" label="筆數" width="70" align="center" />
-                <el-table-column prop="total" label="總金額" width="120" align="center">
-                    <template #default="{ row }">NT$ {{ formatCurrency(row.total) }}</template>
-                </el-table-column>
-                <el-table-column prop="profit" label="總毛利" align="center">
-                    <template #default="{ row }">
-                        <span :class="{ 'profit-negative': row.profit < 0 }">
-                            NT$ {{ formatCurrency(row.profit) }}
+            <div v-if="paymentStats.length" class="analysis-visuals">
+                <section class="visual-card">
+                    <div class="visual-head">
+                        <div>
+                            <span class="visual-eyebrow">營收占比</span>
+                            <strong>付款方式分布</strong>
+                        </div>
+                        <span class="visual-highlight">
+                            {{ topPaymentMethodLabel }} {{ topPaymentMethodShare.toFixed(1) }}%
                         </span>
-                    </template>
-                </el-table-column>
-            </el-table>
+                    </div>
+
+                    <div ref="salesDistributionChartRef" class="visual-chart" />
+
+                    <div class="visual-legend">
+                        <div v-for="row in paymentChartRows" :key="`${row.method}-sales`" class="legend-item">
+                            <span class="legend-dot" :style="{ background: row.color }" />
+                            <span class="legend-label">{{ row.label }}</span>
+                            <strong class="legend-value">NT$ {{ formatCurrency(row.total) }}</strong>
+                            <span class="legend-meta">{{ row.count }} 筆 / {{ row.totalShare.toFixed(1) }}%</span>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="visual-card">
+                    <div class="visual-head">
+                        <div>
+                            <span class="visual-eyebrow">毛利表現</span>
+                            <strong>付款方式比較</strong>
+                        </div>
+                        <span class="visual-highlight">平均客單 NT$ {{ formatCurrency(averageOrderValue) }}</span>
+                    </div>
+
+                    <div ref="profitComparisonChartRef" class="visual-chart visual-chart--wide" />
+                    <p class="visual-caption">柱狀圖顯示總毛利，折線顯示毛利率。</p>
+                </section>
+
+                <section class="visual-card visual-card--full">
+                    <div class="visual-head">
+                        <div>
+                            <span class="visual-eyebrow">時段趨勢</span>
+                            <strong>每小時訂單數量</strong>
+                        </div>
+                        <span class="visual-highlight">{{ busiestHourLabel }} 共有 {{ busiestHourCount }} 筆</span>
+                    </div>
+
+                    <div ref="hourlyOrdersChartRef" class="visual-chart visual-chart--timeline" />
+                    <p class="visual-caption">依目前篩選條件統計各時段訂單數量，可快速看出尖峰時段。</p>
+                </section>
+            </div>
+
+            <div v-if="paymentStats.length" class="analysis-table-wrap">
+                <el-table :data="paymentStats" border size="small" class="analysis-table" :class="tableThemeClass"
+                    :header-cell-style="{ background: 'var(--table-header-bg)', color: 'var(--table-header-text)' }">
+                    <el-table-column prop="method" label="付款方式" width="110" align="center">
+                        <template #default="{ row }">
+                            {{ paymentMethodMap[row.method] || row.method }}
+                        </template>
+                    </el-table-column>
+                    <el-table-column prop="count" label="筆數" width="70" align="center" />
+                    <el-table-column prop="total" label="總金額" width="120" align="center">
+                        <template #default="{ row }">NT$ {{ formatCurrency(row.total) }}</template>
+                    </el-table-column>
+                    <el-table-column prop="profit" label="總毛利" align="center">
+                        <template #default="{ row }">
+                            <span :class="{ 'profit-negative': row.profit < 0 }">
+                                NT$ {{ formatCurrency(row.profit) }}
+                            </span>
+                        </template>
+                    </el-table-column>
+                </el-table>
+            </div>
+            <div v-else class="analysis-empty">
+                <strong>目前篩選條件下沒有可分析的付款資料。</strong>
+                <p>請調整日期或商品關鍵字後，再重新開啟分析。</p>
+            </div>
         </el-dialog>
     </div>
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from "vue";
+import * as echarts from "echarts";
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from "vue";
 import { db } from "@/firebase";
 import { child, endAt, get, orderByChild, query, ref as dbRef, remove, startAt, update } from "firebase/database";
 import { ElMessage, ElMessageBox } from "element-plus";
@@ -477,6 +516,15 @@ const paymentMethodOptions: PaymentOption[] = [
     { label: "PX Pay", value: "px_pay" },
 ];
 
+const paymentMethodColorMap: Record<string, string> = {
+    cash: "#d6a46b",
+    credit_card: "#4d83b4",
+    line_pay: "#4fb27a",
+    px_pay: "#dd7b55",
+    unknown: "#8193a8",
+};
+const defaultPaymentChartColor = "#8193a8";
+
 const sales = ref<Sale[]>([]);
 const filteredSales = ref<Sale[]>([]);
 const selectedItems = ref<SaleItem[]>([]);
@@ -495,9 +543,15 @@ const paymentStats = ref<{ method: string; count: number; total: number; profit:
 const paymentStatsTotal = ref(0);
 const paymentStatsTotalProfit = ref(0);
 const paymentStatsProfitRate = ref(0);
+const salesDistributionChartRef = ref<HTMLDivElement | null>(null);
+const profitComparisonChartRef = ref<HTMLDivElement | null>(null);
+const hourlyOrdersChartRef = ref<HTMLDivElement | null>(null);
 const showDetailActions = ref(false);
 const editingDetailRow = ref<SaleItem | null>(null);
 let currentEditingSaleId: string | null = null;
+let salesDistributionChart: ReturnType<typeof echarts.init> | null = null;
+let profitComparisonChart: ReturnType<typeof echarts.init> | null = null;
+let hourlyOrdersChart: ReturnType<typeof echarts.init> | null = null;
 
 function formatCurrency(value: number) {
     return Number(value || 0).toLocaleString("zh-TW", { maximumFractionDigits: 0 });
@@ -662,6 +716,336 @@ async function loadSalesByDate(date: string | null) {
 const totalSalesCount = computed(() => filteredSales.value.length);
 const totalFilteredSales = computed(() => filteredSales.value.reduce((sum, sale) => sum + sale.total, 0));
 const totalFilteredProfit = computed(() => filteredSales.value.reduce((sum, sale) => sum + (sale.totalProfit ?? 0), 0));
+const filteredProfitRate = computed(() =>
+    totalFilteredSales.value ? parseFloat(((totalFilteredProfit.value / totalFilteredSales.value) * 100).toFixed(2)) : 0
+);
+const activePaymentMethodCount = computed(() => new Set(filteredSales.value.map((sale) => sale.paymentMethod || "unknown")).size);
+const averageOrderValue = computed(() => (totalSalesCount.value ? totalFilteredSales.value / totalSalesCount.value : 0));
+const paymentChartRows = computed(() =>
+    paymentStats.value
+        .map((stat) => {
+            const totalShare = paymentStatsTotal.value ? (stat.total / paymentStatsTotal.value) * 100 : 0;
+            return {
+                ...stat,
+                label: paymentMethodMap[stat.method] || stat.method,
+                color: paymentMethodColorMap[stat.method] || defaultPaymentChartColor,
+                totalShare,
+                averageTicket: stat.count ? stat.total / stat.count : 0,
+                profitRate: stat.total ? Number(((stat.profit / stat.total) * 100).toFixed(1)) : 0,
+            };
+        })
+        .sort((a, b) => b.total - a.total)
+);
+const topPaymentMethodLabel = computed(() => paymentChartRows.value[0]?.label || "—");
+const topPaymentMethodShare = computed(() => paymentChartRows.value[0]?.totalShare ?? 0);
+const hourlyOrderTrend = computed(() => {
+    const hours = Array.from({ length: 24 }, (_, hour) => ({
+        hour,
+        label: `${String(hour).padStart(2, "0")}:00 - ${String((hour + 1) % 24).padStart(2, "0")}:00`,
+        shortLabel: `${String(hour).padStart(2, "0")}:00`,
+        count: 0,
+    }));
+
+    filteredSales.value.forEach((sale) => {
+        const hour = new Date(sale.timestamp).getHours();
+        const targetHour = hours[hour];
+        if (targetHour) targetHour.count += 1;
+    });
+
+    return hours;
+});
+const busiestHourEntry = computed(() =>
+    hourlyOrderTrend.value.reduce(
+        (peak, entry) => (entry.count > peak.count ? entry : peak),
+        hourlyOrderTrend.value[0] ?? { hour: 0, label: "00:00 - 01:00", shortLabel: "00:00", count: 0 }
+    )
+);
+const busiestHourLabel = computed(() => busiestHourEntry.value.label);
+const busiestHourCount = computed(() => busiestHourEntry.value.count);
+const chartTextColor = computed(() => (themeStore.isDarkTheme ? "#d9e2ef" : "#32465b"));
+const chartMutedColor = computed(() => (themeStore.isDarkTheme ? "#95a7bb" : "#72859a"));
+const chartGridColor = computed(() => (themeStore.isDarkTheme ? "rgba(255, 255, 255, 0.08)" : "rgba(20, 36, 58, 0.08)"));
+const chartTooltipBackground = computed(() => (themeStore.isDarkTheme ? "rgba(7, 18, 30, 0.94)" : "rgba(255, 255, 255, 0.96)"));
+const chartDialogSurface = computed(() => (themeStore.isDarkTheme ? "#10243c" : "#f7fafc"));
+const chartSeriesBorderColor = computed(() => (themeStore.isDarkTheme ? "#10243c" : "#ffffff"));
+
+function ensureChart(
+    chartRef: HTMLDivElement | null,
+    currentChart: ReturnType<typeof echarts.init> | null
+): ReturnType<typeof echarts.init> | null {
+    if (!chartRef) return null;
+    return currentChart ?? echarts.getInstanceByDom(chartRef) ?? echarts.init(chartRef);
+}
+
+function renderAnalysisCharts() {
+    if (!salesAnalysisDialog.value || !paymentChartRows.value.length) return;
+
+    salesDistributionChart = ensureChart(salesDistributionChartRef.value, salesDistributionChart);
+    profitComparisonChart = ensureChart(profitComparisonChartRef.value, profitComparisonChart);
+    hourlyOrdersChart = ensureChart(hourlyOrdersChartRef.value, hourlyOrdersChart);
+
+    if (!salesDistributionChart || !profitComparisonChart || !hourlyOrdersChart) return;
+
+    const rows = paymentChartRows.value;
+    const labels: string[] = rows.map((row) => row.label || row.method);
+    const colors: string[] = rows.map((row) => row.color || defaultPaymentChartColor);
+
+    salesDistributionChart.setOption({
+        animationDuration: 500,
+        color: colors,
+        tooltip: {
+            trigger: "item",
+            backgroundColor: chartTooltipBackground.value,
+            borderColor: "transparent",
+            padding: [10, 12],
+            textStyle: { color: chartTextColor.value },
+            formatter: (params: { name: string; value: number; percent: number }) =>
+                `${params.name}<br/>營收：NT$ ${formatCurrency(params.value)}<br/>占比：${params.percent}%`,
+        },
+        title: {
+            text: `NT$ ${formatCurrency(paymentStatsTotal.value)}`,
+            subtext: "總營收",
+            left: "center",
+            top: "38%",
+            textStyle: {
+                color: chartTextColor.value,
+                fontSize: 20,
+                fontWeight: 700,
+            },
+            subtextStyle: {
+                color: chartMutedColor.value,
+                fontSize: 12,
+                fontWeight: 600,
+            },
+        },
+        series: [
+            {
+                type: "pie",
+                radius: ["56%", "78%"],
+                center: ["50%", "52%"],
+                avoidLabelOverlap: true,
+                minAngle: 8,
+                itemStyle: {
+                    borderRadius: 10,
+                    borderColor: chartSeriesBorderColor.value,
+                    borderWidth: 4,
+                },
+                label: { show: false },
+                labelLine: { show: false },
+                emphasis: {
+                    scale: true,
+                    scaleSize: 8,
+                },
+                data: rows.map((row) => ({
+                    name: row.label,
+                    value: row.total,
+                    itemStyle: { color: row.color },
+                })),
+            },
+        ],
+    });
+
+    profitComparisonChart.setOption({
+        animationDuration: 500,
+        grid: {
+            left: 44,
+            right: 28,
+            top: 34,
+            bottom: 42,
+        },
+        tooltip: {
+            trigger: "axis",
+            backgroundColor: chartTooltipBackground.value,
+            borderColor: "transparent",
+            padding: [10, 12],
+            textStyle: { color: chartTextColor.value },
+            axisPointer: {
+                type: "shadow",
+                shadowStyle: {
+                    color: themeStore.isDarkTheme ? "rgba(255, 255, 255, 0.06)" : "rgba(20, 36, 58, 0.06)",
+                },
+            },
+        },
+        legend: {
+            top: 0,
+            icon: "roundRect",
+            itemWidth: 14,
+            itemHeight: 10,
+            textStyle: { color: chartMutedColor.value },
+            data: ["總毛利", "毛利率"],
+        },
+        xAxis: {
+            type: "category",
+            data: labels,
+            axisLine: { lineStyle: { color: chartGridColor.value } },
+            axisLabel: {
+                color: chartMutedColor.value,
+                fontSize: 12,
+            },
+            axisTick: { show: false },
+        },
+        yAxis: [
+            {
+                type: "value",
+                name: "毛利",
+                axisLabel: {
+                    color: chartMutedColor.value,
+                    formatter: (value: number) => `NT$ ${formatCurrency(value)}`,
+                },
+                splitLine: {
+                    lineStyle: {
+                        color: chartGridColor.value,
+                        type: "dashed",
+                    },
+                },
+            },
+            {
+                type: "value",
+                name: "毛利率",
+                axisLabel: {
+                    color: chartMutedColor.value,
+                    formatter: (value: number) => `${value}%`,
+                },
+                splitLine: { show: false },
+            },
+        ],
+        series: [
+            {
+                name: "總毛利",
+                type: "bar",
+                barWidth: 28,
+                itemStyle: {
+                    borderRadius: [10, 10, 4, 4],
+                },
+                data: rows.map((row) => ({
+                    value: row.profit,
+                    itemStyle: { color: row.profit < 0 ? "#d95c5c" : row.color },
+                })),
+            },
+            {
+                name: "毛利率",
+                type: "line",
+                yAxisIndex: 1,
+                smooth: true,
+                symbolSize: 9,
+                lineStyle: { width: 3, color: "#f0c998" },
+                itemStyle: { color: "#f0c998" },
+                areaStyle: {
+                    color: "rgba(240, 201, 152, 0.14)",
+                },
+                data: rows.map((row) => row.profitRate),
+            },
+        ],
+    });
+
+    const hourlyLabels: string[] = hourlyOrderTrend.value.map((entry) => entry.shortLabel);
+    const hourlyCounts: number[] = hourlyOrderTrend.value.map((entry) => entry.count);
+
+    hourlyOrdersChart.setOption({
+        animationDuration: 500,
+        grid: {
+            left: 34,
+            right: 22,
+            top: 24,
+            bottom: 34,
+        },
+        tooltip: {
+            trigger: "axis",
+            backgroundColor: chartTooltipBackground.value,
+            borderColor: "transparent",
+            padding: [10, 12],
+            textStyle: { color: chartTextColor.value },
+            formatter: (params: Array<{ axisValue: string; data: number }>) => {
+                const point = params[0];
+                if (!point) return "";
+                const source = hourlyOrderTrend.value.find((entry) => entry.shortLabel === point.axisValue);
+                return `${source?.label || point.axisValue}<br/>訂單數量：${point.data} 筆`;
+            },
+        },
+        xAxis: {
+            type: "category",
+            boundaryGap: false,
+            data: hourlyLabels,
+            axisLine: { lineStyle: { color: chartGridColor.value } },
+            axisLabel: {
+                color: chartMutedColor.value,
+                fontSize: 11,
+                interval: 1,
+            },
+            axisTick: { show: false },
+        },
+        yAxis: {
+            type: "value",
+            minInterval: 1,
+            axisLabel: {
+                color: chartMutedColor.value,
+                formatter: (value: number) => `${value}`,
+            },
+            splitLine: {
+                lineStyle: {
+                    color: chartGridColor.value,
+                    type: "dashed",
+                },
+            },
+        },
+        series: [
+            {
+                name: "訂單數量",
+                type: "line",
+                smooth: true,
+                symbol: "circle",
+                symbolSize: 8,
+                lineStyle: {
+                    width: 3,
+                    color: "#4d83b4",
+                },
+                itemStyle: {
+                    color: "#d6a46b",
+                    borderColor: chartSeriesBorderColor.value,
+                    borderWidth: 2,
+                },
+                areaStyle: {
+                    color: themeStore.isDarkTheme ? "rgba(77, 131, 180, 0.24)" : "rgba(77, 131, 180, 0.16)",
+                },
+                data: hourlyCounts,
+                markPoint: {
+                    symbol: "roundRect",
+                    symbolSize: [88, 30],
+                    itemStyle: {
+                        color: "#d6a46b",
+                        borderRadius: 10,
+                    },
+                    label: {
+                        color: "#10243c",
+                        fontWeight: 700,
+                        formatter: ({ data }: { data?: { value?: number } }) => `高峰 ${data?.value ?? 0} 筆`,
+                    },
+                    data: [
+                        {
+                            coord: [busiestHourEntry.value.shortLabel, busiestHourEntry.value.count],
+                            value: busiestHourEntry.value.count,
+                        },
+                    ],
+                },
+            },
+        ],
+    });
+}
+
+function resizeAnalysisCharts() {
+    salesDistributionChart?.resize();
+    profitComparisonChart?.resize();
+    hourlyOrdersChart?.resize();
+}
+
+function disposeAnalysisCharts() {
+    salesDistributionChart?.dispose();
+    profitComparisonChart?.dispose();
+    hourlyOrdersChart?.dispose();
+    salesDistributionChart = null;
+    profitComparisonChart = null;
+    hourlyOrdersChart = null;
+}
 
 function calculatePaymentStats() {
     const statsMap: Record<string, { count: number; total: number; profit: number }> = {};
@@ -837,9 +1221,32 @@ watch(selectedDate, (val) => {
     loadSalesByDate(val);
 });
 
+watch(
+    [salesAnalysisDialog, paymentStats, () => themeStore.isDarkTheme],
+    async ([isOpen]) => {
+        if (!isOpen) {
+            disposeAnalysisCharts();
+            return;
+        }
+
+        await nextTick();
+        requestAnimationFrame(() => {
+            renderAnalysisCharts();
+            resizeAnalysisCharts();
+        });
+    },
+    { deep: true }
+);
+
 onMounted(() => {
+    window.addEventListener("resize", resizeAnalysisCharts);
     selectedDate.value = getToday();
     loadSalesByDate(selectedDate.value);
+});
+
+onBeforeUnmount(() => {
+    window.removeEventListener("resize", resizeAnalysisCharts);
+    disposeAnalysisCharts();
 });
 </script>
 
@@ -956,26 +1363,95 @@ onMounted(() => {
     gap: 12px;
 }
 
+.filter-actions .secondary-btn {
+    display: none;
+}
+
 .filter-grid {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) 120px 220px minmax(180px, 240px);
+    grid-template-columns: minmax(0, 1fr) 120px 220px;
     gap: 12px;
     margin-top: 18px;
+    align-items: stretch;
 }
 
-.range-badge {
+.filter-grid>* {
+    min-width: 0;
+}
+
+.search-input :deep(.el-input__wrapper) {
+    min-height: 40px;
+}
+
+.analysis-preview {
     display: flex;
     flex-direction: column;
-    justify-content: center;
-    gap: 4px;
-    padding: 12px 14px;
-    border-radius: 16px;
-    background: var(--surface-muted);
-    color: var(--muted-text);
+    gap: 16px;
+    margin-top: 16px;
+    padding: 18px;
+    border: 1px solid var(--surface-border);
+    border-radius: 22px;
+    background:
+        radial-gradient(circle at top right, rgba(214, 164, 107, 0.14), transparent 30%),
+        linear-gradient(180deg, color-mix(in srgb, var(--surface-card) 92%, transparent), var(--surface-card));
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
 }
 
-.range-badge strong {
+.analysis-preview-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 14px;
+}
+
+.preview-eyebrow {
+    display: inline-flex;
+    color: var(--accent-color);
+    font-size: 0.74rem;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+}
+
+.analysis-preview-head strong {
+    display: block;
+    margin-top: 8px;
     color: var(--heading-color);
+    font-size: 1.08rem;
+    text-shadow: 0 1px 0 rgba(0, 0, 0, 0.08);
+}
+
+.analysis-trigger-btn {
+    min-height: 42px;
+    border-radius: 14px;
+}
+
+.analysis-preview-metrics {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 12px;
+}
+
+.preview-metric {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: 14px 16px;
+    border-radius: 18px;
+    background: color-mix(in srgb, var(--surface-muted) 88%, var(--surface-card));
+    border: 1px solid var(--surface-border);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03);
+}
+
+.preview-metric span {
+    color: var(--muted-text);
+    font-size: 0.84rem;
+}
+
+.preview-metric strong {
+    color: var(--heading-color);
+    font-size: 1.16rem;
+    font-weight: 700;
+    text-shadow: 0 1px 0 rgba(0, 0, 0, 0.08);
 }
 
 .secondary-btn {
@@ -1032,6 +1508,40 @@ onMounted(() => {
     font-size: 1.15rem;
     font-weight: 700;
     color: var(--heading-color);
+}
+
+.detail-view-btn {
+    min-height: 34px;
+    padding: 0 14px;
+    border-radius: 999px;
+    border: 1px solid color-mix(in srgb, var(--accent-color) 42%, var(--surface-border));
+    background:
+        radial-gradient(circle at top right, rgba(214, 164, 107, 0.18), transparent 48%),
+        linear-gradient(180deg, color-mix(in srgb, var(--surface-card) 88%, transparent), color-mix(in srgb, var(--surface-muted) 78%, var(--surface-card)));
+    color: var(--heading-color);
+    font-weight: 600;
+    letter-spacing: 0.01em;
+    box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.08),
+        0 10px 20px rgba(10, 24, 41, 0.12);
+    transition:
+        transform 0.18s ease,
+        border-color 0.18s ease,
+        box-shadow 0.18s ease,
+        background 0.18s ease;
+}
+
+.detail-view-btn:hover,
+.detail-view-btn:focus-visible {
+    transform: translateY(-1px);
+    border-color: color-mix(in srgb, var(--accent-color) 72%, var(--surface-border));
+    background:
+        radial-gradient(circle at top right, rgba(214, 164, 107, 0.28), transparent 46%),
+        linear-gradient(180deg, color-mix(in srgb, var(--surface-card) 82%, transparent), color-mix(in srgb, var(--surface-muted) 90%, var(--surface-card)));
+    color: var(--heading-color);
+    box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.1),
+        0 14px 28px rgba(10, 24, 41, 0.16);
 }
 
 .profit-value {
@@ -1166,43 +1676,234 @@ onMounted(() => {
 }
 
 .analysis-summary {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 12px;
     margin-bottom: 16px;
 }
 
-.summary-row {
+.summary-card {
     display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 16px;
+    flex-direction: column;
+    gap: 8px;
     padding: 14px 16px;
+    border-radius: 18px;
+    background: linear-gradient(180deg, color-mix(in srgb, var(--surface-card) 94%, transparent), var(--surface-card));
+    border: 1px solid var(--surface-border);
+    color: var(--muted-text);
+}
+
+.summary-card strong {
+    color: var(--heading-color);
+    font-size: 1.08rem;
+}
+
+.analysis-visuals {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 14px;
+    margin-bottom: 18px;
+}
+
+.visual-card {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    padding: 18px;
+    border-radius: 22px;
+    border: 1px solid var(--surface-border);
+    background:
+        radial-gradient(circle at top right, rgba(214, 164, 107, 0.1), transparent 34%),
+        linear-gradient(180deg, color-mix(in srgb, var(--surface-card) 94%, transparent), var(--surface-card));
+    box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.04),
+        0 16px 36px rgba(6, 16, 30, 0.12);
+}
+
+.visual-card--full {
+    grid-column: 1 / -1;
+}
+
+.visual-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.visual-eyebrow {
+    display: inline-flex;
+    color: var(--accent-color);
+    font-size: 0.72rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+}
+
+.visual-head strong {
+    display: block;
+    margin-top: 8px;
+    color: var(--heading-color);
+    font-size: 1.08rem;
+    letter-spacing: -0.02em;
+}
+
+.visual-highlight {
+    padding: 9px 13px;
+    border-radius: 999px;
+    border: 1px solid var(--surface-border);
+    background: color-mix(in srgb, var(--surface-muted) 82%, var(--surface-card));
+    color: var(--heading-color);
+    font-size: 0.84rem;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.visual-chart {
+    width: 100%;
+    height: 288px;
+    border-radius: 18px;
+}
+
+.visual-chart--wide {
+    height: 304px;
+}
+
+.visual-chart--timeline {
+    height: 320px;
+}
+
+.visual-legend {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px 12px;
+}
+
+.legend-item {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    gap: 4px 10px;
+    align-items: center;
+    padding: 12px 14px;
     border-radius: 16px;
+    border: 1px solid var(--surface-border);
+    background: color-mix(in srgb, var(--surface-muted) 84%, var(--surface-card));
+    transition:
+        transform 0.2s ease,
+        border-color 0.2s ease,
+        background 0.2s ease;
+}
+
+.legend-item:hover {
+    transform: translateY(-1px);
+    border-color: color-mix(in srgb, var(--accent-color) 35%, var(--surface-border));
+    background: color-mix(in srgb, var(--surface-muted) 68%, var(--surface-card));
+}
+
+.legend-dot {
+    grid-row: span 2;
+    width: 10px;
+    height: 10px;
+    border-radius: 999px;
+    box-shadow: 0 0 0 4px rgba(255, 255, 255, 0.04);
+}
+
+.legend-label {
+    color: var(--heading-color);
+    font-size: 0.92rem;
+    font-weight: 600;
+}
+
+.legend-value {
+    color: var(--heading-color);
+    font-size: 0.92rem;
+    text-align: right;
+}
+
+.legend-meta {
+    color: var(--muted-text);
+    font-size: 0.82rem;
+    text-align: right;
+}
+
+.visual-caption {
+    margin: -4px 0 0;
+    color: var(--muted-text);
+    font-size: 0.84rem;
+    line-height: 1.6;
+}
+
+.analysis-table-wrap {
+    overflow-x: auto;
+}
+
+.analysis-empty {
+    padding: 18px;
+    border: 1px dashed var(--surface-border);
+    border-radius: 18px;
     background: var(--surface-muted);
     color: var(--muted-text);
 }
 
-.summary-row strong {
+.analysis-empty strong {
+    display: block;
     color: var(--heading-color);
     font-size: 1rem;
+}
+
+.analysis-empty p {
+    margin: 8px 0 0;
+    line-height: 1.7;
 }
 
 :deep(.detail-dialog .el-dialog),
 :deep(.analysis-dialog .el-dialog) {
     border-radius: 28px;
-    background: rgba(255, 255, 255, 0.98);
+    border: 1px solid var(--surface-border);
+    background: linear-gradient(180deg, color-mix(in srgb, var(--surface-card) 96%, transparent), var(--surface-card));
+    box-shadow: 0 24px 60px rgba(2, 10, 22, 0.28);
 }
 
 :deep(.detail-dialog .el-dialog__header),
 :deep(.analysis-dialog .el-dialog__header) {
     margin-right: 0;
     padding: 24px 24px 0;
+    border-bottom: 1px solid var(--surface-border);
+    background:
+        radial-gradient(circle at top right, rgba(214, 164, 107, 0.12), transparent 28%),
+        linear-gradient(180deg, color-mix(in srgb, var(--surface-card) 98%, transparent), var(--surface-card));
 }
 
 :deep(.detail-dialog .el-dialog__body),
 :deep(.analysis-dialog .el-dialog__body) {
     padding: 20px 24px 24px;
+    background: transparent;
+}
+
+:deep(.analysis-dialog .el-dialog__title),
+:deep(.detail-dialog .el-dialog__title),
+:deep(.analysis-dialog .el-dialog__headerbtn .el-dialog__close),
+:deep(.detail-dialog .el-dialog__headerbtn .el-dialog__close) {
+    color: var(--heading-color);
+}
+
+:deep(.analysis-dialog .el-dialog) {
+    background: #f7fafc;
+}
+
+:deep(.analysis-dialog .el-dialog__header) {
+    border-bottom: none;
+    background: transparent;
+}
+
+:deep(.analysis-dialog .el-dialog__body) {
+    background: transparent;
+}
+
+:deep(.analysis-dialog .el-dialog__title),
+:deep(.analysis-dialog .el-dialog__headerbtn .el-dialog__close),
+.analysis-title strong,
+.analysis-title span {
+    color: #000000;
 }
 
 :deep(.el-input__wrapper),
@@ -1228,6 +1929,12 @@ onMounted(() => {
     .hero-metrics {
         grid-template-columns: 1fr;
     }
+
+    .analysis-summary,
+    .analysis-visuals,
+    .analysis-preview-metrics {
+        grid-template-columns: 1fr;
+    }
 }
 
 @media (max-width: 900px) {
@@ -1237,6 +1944,7 @@ onMounted(() => {
 }
 
 @media (max-width: 768px) {
+
     .sales-hero,
     .filter-card,
     .table-card {
@@ -1253,6 +1961,37 @@ onMounted(() => {
 
     .filter-grid {
         grid-template-columns: 1fr;
+    }
+
+    .analysis-preview-head {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .visual-head {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .visual-highlight {
+        white-space: normal;
+    }
+
+    .visual-chart,
+    .visual-chart--wide {
+        height: 260px;
+    }
+
+    .visual-chart--timeline {
+        height: 280px;
+    }
+
+    .visual-legend {
+        grid-template-columns: 1fr;
+    }
+
+    .analysis-trigger-btn {
+        width: 100%;
     }
 }
 </style>

@@ -18,6 +18,7 @@
     "@zxing/browser": "^0.1.5",
     "@zxing/library": "^0.21.3",
     "axios": "^1.18.0",
+    "echarts": "^6.1.0",
     "element-plus": "^2.11.4",
     "firebase": "^12.3.0",
     "html5-qrcode": "^2.3.8",

@@ -104,7 +104,7 @@ salesManagementSys/
 │  ├─ components/          # 功能頁元件與共用元件
 │  │  ├─ AddProduct.vue
 │  │  ├─ Checkout.vue
-│  │  ├─ CheckoutRedesign.vue
+│  │  ├─ Checkout.vue
 │  │  ├─ ProductList.vue
 │  │  ├─ Sales.vue
 │  │  ├─ SalesRecord.vue
@@ -201,7 +201,7 @@ npm run format
 - `src/views/HomeView.vue`
 - `src/views/Vendors.vue`
 - `src/components/ProductList.vue`
-- `src/components/CheckoutRedesign.vue`
+- `src/components/Checkout.vue`
 - `src/components/SalesRecord.vue`
 
 ## UI / UX 設計方向
@@ -221,7 +221,7 @@ npm run format
   - `Checkout.vue`
   - `Sales.vue`
 - 目前路由實際使用的是：
-  - `CheckoutRedesign.vue`
+  - `Checkout.vue`
   - `SalesRecord.vue`
 - `npm run build` 可正常通過，但 Vite 會提示 chunk 體積較大，屬於目前已知警告。
 

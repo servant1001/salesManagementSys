@@ -272,7 +272,7 @@
 - `src/views/HomeView.vue`
 - `src/views/Vendors.vue`
 - `src/components/ProductList.vue`
-- `src/components/CheckoutRedesign.vue`
+- `src/components/Checkout.vue`
 - `src/components/Scanner.vue`
 - `src/components/SalesRecord.vue`
 - `src/assets/main.css`
@@ -288,5 +288,5 @@
 ## 備註
 
 - 舊版元件仍可能保留在專案中，例如 `src/components/Checkout.vue`、`src/components/Sales.vue`
-- 目前實際上線視覺以 `CheckoutRedesign.vue`、`SalesRecord.vue` 等新版元件為主
+- 目前實際上線視覺以 `Checkout.vue`、`SalesRecord.vue` 等新版元件為主
 - 若後續新增頁面，請先閱讀本文件，再決定是否要擴充這套設計系統

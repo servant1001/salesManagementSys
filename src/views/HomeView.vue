@@ -1,24 +1,142 @@
 <script setup lang="ts">
-const metrics = [
-  { label: '今日訂單', value: '128', detail: '比昨日成長 12%' },
-  { label: '待補商品', value: '14', detail: '3 項需要優先處理' },
-  { label: '本月營收', value: 'NT$ 842K', detail: '達成率 78%' },
-]
+import { computed, onMounted, ref } from "vue";
+import { child, get, orderByChild, query, ref as dbRef, startAt, endAt } from "firebase/database";
+import { db } from "@/firebase";
 
-const panels = [
+interface SaleRecord {
+  id: string;
+  total: number;
+  totalProfit?: number;
+  paymentMethod?: string;
+  timestamp: number;
+}
+
+const todaySales = ref<SaleRecord[]>([]);
+const yesterdaySales = ref<SaleRecord[]>([]);
+const loading = ref(false);
+
+function getDayRange(baseDate: Date) {
+  const start = new Date(baseDate.getFullYear(), baseDate.getMonth(), baseDate.getDate(), 0, 0, 0, 0).getTime();
+  const end = new Date(baseDate.getFullYear(), baseDate.getMonth(), baseDate.getDate(), 23, 59, 59, 999).getTime();
+  return { start, end };
+}
+
+async function loadSalesInRange(startTime: number, endTime: number) {
+  const salesRef = child(dbRef(db), "sales");
+  const salesQuery = query(salesRef, orderByChild("timestamp"), startAt(startTime), endAt(endTime));
+  const snapshot = await get(salesQuery);
+
+  if (!snapshot.exists()) {
+    return [];
+  }
+
+  const data = snapshot.val() as Record<string, Omit<SaleRecord, "id">>;
+  return Object.entries(data)
+    .map(([id, value]) => ({
+      id,
+      total: Number(value.total || 0),
+      totalProfit: Number(value.totalProfit || 0),
+      paymentMethod: value.paymentMethod || "",
+      timestamp: Number(value.timestamp || 0),
+    }))
+    .sort((a, b) => b.timestamp - a.timestamp);
+}
+
+async function loadDashboardMetrics() {
+  loading.value = true;
+
+  try {
+    const today = new Date();
+    const yesterday = new Date();
+    yesterday.setDate(today.getDate() - 1);
+
+    const todayRange = getDayRange(today);
+    const yesterdayRange = getDayRange(yesterday);
+
+    const [todayRows, yesterdayRows] = await Promise.all([
+      loadSalesInRange(todayRange.start, todayRange.end),
+      loadSalesInRange(yesterdayRange.start, yesterdayRange.end),
+    ]);
+
+    todaySales.value = todayRows;
+    yesterdaySales.value = yesterdayRows;
+  } finally {
+    loading.value = false;
+  }
+}
+
+function formatCurrency(value: number) {
+  return Number(value || 0).toLocaleString("zh-TW", { maximumFractionDigits: 0 });
+}
+
+function getGrowthText(current: number, previous: number, unit = "%") {
+  if (previous <= 0 && current > 0) return "較昨日新增啟動";
+  if (previous <= 0) return "較昨日持平";
+
+  const change = ((current - previous) / previous) * 100;
+  const sign = change > 0 ? "+" : "";
+  return `較昨日 ${sign}${change.toFixed(1)}${unit}`;
+}
+
+const todayOrderCount = computed(() => todaySales.value.length);
+const yesterdayOrderCount = computed(() => yesterdaySales.value.length);
+const todayRevenue = computed(() => todaySales.value.reduce((sum, sale) => sum + sale.total, 0));
+const yesterdayRevenue = computed(() => yesterdaySales.value.reduce((sum, sale) => sum + sale.total, 0));
+const todayProfit = computed(() => todaySales.value.reduce((sum, sale) => sum + (sale.totalProfit ?? 0), 0));
+const activePaymentCount = computed(() => new Set(todaySales.value.map((sale) => sale.paymentMethod || "unknown")).size);
+const averageOrderValue = computed(() => (todayOrderCount.value ? todayRevenue.value / todayOrderCount.value : 0));
+const profitRate = computed(() => (
+  todayRevenue.value ? Number(((todayProfit.value / todayRevenue.value) * 100).toFixed(1)) : 0
+));
+
+const metrics = computed(() => [
   {
-    title: '今日重點',
-    text: '優先處理低庫存商品與待確認供應商訂單，維持結帳與補貨節奏穩定。',
+    label: "今日訂單",
+    value: loading.value ? "讀取中..." : `${todayOrderCount.value}`,
+    detail: getGrowthText(todayOrderCount.value, yesterdayOrderCount.value),
   },
   {
-    title: '門市節奏',
-    text: '上午來客較集中，建議先確認熱銷品庫存與結帳區人力配置。',
+    label: "今日營收",
+    value: loading.value ? "讀取中..." : `NT$ ${formatCurrency(todayRevenue.value)}`,
+    detail: loading.value
+      ? "正在同步銷售資料"
+      : `${getGrowthText(todayRevenue.value, yesterdayRevenue.value)} / 平均客單 NT$ ${formatCurrency(averageOrderValue.value)}`,
   },
   {
-    title: '系統狀態',
-    text: '目前資料同步與帳號服務正常，可持續進行商品與銷售操作。',
+    label: "今日毛利",
+    value: loading.value ? "讀取中..." : `NT$ ${formatCurrency(todayProfit.value)}`,
+    detail: loading.value
+      ? "正在計算今日毛利"
+      : `毛利率 ${profitRate.value}% / ${activePaymentCount.value} 種付款方式`,
   },
-]
+]);
+
+const panels = computed(() => [
+  {
+    title: "即時營運摘要",
+    text: loading.value
+      ? "首頁正在同步今天的銷售統計資料。"
+      : `今天累計 ${todayOrderCount.value} 筆訂單，總營收 NT$ ${formatCurrency(todayRevenue.value)}。`,
+  },
+  {
+    title: "訂單節奏",
+    text: loading.value
+      ? "正在整理今日訂單節奏。"
+      : todayOrderCount.value
+        ? `目前平均客單為 NT$ ${formatCurrency(averageOrderValue.value)}，可持續追蹤高峰時段與付款方式分布。`
+        : "今天目前尚未產生訂單，可先前往結帳作業或銷售紀錄頁確認資料流。 ",
+  },
+  {
+    title: "下一步建議",
+    text: todayOrderCount.value
+      ? "可前往銷售紀錄頁查看圖表分析，或在商品列表與供應商頁面持續補強資料品質。"
+      : "建議先確認結帳作業是否正常出單，並檢查商品與供應商資料是否完整。",
+  },
+]);
+
+onMounted(() => {
+  void loadDashboardMetrics();
+});
 </script>
 
 <template>
@@ -26,14 +144,14 @@ const panels = [
     <section class="hero-card">
       <div class="hero-copy">
         <span class="hero-eyebrow">AURA DASHBOARD</span>
-        <h1>讓每天的銷售決策，看起來更清楚一點。</h1>
+        <h1>AURA 銷售管理系統</h1>
         <p>
-          從首頁直接掌握今日營運重點、補貨節奏與系統狀態，讓團隊在同一個畫面上協作。
+          讓你隨時隨地，方便、快速、直覺地管理商品、操作結帳與查看銷售紀錄。
         </p>
       </div>
       <div class="hero-badge">
-        <strong>Retail flow</strong>
-        <span>Unified ops view</span>
+        <strong>{{ loading ? "同步中" : "Live Sales" }}</strong>
+        <span>{{ loading ? "Loading dashboard metrics" : "Today synced from Firebase" }}</span>
       </div>
     </section>
 
@@ -62,12 +180,12 @@ const panels = [
       <article class="feature-panel accent-panel">
         <div class="panel-header">
           <span class="panel-eyebrow">NEXT STEP</span>
-          <h3>建議操作順序</h3>
+          <h3>建議檢查項目</h3>
         </div>
         <ol class="step-list">
-          <li>先查看商品管理頁，確認低庫存與待上架商品。</li>
-          <li>進入結帳作業與銷售紀錄，檢查今日交易狀態。</li>
-          <li>若有補貨需求，再到供應商管理安排後續流程。</li>
+          <li>確認今天的訂單數與營收是否符合預期。</li>
+          <li>若出單量異常，前往銷售紀錄頁查看圖表分析與明細。</li>
+          <li>若要補齊基礎資料，可回商品列表與供應商管理持續維護。</li>
         </ol>
       </article>
     </section>
@@ -177,6 +295,7 @@ const panels = [
 .metric-card p {
   margin-top: 10px;
   color: var(--muted-text);
+  line-height: 1.7;
 }
 
 .content-grid {
@@ -233,7 +352,7 @@ const panels = [
   line-height: 1.9;
 }
 
-.step-list li + li {
+.step-list li+li {
   margin-top: 10px;
 }
 

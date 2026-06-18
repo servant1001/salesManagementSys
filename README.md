@@ -107,7 +107,7 @@ salesManagementSys/
 │  │  ├─ CheckoutRedesign.vue
 │  │  ├─ ProductList.vue
 │  │  ├─ Sales.vue
-│  │  ├─ SalesRedesign.vue
+│  │  ├─ SalesRecord.vue
 │  │  └─ Scanner.vue
 │  ├─ composables/         # 自訂 composables
 │  ├─ layouts/             # 版型，例如主框架與側邊欄
@@ -168,14 +168,14 @@ npm run format
 
 ## npm Scripts
 
-| 指令 | 說明 |
-| --- | --- |
-| `npm run dev` | 啟動 Vite 開發伺服器 |
-| `npm run build` | 先做型別檢查，再建置正式版 |
-| `npm run build-only` | 只執行 Vite build |
-| `npm run preview` | 預覽建置後內容 |
-| `npm run type-check` | 使用 `vue-tsc` 做型別檢查 |
-| `npm run format` | 使用 Prettier 格式化 `src/` |
+| 指令                 | 說明                        |
+| -------------------- | --------------------------- |
+| `npm run dev`        | 啟動 Vite 開發伺服器        |
+| `npm run build`      | 先做型別檢查，再建置正式版  |
+| `npm run build-only` | 只執行 Vite build           |
+| `npm run preview`    | 預覽建置後內容              |
+| `npm run type-check` | 使用 `vue-tsc` 做型別檢查   |
+| `npm run format`     | 使用 Prettier 格式化 `src/` |
 
 ## Firebase 設定
 
@@ -202,7 +202,7 @@ npm run format
 - `src/views/Vendors.vue`
 - `src/components/ProductList.vue`
 - `src/components/CheckoutRedesign.vue`
-- `src/components/SalesRedesign.vue`
+- `src/components/SalesRecord.vue`
 
 ## UI / UX 設計方向
 
@@ -222,7 +222,7 @@ npm run format
   - `Sales.vue`
 - 目前路由實際使用的是：
   - `CheckoutRedesign.vue`
-  - `SalesRedesign.vue`
+  - `SalesRecord.vue`
 - `npm run build` 可正常通過，但 Vite 會提示 chunk 體積較大，屬於目前已知警告。
 
 ## 後續建議

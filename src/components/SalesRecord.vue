@@ -263,6 +263,8 @@
                         <template #default="{ row }">
                             <button type="button"
                                 :class="['product-image-box', 'product-image-box--large', { 'product-image-box--clickable': !!row.imageUrl }]"
+                                :disabled="!row.imageUrl"
+                                :aria-label="row.imageUrl ? `放大查看 ${row.name || '商品圖片'}` : '此商品沒有圖片'"
                                 @click="row.imageUrl && openDetailImagePreview(row.imageUrl, row.name)">
                                 <img v-if="row.imageUrl" :src="row.imageUrl" alt="商品圖片" class="product-image" />
                                 <el-icon v-else class="product-image-fallback">
@@ -382,6 +384,14 @@
                 <img v-if="detailImagePreviewUrl" :src="detailImagePreviewUrl" :alt="detailImagePreviewName || '商品圖片'"
                     class="image-preview-full" />
             </div>
+
+            <template #footer>
+                <div class="dialog-footer">
+                    <el-button class="detail-toolbar-btn detail-toolbar-btn--secondary" @click="detailImagePreviewVisible = false">
+                        關閉
+                    </el-button>
+                </div>
+            </template>
         </el-dialog>
 
         <el-dialog v-model="salesAnalysisDialog" width="min(94vw, 860px)" class="analysis-dialog">
@@ -1970,6 +1980,11 @@ onBeforeUnmount(() => {
     justify-content: center;
     background: #f5f5f5;
     appearance: none;
+}
+
+.product-image-box:disabled {
+    cursor: default;
+    opacity: 0.88;
 }
 
 .product-image-box--large {

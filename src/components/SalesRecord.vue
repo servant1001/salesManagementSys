@@ -1635,9 +1635,118 @@ onBeforeUnmount(() => {
     box-shadow: var(--surface-shadow);
 }
 
+:deep(.sales-table.el-table),
+:deep(.detail-table.el-table),
+:deep(.analysis-table.el-table) {
+    --el-table-border-color: var(--surface-border);
+    --el-table-border: 1px solid var(--surface-border);
+    --el-table-tr-bg-color: transparent;
+    --el-table-row-hover-bg-color: rgba(185, 120, 55, 0.08);
+    border-radius: 24px;
+    overflow: hidden;
+    background: transparent;
+}
+
+:deep(.sales-table .el-table__inner-wrapper::before),
+:deep(.detail-table .el-table__inner-wrapper::before),
+:deep(.analysis-table .el-table__inner-wrapper::before) {
+    display: none;
+}
+
 :deep(.el-table th) {
     font-weight: 700;
     text-align: center;
+}
+
+:deep(.sales-table td.el-table__cell),
+:deep(.sales-table th.el-table__cell.is-leaf),
+:deep(.detail-table td.el-table__cell),
+:deep(.detail-table th.el-table__cell.is-leaf),
+:deep(.analysis-table td.el-table__cell),
+:deep(.analysis-table th.el-table__cell.is-leaf) {
+    border-bottom-color: var(--surface-border);
+}
+
+:deep(.sales-table .el-table__body td.el-table__cell),
+:deep(.detail-table .el-table__body td.el-table__cell),
+:deep(.analysis-table .el-table__body td.el-table__cell) {
+    background: transparent;
+}
+
+:deep(.sales-table .el-table__fixed),
+:deep(.sales-table .el-table__fixed-right),
+:deep(.detail-table .el-table__fixed),
+:deep(.detail-table .el-table__fixed-right),
+:deep(.analysis-table .el-table__fixed),
+:deep(.analysis-table .el-table__fixed-right) {
+    box-shadow: none;
+}
+
+:deep(.sales-table .el-table__fixed-body-wrapper td.el-table__cell),
+:deep(.sales-table .el-table__fixed-header-wrapper th.el-table__cell),
+:deep(.detail-table .el-table__fixed-body-wrapper td.el-table__cell),
+:deep(.detail-table .el-table__fixed-header-wrapper th.el-table__cell),
+:deep(.analysis-table .el-table__fixed-body-wrapper td.el-table__cell),
+:deep(.analysis-table .el-table__fixed-header-wrapper th.el-table__cell) {
+    background: inherit;
+}
+
+.table-light :deep(.sales-table .el-table__body tr:hover > td.el-table__cell),
+.table-light :deep(.detail-table .el-table__body tr:hover > td.el-table__cell),
+.table-light :deep(.analysis-table .el-table__body tr:hover > td.el-table__cell) {
+    background: rgba(185, 120, 55, 0.08) !important;
+}
+
+.table-dark :deep(.sales-table .el-table__header-wrapper th.el-table__cell),
+.table-dark :deep(.detail-table .el-table__header-wrapper th.el-table__cell),
+.table-dark :deep(.analysis-table .el-table__header-wrapper th.el-table__cell) {
+    background:
+        linear-gradient(180deg, rgba(18, 45, 72, 0.98), rgba(14, 33, 54, 0.96)) !important;
+    color: #eef4fb !important;
+    border-bottom-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+.table-dark :deep(.sales-table .el-table__body tr > td.el-table__cell),
+.table-dark :deep(.detail-table .el-table__body tr > td.el-table__cell),
+.table-dark :deep(.analysis-table .el-table__body tr > td.el-table__cell) {
+    background: linear-gradient(180deg, rgba(11, 27, 45, 0.92), rgba(9, 23, 38, 0.9)) !important;
+    color: #d9e2ef;
+    border-bottom-color: rgba(255, 255, 255, 0.06) !important;
+}
+
+.table-dark :deep(.sales-table .el-table__body tr:nth-child(even) > td.el-table__cell),
+.table-dark :deep(.detail-table .el-table__body tr:nth-child(even) > td.el-table__cell),
+.table-dark :deep(.analysis-table .el-table__body tr:nth-child(even) > td.el-table__cell) {
+    background: linear-gradient(180deg, rgba(13, 31, 50, 0.94), rgba(10, 24, 41, 0.92)) !important;
+}
+
+.table-dark :deep(.sales-table .el-table__body tr:hover > td.el-table__cell),
+.table-dark :deep(.detail-table .el-table__body tr:hover > td.el-table__cell),
+.table-dark :deep(.analysis-table .el-table__body tr:hover > td.el-table__cell) {
+    background:
+        radial-gradient(circle at left center, rgba(214, 164, 107, 0.12), transparent 28%),
+        linear-gradient(180deg, rgba(18, 38, 60, 0.98), rgba(12, 29, 48, 0.96)) !important;
+}
+
+.table-dark :deep(.sales-table .el-table__fixed-body-wrapper tr > td.el-table__cell),
+.table-dark :deep(.sales-table .el-table__fixed-header-wrapper th.el-table__cell),
+.table-dark :deep(.detail-table .el-table__fixed-body-wrapper tr > td.el-table__cell),
+.table-dark :deep(.detail-table .el-table__fixed-header-wrapper th.el-table__cell),
+.table-dark :deep(.analysis-table .el-table__fixed-body-wrapper tr > td.el-table__cell),
+.table-dark :deep(.analysis-table .el-table__fixed-header-wrapper th.el-table__cell) {
+    background: inherit !important;
+}
+
+.table-dark :deep(.sales-table .el-table__empty-block),
+.table-dark :deep(.detail-table .el-table__empty-block),
+.table-dark :deep(.analysis-table .el-table__empty-block) {
+    background: linear-gradient(180deg, rgba(10, 24, 41, 0.92), rgba(8, 20, 34, 0.9));
+}
+
+.table-dark :deep(.sales-table .el-table__empty-text),
+.table-dark :deep(.detail-table .el-table__empty-text),
+.table-dark :deep(.analysis-table .el-table__empty-text) {
+    color: #95a7bb;
 }
 
 :deep(.no-padding-cell .cell) {
@@ -1769,6 +1878,13 @@ onBeforeUnmount(() => {
     border-color: rgba(217, 92, 92, 0.34);
     background: linear-gradient(180deg, rgba(176, 60, 60, 1), rgba(155, 48, 48, 0.98));
     color: #ffffff;
+}
+
+.table-dark :deep(.sales-table .el-table__body tr:has(.sales-row-btn--save) > td.el-table__cell),
+.table-dark :deep(.sales-table .el-table__body tr:has(.sales-row-btn--edit) > td.el-table__cell) {
+    background:
+        radial-gradient(circle at left center, rgba(214, 164, 107, 0.08), transparent 26%),
+        linear-gradient(180deg, rgba(13, 31, 50, 0.94), rgba(10, 24, 41, 0.92)) !important;
 }
 
 .row-action-stack :deep(.el-button + .el-button),
@@ -2044,6 +2160,16 @@ onBeforeUnmount(() => {
 .product-link:hover,
 .site-link:hover {
     text-decoration: underline;
+}
+
+.table-dark .product-link,
+.table-dark .site-link {
+    color: #9bc2ec;
+}
+
+.table-dark .product-link:hover,
+.table-dark .site-link:hover {
+    color: #d8eaff;
 }
 
 .detail-number {

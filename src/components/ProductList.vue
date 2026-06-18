@@ -147,8 +147,17 @@
 
                 <el-table-column label="商品圖片" class-name="no-padding-cell" width="98" align="center">
                     <template #default="{ row }">
-                        <button type="button" class="product-image-box product-image-button" :disabled="!row.imageUrl"
-                            @click="openImagePreview(row)">
+                        <button
+                            type="button"
+                            :class="[
+                                'product-image-box',
+                                'product-image-button',
+                                { 'product-image-box--clickable': !!row.imageUrl }
+                            ]"
+                            :disabled="!row.imageUrl"
+                            :aria-label="row.imageUrl ? `放大查看 ${row.name || '商品圖片'}` : '此商品沒有圖片'"
+                            @click="openImagePreview(row)"
+                        >
                             <img v-if="row.imageUrl" :src="row.imageUrl" alt="商品圖片" class="product-image" />
                             <el-icon v-else class="product-image-fallback">
                                 <Picture />
@@ -2070,6 +2079,85 @@ onMounted(() => {
     box-shadow: var(--surface-shadow);
 }
 
+:deep(.product-table.el-table) {
+    --el-table-border-color: var(--surface-border);
+    --el-table-border: 1px solid var(--surface-border);
+    --el-table-tr-bg-color: transparent;
+    --el-table-row-hover-bg-color: rgba(185, 120, 55, 0.08);
+    --el-table-current-row-bg-color: rgba(185, 120, 55, 0.12);
+    border-radius: 24px;
+    overflow: hidden;
+    background: transparent;
+}
+
+:deep(.product-table .el-table__inner-wrapper::before) {
+    display: none;
+}
+
+:deep(.product-table th.el-table__cell) {
+    font-weight: 700;
+    text-align: center;
+}
+
+:deep(.product-table td.el-table__cell),
+:deep(.product-table th.el-table__cell.is-leaf) {
+    border-bottom-color: var(--surface-border);
+}
+
+:deep(.product-table .el-table__body td.el-table__cell) {
+    background: transparent;
+}
+
+:deep(.product-table .el-table__fixed),
+:deep(.product-table .el-table__fixed-right) {
+    box-shadow: none;
+}
+
+:deep(.product-table .el-table__fixed-body-wrapper td.el-table__cell),
+:deep(.product-table .el-table__fixed-header-wrapper th.el-table__cell) {
+    background: inherit;
+}
+
+.table-light :deep(.product-table .el-table__body tr:hover > td.el-table__cell) {
+    background: rgba(185, 120, 55, 0.08) !important;
+}
+
+.table-dark :deep(.product-table .el-table__header-wrapper th.el-table__cell) {
+    background:
+        linear-gradient(180deg, rgba(18, 45, 72, 0.98), rgba(14, 33, 54, 0.96)) !important;
+    color: #eef4fb !important;
+    border-bottom-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+.table-dark :deep(.product-table .el-table__body tr > td.el-table__cell) {
+    background: linear-gradient(180deg, rgba(11, 27, 45, 0.92), rgba(9, 23, 38, 0.9)) !important;
+    color: #d9e2ef;
+    border-bottom-color: rgba(255, 255, 255, 0.06) !important;
+}
+
+.table-dark :deep(.product-table .el-table__body tr:nth-child(even) > td.el-table__cell) {
+    background: linear-gradient(180deg, rgba(13, 31, 50, 0.94), rgba(10, 24, 41, 0.92)) !important;
+}
+
+.table-dark :deep(.product-table .el-table__body tr:hover > td.el-table__cell) {
+    background:
+        radial-gradient(circle at left center, rgba(214, 164, 107, 0.12), transparent 28%),
+        linear-gradient(180deg, rgba(18, 38, 60, 0.98), rgba(12, 29, 48, 0.96)) !important;
+}
+
+.table-dark :deep(.product-table .el-table__fixed-body-wrapper tr > td.el-table__cell),
+.table-dark :deep(.product-table .el-table__fixed-header-wrapper th.el-table__cell) {
+    background: inherit !important;
+}
+
+.table-dark :deep(.product-table .el-table__empty-block) {
+    background: linear-gradient(180deg, rgba(10, 24, 41, 0.92), rgba(8, 20, 34, 0.9));
+}
+
+.table-dark :deep(.product-table .el-table__empty-text) {
+    color: #95a7bb;
+}
+
 .table-card {
     border: 1px solid var(--surface-border);
     border-radius: 28px;
@@ -2208,6 +2296,40 @@ onMounted(() => {
     box-shadow: inset 3px 0 0 rgba(185, 120, 55, 0.9);
 }
 
+.table-dark :deep(.product-table .el-table__body tr.current-row > td.el-table__cell) {
+    background:
+        radial-gradient(circle at left center, rgba(214, 164, 107, 0.16), transparent 28%),
+        linear-gradient(180deg, rgba(20, 44, 69, 0.98), rgba(14, 33, 54, 0.96)) !important;
+}
+
+.table-dark :deep(.product-table .el-table__body tr.current-row:hover > td.el-table__cell) {
+    background:
+        radial-gradient(circle at left center, rgba(214, 164, 107, 0.2), transparent 30%),
+        linear-gradient(180deg, rgba(23, 49, 77, 1), rgba(16, 37, 61, 0.98)) !important;
+}
+
+.table-dark :deep(.product-table .el-table__body tr.multi-selected-row > td.el-table__cell) {
+    background:
+        linear-gradient(180deg, rgba(18, 38, 60, 0.96), rgba(12, 29, 48, 0.94)) !important;
+}
+
+.table-dark :deep(.product-table .el-table__body tr.multi-selected-row:hover > td.el-table__cell) {
+    background:
+        radial-gradient(circle at left center, rgba(214, 164, 107, 0.1), transparent 28%),
+        linear-gradient(180deg, rgba(20, 42, 67, 0.98), rgba(14, 33, 54, 0.96)) !important;
+}
+
+.table-dark :deep(.selection-column .el-checkbox__inner) {
+    border-color: rgba(155, 176, 198, 0.45);
+    background: rgba(10, 24, 41, 0.88);
+}
+
+.table-dark :deep(.selection-column .el-checkbox.is-checked .el-checkbox__inner),
+.table-dark :deep(.selection-column .el-checkbox.is-indeterminate .el-checkbox__inner) {
+    border-color: #d6a46b;
+    background: #d6a46b;
+}
+
 .pagination-bar {
     display: flex;
     justify-content: flex-end;
@@ -2279,6 +2401,16 @@ onMounted(() => {
 .product-link:hover,
 .site-link:hover {
     text-decoration: underline;
+}
+
+.table-dark .product-link,
+.table-dark .site-link {
+    color: #9bc2ec;
+}
+
+.table-dark .product-link:hover,
+.table-dark .site-link:hover {
+    color: #d8eaff;
 }
 
 .barcode-preview {
@@ -2366,6 +2498,26 @@ onMounted(() => {
 
 .product-image-button:disabled {
     cursor: default;
+}
+
+.product-image-box--clickable {
+    position: relative;
+}
+
+.product-image-box--clickable::after {
+    content: "放大";
+    position: absolute;
+    right: 8px;
+    bottom: 8px;
+    padding: 3px 8px;
+    border-radius: 999px;
+    background: rgba(16, 36, 58, 0.78);
+    color: #f5f8fc;
+    font-size: 0.72rem;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    line-height: 1;
+    pointer-events: none;
 }
 
 .product-image {

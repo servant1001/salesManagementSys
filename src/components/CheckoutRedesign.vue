@@ -142,12 +142,22 @@
 
                 <el-table-column class-name="no-padding-cell" label="商品圖片" width="96" align="center">
                     <template #default="{ row }">
-                        <div class="product-image-box">
+                        <button
+                            type="button"
+                            :class="[
+                                'product-image-box',
+                                'product-image-button',
+                                { 'product-image-box--clickable': !!row.imageUrl }
+                            ]"
+                            :disabled="!row.imageUrl"
+                            :aria-label="row.imageUrl ? `放大查看 ${row.name || '商品圖片'}` : '此商品沒有圖片'"
+                            @click="openImagePreview(row)"
+                        >
                             <img v-if="row.imageUrl" :src="row.imageUrl" alt="商品圖片" class="product-image" />
                             <el-icon v-else class="product-image-fallback">
                                 <Picture />
                             </el-icon>
-                        </div>
+                        </button>
                     </template>
                 </el-table-column>
 
@@ -301,6 +311,22 @@
                 <el-button type="primary" class="checkout-primary-btn" @click="confirmAddManualItem">加入購物車</el-button>
             </template>
         </el-dialog>
+
+        <el-dialog
+            v-model="showImagePreviewDialog"
+            title="商品圖片預覽"
+            width="min(92vw, 760px)"
+            center
+            class="image-preview-modal"
+        >
+            <div v-if="previewImageUrl" class="image-preview-dialog">
+                <img :src="previewImageUrl" :alt="previewImageName || '商品圖片預覽'" class="image-preview-full" />
+                <p v-if="previewImageName" class="image-preview-caption">{{ previewImageName }}</p>
+            </div>
+            <template #footer>
+                <el-button class="checkout-secondary-btn" @click="showImagePreviewDialog = false">關閉</el-button>
+            </template>
+        </el-dialog>
     </div>
 </template>
 
@@ -361,6 +387,9 @@ const showPaymentError = ref(false);
 const manualGtin = ref("");
 const manualQuantity = ref(1);
 const showAddDialog = ref(false);
+const showImagePreviewDialog = ref(false);
+const previewImageUrl = ref("");
+const previewImageName = ref("");
 const manualItem = reactive({
     name: "",
     code: "",
@@ -487,6 +516,14 @@ function toggleEdit(item: CartItem) {
     item.editing = !item.editing;
     if (item.quantity < 1) item.quantity = 1;
     if (item.sellingPrice < 0) item.sellingPrice = 0;
+}
+
+function openImagePreview(product: { imageUrl?: string; name?: string }) {
+    if (!product.imageUrl) return;
+
+    previewImageUrl.value = product.imageUrl;
+    previewImageName.value = product.name || "";
+    showImagePreviewDialog.value = true;
 }
 
 async function confirmCheckout() {
@@ -956,9 +993,83 @@ function confirmAddManualItem() {
     box-shadow: var(--surface-shadow);
 }
 
+:deep(.checkout-table.el-table) {
+    --el-table-border-color: var(--surface-border);
+    --el-table-border: 1px solid var(--surface-border);
+    --el-table-tr-bg-color: transparent;
+    --el-table-row-hover-bg-color: rgba(185, 120, 55, 0.08);
+    --el-table-current-row-bg-color: rgba(185, 120, 55, 0.12);
+    border-radius: 24px;
+    overflow: hidden;
+    background: transparent;
+}
+
+:deep(.checkout-table .el-table__inner-wrapper::before) {
+    display: none;
+}
+
 :deep(.checkout-table th) {
     font-weight: 700;
     text-align: center;
+}
+
+:deep(.checkout-table td),
+:deep(.checkout-table th.is-leaf) {
+    border-bottom-color: var(--surface-border);
+}
+
+:deep(.checkout-table .el-table__body td) {
+    background: transparent;
+}
+
+:deep(.checkout-table .el-table__fixed),
+:deep(.checkout-table .el-table__fixed-right) {
+    box-shadow: none;
+}
+
+:deep(.checkout-table .el-table__fixed-body-wrapper td),
+:deep(.checkout-table .el-table__fixed-header-wrapper th) {
+    background: inherit;
+}
+
+.table-light :deep(.checkout-table .el-table__body tr:hover > td) {
+    background: rgba(185, 120, 55, 0.08) !important;
+}
+
+.table-dark :deep(.checkout-table .el-table__header-wrapper th) {
+    background:
+        linear-gradient(180deg, rgba(18, 45, 72, 0.98), rgba(14, 33, 54, 0.96)) !important;
+    color: #eef4fb !important;
+    border-bottom-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+.table-dark :deep(.checkout-table .el-table__body tr > td) {
+    background: linear-gradient(180deg, rgba(11, 27, 45, 0.92), rgba(9, 23, 38, 0.9)) !important;
+    color: #d9e2ef;
+    border-bottom-color: rgba(255, 255, 255, 0.06) !important;
+}
+
+.table-dark :deep(.checkout-table .el-table__body tr:nth-child(even) > td) {
+    background: linear-gradient(180deg, rgba(13, 31, 50, 0.94), rgba(10, 24, 41, 0.92)) !important;
+}
+
+.table-dark :deep(.checkout-table .el-table__body tr:hover > td) {
+    background:
+        radial-gradient(circle at left center, rgba(214, 164, 107, 0.12), transparent 28%),
+        linear-gradient(180deg, rgba(18, 38, 60, 0.98), rgba(12, 29, 48, 0.96)) !important;
+}
+
+.table-dark :deep(.checkout-table .el-table__fixed-body-wrapper tr > td),
+.table-dark :deep(.checkout-table .el-table__fixed-header-wrapper th) {
+    background: inherit !important;
+}
+
+.table-dark :deep(.checkout-table .el-table__empty-block) {
+    background: linear-gradient(180deg, rgba(10, 24, 41, 0.92), rgba(8, 20, 34, 0.9));
+}
+
+.table-dark :deep(.checkout-table .el-table__empty-text) {
+    color: #95a7bb;
 }
 
 :deep(.no-padding-cell .cell) {
@@ -981,6 +1092,51 @@ function confirmAddManualItem() {
     background: #f5f5f5;
 }
 
+.product-image-button {
+    padding: 0;
+    border: 1px solid rgba(20, 36, 58, 0.08);
+    cursor: pointer;
+    transition:
+        transform 0.2s ease,
+        box-shadow 0.2s ease,
+        border-color 0.2s ease;
+}
+
+.product-image-button:hover:not(:disabled) {
+    transform: scale(1.03);
+    border-color: rgba(47, 111, 168, 0.28);
+    box-shadow: 0 10px 24px rgba(20, 36, 58, 0.14);
+}
+
+.product-image-button:disabled {
+    cursor: default;
+}
+
+.product-image-box--clickable {
+    position: relative;
+}
+
+.product-image-box--clickable::after {
+    content: "放大";
+    position: absolute;
+    right: 8px;
+    bottom: 8px;
+    padding: 3px 8px;
+    border-radius: 999px;
+    background: rgba(16, 36, 58, 0.78);
+    color: #f5f8fc;
+    font-size: 0.72rem;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    line-height: 1;
+    pointer-events: none;
+}
+
+.table-dark .product-image-box {
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
 .product-image {
     width: 100%;
     height: 100%;
@@ -990,6 +1146,29 @@ function confirmAddManualItem() {
 .product-image-fallback {
     font-size: 32px;
     color: #c4ccd6;
+}
+
+.image-preview-dialog {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 14px;
+}
+
+.image-preview-full {
+    display: block;
+    max-width: min(100%, 640px);
+    max-height: min(70vh, 640px);
+    border-radius: 22px;
+    object-fit: contain;
+    box-shadow: 0 24px 48px rgba(15, 31, 49, 0.16);
+}
+
+.image-preview-caption {
+    margin: 0;
+    color: var(--muted-text);
+    font-size: 0.94rem;
+    text-align: center;
 }
 
 .qty-badge {
@@ -1005,11 +1184,26 @@ function confirmAddManualItem() {
     font-weight: 700;
 }
 
+.table-dark .qty-badge {
+    background: rgba(232, 190, 123, 0.18);
+    color: #f4f7fb;
+}
+
 .product-link,
 .site-link {
     color: #2f6fa8;
     text-decoration: none;
     font-weight: 500;
+}
+
+.table-dark .product-link,
+.table-dark .site-link {
+    color: #9bc2ec;
+}
+
+.table-dark .product-link:hover,
+.table-dark .site-link:hover {
+    color: #d8eaff;
 }
 
 .product-link:hover,

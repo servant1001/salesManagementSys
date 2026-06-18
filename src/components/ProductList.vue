@@ -35,7 +35,7 @@
 
             <div class="secondary-row">
                 <div class="action-row">
-                    <el-button type="primary" class="scanner-btn" @click="openScanner">
+                    <el-button type="primary" class="scanner-btn product-accent-btn" @click="openScanner">
                         <el-icon class="button-icon">
                             <Camera />
                         </el-icon>
@@ -45,11 +45,12 @@
                 </div>
 
                 <div class="button-group">
-                    <el-button type="primary" @click="openProductImportDialog">網址匯入商品</el-button>
-                    <el-button type="success" @click="showAddDialog = true">
+                    <el-button type="primary" class="product-secondary-btn"
+                        @click="openProductImportDialog">網址匯入商品</el-button>
+                    <el-button type="success" class="product-primary-btn" @click="showAddDialog = true">
                         新增商品
                     </el-button>
-                    <el-button type="warning" @click="showBatchDialog = true">
+                    <el-button type="warning" class="product-accent-btn" @click="showBatchDialog = true">
                         批量新增
                     </el-button>
                 </div>
@@ -58,7 +59,7 @@
                     <span class="selection-hint">
                         {{ selectedProducts.length ? `已選取 ${selectedProducts.length} 筆商品` : "請先勾選要刪除的商品" }}
                     </span>
-                    <el-button type="danger" @click="deleteSelectedProducts">
+                    <el-button type="danger" class="product-danger-btn" @click="deleteSelectedProducts">
                         刪除已選商品
                     </el-button>
                 </div>
@@ -93,9 +94,12 @@
                     </div>
 
                     <div class="floating-action-buttons">
-                        <el-button type="warning" @click="copyProduct(activeProduct)">複製</el-button>
-                        <el-button type="primary" @click="openEditDialog(activeProduct)">編輯</el-button>
-                        <el-button type="danger" @click="deleteProduct(activeProduct)">刪除</el-button>
+                        <el-button type="warning" class="product-secondary-btn product-dock-btn"
+                            @click="copyProduct(activeProduct)">複製</el-button>
+                        <el-button type="primary" class="product-primary-btn product-dock-btn"
+                            @click="openEditDialog(activeProduct)">編輯</el-button>
+                        <el-button type="danger" class="product-danger-btn product-dock-btn"
+                            @click="deleteProduct(activeProduct)">刪除</el-button>
                     </div>
 
                     <el-button text class="floating-action-clear" @click="clearActiveProductSelection">
@@ -128,11 +132,14 @@
                 <el-table-column v-if="editMode" class-name="no-padding-cell" label="操作" width="96" align="center">
                     <template #default="{ row }">
                         <div class="row-action-stack">
-                            <el-button type="primary" size="small" class="row-action-btn"
+                            <el-button type="primary" size="small"
+                                class="row-action-btn product-row-btn product-row-btn--edit"
                                 @click="openEditDialog(row)">編輯</el-button>
-                            <el-button type="warning" size="small" class="row-action-btn"
+                            <el-button type="warning" size="small"
+                                class="row-action-btn product-row-btn product-row-btn--copy"
                                 @click="copyProduct(row)">複製</el-button>
-                            <el-button type="danger" size="small" class="row-action-btn row-action-btn--full"
+                            <el-button type="danger" size="small"
+                                class="row-action-btn row-action-btn--full product-row-btn product-row-btn--delete"
                                 @click="deleteProduct(row)">刪除</el-button>
                         </div>
                     </template>
@@ -188,9 +195,10 @@
                 <el-table-column prop="supplierName" label="廠商名稱" min-width="120" />
                 <el-table-column prop="supplierCode" label="廠商編號" min-width="120" />
                 <el-table-column prop="gtin" label="GTIN" min-width="120" />
-                <el-table-column label="條碼" width="100">
+                <el-table-column label="條碼" width="120">
                     <template #default="scope">
-                        <el-button type="primary" size="small" @click="handleGenerateBarcode(scope.row)">
+                        <el-button type="primary" size="small" class="product-secondary-btn product-table-btn"
+                            @click="handleGenerateBarcode(scope.row)">
                             生成條碼
                         </el-button>
                     </template>
@@ -219,9 +227,11 @@
                 <strong>目前沒有商品資料</strong>
                 <p>你可以先新增單筆商品，或使用批量新增快速建立商品清單。</p>
                 <div class="empty-actions">
-                    <el-button type="primary" @click="openProductImportDialog">網址匯入商品</el-button>
-                    <el-button type="primary" @click="showAddDialog = true">新增商品</el-button>
-                    <el-button type="warning" @click="showBatchDialog = true">批量新增</el-button>
+                    <el-button type="primary" class="product-secondary-btn"
+                        @click="openProductImportDialog">網址匯入商品</el-button>
+                    <el-button type="primary" class="product-primary-btn" @click="showAddDialog = true">新增商品</el-button>
+                    <el-button type="warning" class="product-accent-btn"
+                        @click="showBatchDialog = true">批量新增</el-button>
                 </div>
             </div>
         </section>
@@ -234,10 +244,12 @@
                         <el-input v-model="newProduct.gtin" placeholder="請輸入 GTIN" />
                         <!-- 🔹 按鈕群組 -->
                         <div class="gtin-actions">
-                            <el-button type="primary" @click="startScanNewProduct">
+                            <el-button type="primary" class="product-accent-btn product-inline-btn"
+                                @click="startScanNewProduct">
                                 掃描
                             </el-button>
-                            <el-button type="success" @click="syncGtinToCode">
+                            <el-button type="success" class="product-primary-btn product-inline-btn"
+                                @click="syncGtinToCode">
                                 同步編號
                             </el-button>
                         </div>
@@ -303,18 +315,18 @@
             </el-form>
 
             <template #footer>
-                <el-button @click="showAddDialog = false">取消</el-button>
-                <el-button type="primary" @click="submitAddProduct">新增</el-button>
+                <el-button class="product-secondary-btn" @click="showAddDialog = false">取消</el-button>
+                <el-button type="primary" class="product-primary-btn" @click="submitAddProduct">新增</el-button>
             </template>
         </el-dialog>
 
         <!-- 網址匯入商品彈窗 -->
-        <el-dialog v-model="showProductImportDialog" title="網址匯入商品" width="600px">
+        <el-dialog v-model="showProductImportDialog" title="網址匯入商品" width="600px" class="product-import-dialog">
             <el-form label-width="120px">
                 <el-form-item label="匯入來源">
-                    <el-radio-group v-model="productImportSource">
-                        <el-radio-button label="campus">校園書房</el-radio-button>
+                    <el-radio-group v-model="productImportSource" class="import-source-group">
                         <el-radio-button label="sheep100love">百羊官網</el-radio-button>
+                        <el-radio-button label="campus">校園書房</el-radio-button>
                     </el-radio-group>
                 </el-form-item>
 
@@ -329,8 +341,9 @@
             </el-form>
 
             <template #footer>
-                <el-button @click="showProductImportDialog = false">取消</el-button>
-                <el-button type="primary" :loading="productImportLoading" @click="importProduct">
+                <el-button class="product-secondary-btn" @click="showProductImportDialog = false">取消</el-button>
+                <el-button type="primary" class="product-primary-btn" :loading="productImportLoading"
+                    @click="importProduct">
                     抓取商品資料
                 </el-button>
             </template>
@@ -405,8 +418,8 @@
             </el-form>
 
             <template #footer>
-                <el-button @click="showEditDialog = false">取消</el-button>
-                <el-button type="primary" @click="saveEditProduct">保存</el-button>
+                <el-button class="product-secondary-btn" @click="showEditDialog = false">取消</el-button>
+                <el-button type="primary" class="product-primary-btn" @click="saveEditProduct">保存</el-button>
             </template>
         </el-dialog>
 
@@ -417,7 +430,8 @@
                 <el-form-item label="定價" prop="price">
                     <div class="stock-field">
                         <el-input type="number" min="0" v-model.number="batchBase.price" />
-                        <el-button type="primary" size="small" @click="syncBatchField('price')">
+                        <el-button type="primary" size="small" class="product-secondary-btn product-sync-btn"
+                            @click="syncBatchField('price')">
                             定價同步
                         </el-button>
                     </div>
@@ -426,7 +440,8 @@
                 <el-form-item label="售價" prop="sellingPrice">
                     <div class="stock-field">
                         <el-input type="number" min="0" v-model.number="batchBase.sellingPrice" />
-                        <el-button type="primary" size="small" @click="syncBatchField('sellingPrice')">
+                        <el-button type="primary" size="small" class="product-secondary-btn product-sync-btn"
+                            @click="syncBatchField('sellingPrice')">
                             售價同步
                         </el-button>
                     </div>
@@ -435,7 +450,8 @@
                 <el-form-item label="成本" prop="cost">
                     <div class="stock-field">
                         <el-input type="number" min="0" v-model.number="batchBase.cost" />
-                        <el-button type="primary" size="small" @click="syncBatchField('cost')">
+                        <el-button type="primary" size="small" class="product-secondary-btn product-sync-btn"
+                            @click="syncBatchField('cost')">
                             成本同步
                         </el-button>
                     </div>
@@ -444,7 +460,8 @@
                 <el-form-item label="庫存" prop="stock" class="stock-item">
                     <div class="stock-field">
                         <el-input-number style="width: 120px;" :min="0" v-model.number="batchBase.stock" />
-                        <el-button style="width: 120px;" type="primary" size="small" @click="syncBatchField('stock')">
+                        <el-button style="width: 120px;" type="primary" size="small"
+                            class="product-secondary-btn product-sync-btn" @click="syncBatchField('stock')">
                             庫存同步
                         </el-button>
                     </div>
@@ -473,8 +490,8 @@
 
             <h4 style="margin-bottom: 10px;">商品清單</h4>
             <div style="margin-bottom: 10px; display: flex; justify-content: flex-end;">
-                <el-button type="danger" @click="clearAllBatchRows">全部清空</el-button>
-                <el-button type="primary" @click="addBatchRow">新增一列</el-button>
+                <el-button type="danger" class="product-danger-btn" @click="clearAllBatchRows">全部清空</el-button>
+                <el-button type="primary" class="product-primary-btn" @click="addBatchRow">新增一列</el-button>
             </div>
 
             <el-table :data="batchList" border style="width: 100%">
@@ -486,7 +503,8 @@
                         <div style="display: flex; align-items: center; gap: 6px;">
                             <el-input v-model="row.gtin" placeholder="請輸入 GTIN" @input="onGtinChange(row)"
                                 style="flex: 1;" />
-                            <el-button type="primary" size="small" @click="startScanGTIN(row)">掃描</el-button>
+                            <el-button type="primary" size="small" class="product-accent-btn product-inline-btn"
+                                @click="startScanGTIN(row)">掃描</el-button>
                             <el-checkbox v-model="row.useGtinAsCode" @change="onUseGtinAsCodeChange(row)">
                                 同步編號
                             </el-checkbox>
@@ -549,14 +567,15 @@
                 <!-- 操作 -->
                 <el-table-column label="操作">
                     <template #default="{ $index }">
-                        <el-button type="danger" size="small" @click="removeBatchRow($index)">刪除</el-button>
+                        <el-button type="danger" size="small" class="product-danger-btn product-inline-btn"
+                            @click="removeBatchRow($index)">刪除</el-button>
                     </template>
                 </el-table-column>
             </el-table>
 
             <template #footer>
-                <el-button @click="showBatchDialog = false">取消</el-button>
-                <el-button type="primary" @click="submitBatchProducts">提交</el-button>
+                <el-button class="product-secondary-btn" @click="showBatchDialog = false">取消</el-button>
+                <el-button type="primary" class="product-primary-btn" @click="submitBatchProducts">提交</el-button>
             </template>
         </el-dialog>
 
@@ -572,9 +591,9 @@
                 <img :src="barcodeDataUrl" alt="Barcode" />
             </div>
             <template #footer>
-                <el-button
+                <el-button class="product-secondary-btn"
                     @click="downloadBarcode(currentProduct?.name, currentProduct?.gtin, barcodeDataUrl)">下載圖片</el-button>
-                <el-button type="primary" @click="showBarcodeDialog = false">關閉</el-button>
+                <el-button type="primary" class="product-primary-btn" @click="showBarcodeDialog = false">關閉</el-button>
             </template>
         </el-dialog>
 
@@ -584,7 +603,8 @@
                 <p v-if="previewImageName" class="image-preview-caption">{{ previewImageName }}</p>
             </div>
             <template #footer>
-                <el-button type="primary" @click="showImagePreviewDialog = false">關閉</el-button>
+                <el-button type="primary" class="product-primary-btn"
+                    @click="showImagePreviewDialog = false">關閉</el-button>
             </template>
         </el-dialog>
     </div>
@@ -694,7 +714,7 @@ const productImportUrl = ref("");
 const productImportLoading = ref(false);
 
 function openProductImportDialog() {
-    productImportSource.value = "campus";
+    productImportSource.value = "sheep100love";
     productImportUrl.value = "";
     showProductImportDialog.value = true;
 }
@@ -1846,6 +1866,183 @@ onMounted(() => {
     font-weight: 600;
 }
 
+.product-primary-btn,
+.product-secondary-btn,
+.product-accent-btn,
+.product-danger-btn,
+.product-row-btn {
+    transition:
+        transform 0.18s ease,
+        box-shadow 0.18s ease,
+        border-color 0.18s ease,
+        background 0.18s ease,
+        color 0.18s ease,
+        filter 0.18s ease;
+}
+
+.product-primary-btn:hover,
+.product-primary-btn:focus-visible,
+.product-secondary-btn:hover,
+.product-secondary-btn:focus-visible,
+.product-accent-btn:hover,
+.product-accent-btn:focus-visible,
+.product-danger-btn:hover,
+.product-danger-btn:focus-visible,
+.product-row-btn:hover,
+.product-row-btn:focus-visible {
+    transform: translateY(-1px);
+}
+
+.product-primary-btn {
+    border-color: rgba(185, 122, 55, 0.38);
+    background:
+        radial-gradient(circle at top right, rgba(214, 164, 107, 0.24), transparent 48%),
+        linear-gradient(180deg, rgba(17, 40, 66, 0.98), rgba(24, 54, 86, 0.96));
+    color: #f7fbff;
+    font-weight: 700;
+    box-shadow: 0 14px 28px rgba(16, 36, 58, 0.18);
+}
+
+.product-primary-btn:hover,
+.product-primary-btn:focus-visible {
+    border-color: rgba(214, 164, 107, 0.56);
+    background:
+        radial-gradient(circle at top right, rgba(214, 164, 107, 0.3), transparent 46%),
+        linear-gradient(180deg, rgba(14, 34, 58, 1), rgba(22, 49, 79, 0.98));
+    color: #ffffff;
+    box-shadow: 0 18px 32px rgba(16, 36, 58, 0.22);
+}
+
+.product-secondary-btn {
+    border-color: rgba(20, 36, 58, 0.1);
+    background: rgba(255, 255, 255, 0.92);
+    color: #10243c;
+    font-weight: 600;
+    box-shadow: 0 10px 20px rgba(16, 36, 58, 0.08);
+}
+
+.product-secondary-btn:hover,
+.product-secondary-btn:focus-visible {
+    border-color: rgba(77, 131, 180, 0.28);
+    background: rgba(247, 250, 252, 1);
+    color: #10243c;
+    box-shadow: 0 14px 24px rgba(16, 36, 58, 0.12);
+}
+
+.product-accent-btn {
+    border-color: rgba(235, 181, 106, 0.52);
+    background:
+        radial-gradient(circle at top right, rgba(255, 244, 212, 0.38), transparent 42%),
+        linear-gradient(135deg, #be6825 0%, #df9c45 48%, #f4c87d 100%);
+    color: #10243c;
+    font-weight: 700;
+    box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.34),
+        0 18px 32px rgba(190, 104, 37, 0.24);
+}
+
+.product-accent-btn:hover,
+.product-accent-btn:focus-visible {
+    border-color: rgba(240, 191, 118, 0.72);
+    color: #10243c;
+    filter: saturate(1.06) brightness(1.02);
+    box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.38),
+        0 22px 36px rgba(190, 104, 37, 0.3);
+}
+
+.product-danger-btn {
+    border-color: rgba(217, 92, 92, 0.2);
+    background: linear-gradient(180deg, rgba(191, 72, 72, 0.96), rgba(170, 58, 58, 0.94));
+    color: #fff8f8;
+    font-weight: 700;
+    box-shadow: 0 10px 20px rgba(191, 72, 72, 0.18);
+}
+
+.product-danger-btn:hover,
+.product-danger-btn:focus-visible {
+    border-color: rgba(217, 92, 92, 0.34);
+    background: linear-gradient(180deg, rgba(176, 60, 60, 1), rgba(155, 48, 48, 0.98));
+    color: #ffffff;
+    box-shadow: 0 14px 24px rgba(191, 72, 72, 0.24);
+}
+
+.product-dock-btn,
+.product-inline-btn,
+.product-sync-btn,
+.product-table-btn {
+    min-height: 36px;
+    border-radius: 12px;
+    font-weight: 600;
+    padding-inline: 12px;
+}
+
+.product-inline-btn,
+.product-sync-btn,
+.product-table-btn {
+    box-shadow: 0 8px 18px rgba(16, 36, 58, 0.1);
+}
+
+.product-sync-btn {
+    min-width: 108px;
+}
+
+.product-table-btn {
+    min-width: 90px;
+}
+
+.product-row-btn {
+    width: 100%;
+    min-height: 34px;
+    border-radius: 12px;
+    font-weight: 600;
+    letter-spacing: 0.01em;
+}
+
+.product-row-btn--edit {
+    border-color: rgba(77, 131, 180, 0.26);
+    background: linear-gradient(180deg, rgba(24, 54, 86, 0.96), rgba(35, 74, 113, 0.94));
+    color: #f7fbff;
+    box-shadow: 0 10px 20px rgba(16, 36, 58, 0.16);
+}
+
+.product-row-btn--edit:hover,
+.product-row-btn--edit:focus-visible {
+    border-color: rgba(77, 131, 180, 0.4);
+    background: linear-gradient(180deg, rgba(20, 46, 74, 1), rgba(31, 66, 101, 0.98));
+    color: #ffffff;
+}
+
+.product-row-btn--copy {
+    border-color: rgba(214, 164, 107, 0.32);
+    background:
+        radial-gradient(circle at top right, rgba(255, 239, 205, 0.3), transparent 42%),
+        linear-gradient(135deg, rgba(185, 120, 55, 0.94), rgba(214, 164, 107, 0.92));
+    color: #10243c;
+    box-shadow: 0 10px 20px rgba(185, 122, 55, 0.18);
+}
+
+.product-row-btn--copy:hover,
+.product-row-btn--copy:focus-visible {
+    border-color: rgba(214, 164, 107, 0.48);
+    color: #10243c;
+    box-shadow: 0 14px 24px rgba(185, 122, 55, 0.24);
+}
+
+.product-row-btn--delete {
+    border-color: rgba(217, 92, 92, 0.2);
+    background: linear-gradient(180deg, rgba(191, 72, 72, 0.96), rgba(170, 58, 58, 0.94));
+    color: #fff8f8;
+    box-shadow: 0 10px 20px rgba(191, 72, 72, 0.18);
+}
+
+.product-row-btn--delete:hover,
+.product-row-btn--delete:focus-visible {
+    border-color: rgba(217, 92, 92, 0.34);
+    background: linear-gradient(180deg, rgba(176, 60, 60, 1), rgba(155, 48, 48, 0.98));
+    color: #ffffff;
+}
+
 .button-icon {
     margin-right: 4px;
 }
@@ -2233,6 +2430,7 @@ onMounted(() => {
 }
 
 :deep(.add-product-dialog .el-dialog),
+:deep(.product-import-dialog .el-dialog),
 :deep(.edit-product-dialog .el-dialog),
 :deep(.batch-add-dialog .el-dialog) {
     border-radius: 28px;
@@ -2240,6 +2438,7 @@ onMounted(() => {
 }
 
 :deep(.add-product-dialog .el-dialog__header),
+:deep(.product-import-dialog .el-dialog__header),
 :deep(.edit-product-dialog .el-dialog__header),
 :deep(.batch-add-dialog .el-dialog__header) {
     margin-right: 0;
@@ -2247,9 +2446,57 @@ onMounted(() => {
 }
 
 :deep(.add-product-dialog .el-dialog__body),
+:deep(.product-import-dialog .el-dialog__body),
 :deep(.edit-product-dialog .el-dialog__body),
 :deep(.batch-add-dialog .el-dialog__body) {
     padding: 20px 24px 24px;
+}
+
+.import-source-group {
+    display: inline-flex;
+    padding: 6px;
+    border-radius: 18px;
+    background: rgba(243, 247, 252, 0.96);
+    border: 1px solid rgba(20, 36, 58, 0.08);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7);
+}
+
+.import-source-group :deep(.el-radio-button__inner) {
+    min-width: 112px;
+    min-height: 42px;
+    padding: 0 18px;
+    border: 0 !important;
+    border-radius: 14px !important;
+    background: transparent;
+    color: #32465b;
+    font-weight: 700;
+    line-height: 42px;
+    box-shadow: none !important;
+    transition:
+        transform 0.18s ease,
+        background 0.18s ease,
+        color 0.18s ease,
+        box-shadow 0.18s ease;
+}
+
+.import-source-group :deep(.el-radio-button__inner:hover) {
+    color: #10243c;
+    background: rgba(255, 255, 255, 0.74);
+}
+
+.import-source-group :deep(.el-radio-button__original-radio:checked + .el-radio-button__inner) {
+    background:
+        radial-gradient(circle at top right, rgba(255, 244, 212, 0.38), transparent 42%),
+        linear-gradient(135deg, #be6825 0%, #df9c45 48%, #f4c87d 100%);
+    color: #10243c;
+    box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.38),
+        0 12px 24px rgba(190, 104, 37, 0.22);
+}
+
+.import-source-group :deep(.el-radio-button:first-child .el-radio-button__inner),
+.import-source-group :deep(.el-radio-button:last-child .el-radio-button__inner) {
+    border-radius: 14px !important;
 }
 
 @media (max-width: 1024px) {

@@ -4,11 +4,13 @@
       <div>
         <span class="page-eyebrow">VENDOR DIRECTORY</span>
         <h1>供應商管理</h1>
-        <p>集中整理合作廠商資訊，快速搜尋、編輯與維護供應關係資料。</p>
+        <p>
+          集中維護供應商資料、聯絡方式、網站與備註資訊，讓進貨管理、商品建檔與日常查詢保持一致節奏。
+        </p>
       </div>
       <div class="hero-badge">
         <strong>{{ filteredVendors.length }}</strong>
-        <span>目前顯示筆數</span>
+        <span>目前供應商筆數</span>
       </div>
     </section>
 
@@ -16,7 +18,7 @@
       <div class="control-bar">
         <el-input
           v-model="searchKeyword"
-          placeholder="搜尋供應商名稱"
+          placeholder="搜尋供應商名稱或供應商編號"
           clearable
           @input="filterVendors"
           class="search-input"
@@ -24,7 +26,7 @@
 
         <el-select
           v-model="countryFilter"
-          placeholder="地區篩選"
+          placeholder="選擇地區"
           @change="filterVendors"
           class="country-select"
         >
@@ -38,7 +40,7 @@
             新增供應商
           </el-button>
           <el-button class="secondary-btn" @click="toggleEditMode">
-            {{ showActions ? '關閉操作模式' : '開啟操作模式' }}
+            {{ showActions ? "關閉操作模式" : "開啟操作模式" }}
           </el-button>
         </div>
       </div>
@@ -48,7 +50,7 @@
       <div class="section-header">
         <div>
           <span class="section-eyebrow">LIST</span>
-          <h2>廠商列表</h2>
+          <h2>供應商清單</h2>
         </div>
       </div>
 
@@ -63,17 +65,31 @@
         >
           <el-table-column type="index" label="#" width="60" align="center" />
 
-          <el-table-column v-if="showActions" fixed="left" label="操作" min-width="156">
+          <el-table-column v-if="showActions" fixed="left" label="操作" min-width="166">
             <template #default="{ row }">
               <div class="row-actions">
-                <el-button type="primary" size="small" @click="openDialog(row)">編輯</el-button>
-                <el-button type="danger" size="small" @click="deleteVendor(row.id)">刪除</el-button>
+                <el-button
+                  type="primary"
+                  size="small"
+                  class="row-action-btn row-action-btn--edit"
+                  @click="openDialog(row)"
+                >
+                  編輯
+                </el-button>
+                <el-button
+                  type="danger"
+                  size="small"
+                  class="row-action-btn row-action-btn--delete"
+                  @click="deleteVendor(row.id)"
+                >
+                  刪除
+                </el-button>
               </div>
             </template>
           </el-table-column>
 
-          <el-table-column prop="vendorId" label="廠商編號" sortable min-width="120" />
-          <el-table-column prop="vendorName" label="廠商名稱" min-width="180" />
+          <el-table-column prop="vendorId" label="供應商編號" sortable min-width="120" />
+          <el-table-column prop="vendorName" label="供應商名稱" min-width="180" />
           <el-table-column prop="contact" label="聯絡資訊" min-width="150" />
           <el-table-column prop="website" label="網站" min-width="180">
             <template #default="{ row }">
@@ -91,7 +107,7 @@
           </el-table-column>
           <el-table-column prop="note" label="備註" min-width="180">
             <template #default="{ row }">
-              <span>{{ row.note || '未填寫' }}</span>
+              <span>{{ row.note || "無備註" }}</span>
             </template>
           </el-table-column>
           <el-table-column prop="createdBy" label="建立者" min-width="120" />
@@ -114,27 +130,27 @@
       class="vendor-dialog"
     >
       <el-form :model="form" ref="formRef" label-width="96px" class="vendor-form">
-        <el-form-item label="廠商編號" required>
+        <el-form-item label="供應商編號" required>
           <el-input v-model="form.vendorId" placeholder="例如 TW001 或 CN003" />
         </el-form-item>
-        <el-form-item label="廠商名稱" required>
+        <el-form-item label="供應商名稱" required>
           <el-input v-model="form.vendorName" placeholder="請輸入供應商名稱" />
         </el-form-item>
         <el-form-item label="聯絡資訊">
-          <el-input v-model="form.contact" placeholder="請輸入聯絡人或電話" />
+          <el-input v-model="form.contact" placeholder="請輸入聯絡人、電話或 Email" />
         </el-form-item>
         <el-form-item label="網站">
           <el-input v-model="form.website" placeholder="https://example.com" />
         </el-form-item>
         <el-form-item label="備註">
-          <el-input v-model="form.note" type="textarea" :rows="4" placeholder="補充說明..." />
+          <el-input v-model="form.note" type="textarea" :rows="4" placeholder="補充說明或合作備註..." />
         </el-form-item>
       </el-form>
 
       <template #footer>
         <div class="dialog-footer">
-          <el-button @click="dialogVisible = false">取消</el-button>
-          <el-button type="primary" @click="saveVendor">儲存</el-button>
+          <el-button class="secondary-btn" @click="dialogVisible = false">取消</el-button>
+          <el-button type="primary" class="primary-btn" @click="saveVendor">儲存</el-button>
         </div>
       </template>
     </el-dialog>
@@ -215,8 +231,9 @@ function updateTableHeight() {
 
 function filterVendors() {
   filteredVendors.value = vendors.value.filter((vendor) => {
-    const matchesKeyword = searchKeyword.value
-      ? vendor.vendorName.toLowerCase().includes(searchKeyword.value.toLowerCase())
+    const query = searchKeyword.value.trim().toLowerCase()
+    const matchesKeyword = query
+      ? vendor.vendorName.toLowerCase().includes(query) || vendor.vendorId.toLowerCase().includes(query)
       : true
 
     const matchesCountry =
@@ -254,7 +271,7 @@ function openDialog(vendor?: Vendor) {
 
 async function saveVendor() {
   if (!form.value.vendorId || !form.value.vendorName) {
-    ElMessage.warning('請填寫廠商編號與廠商名稱。')
+    ElMessage.warning('請先輸入供應商編號與供應商名稱。')
     return
   }
 
@@ -295,14 +312,18 @@ async function deleteVendor(id?: string) {
   if (!id) return
 
   try {
-    await ElMessageBox.confirm('確定要刪除這筆供應商資料嗎？此操作無法復原。', '刪除確認', {
-      confirmButtonText: '確認刪除',
-      cancelButtonText: '取消',
-      type: 'warning',
-      draggable: true,
-      autofocus: false,
-      lockScroll: true,
-    })
+    await ElMessageBox.confirm(
+      '確認要刪除此供應商資料嗎？此操作無法復原。',
+      '刪除確認',
+      {
+        confirmButtonText: '確認刪除',
+        cancelButtonText: '取消',
+        type: 'warning',
+        draggable: true,
+        autofocus: false,
+        lockScroll: true,
+      },
+    )
 
     await remove(child(dbRef(db), `vendors/${id}`))
     await loadVendors()
@@ -444,20 +465,70 @@ onUnmounted(() => {
   flex-wrap: wrap;
 }
 
-.action-buttons :deep(.el-button + .el-button) {
+.action-buttons :deep(.el-button + .el-button),
+.dialog-footer :deep(.el-button + .el-button),
+.row-actions :deep(.el-button + .el-button) {
   margin-left: 0;
 }
 
 .primary-btn,
-.secondary-btn {
+.secondary-btn,
+.row-action-btn {
+  transition:
+    transform 0.18s ease,
+    box-shadow 0.18s ease,
+    border-color 0.18s ease,
+    background 0.18s ease,
+    color 0.18s ease,
+    filter 0.18s ease;
+}
+
+.primary-btn:hover,
+.primary-btn:focus-visible,
+.secondary-btn:hover,
+.secondary-btn:focus-visible,
+.row-action-btn:hover,
+.row-action-btn:focus-visible {
+  transform: translateY(-1px);
+}
+
+.primary-btn {
   min-height: 44px;
   border-radius: 14px;
+  border-color: rgba(185, 122, 55, 0.38);
+  background:
+    radial-gradient(circle at top right, rgba(214, 164, 107, 0.24), transparent 48%),
+    linear-gradient(180deg, rgba(17, 40, 66, 0.98), rgba(24, 54, 86, 0.96));
+  color: #f7fbff;
+  font-weight: 700;
+  box-shadow: 0 14px 28px rgba(16, 36, 58, 0.18);
+}
+
+.primary-btn:hover,
+.primary-btn:focus-visible {
+  border-color: rgba(214, 164, 107, 0.56);
+  background:
+    radial-gradient(circle at top right, rgba(214, 164, 107, 0.3), transparent 46%),
+    linear-gradient(180deg, rgba(14, 34, 58, 1), rgba(22, 49, 79, 0.98));
+  color: #ffffff;
+  box-shadow: 0 18px 32px rgba(16, 36, 58, 0.22);
 }
 
 .secondary-btn {
-  color: var(--heading-color);
-  border-color: var(--surface-border);
-  background: var(--surface-muted);
+  min-height: 44px;
+  border-radius: 14px;
+  border-color: rgba(20, 36, 58, 0.1);
+  background: rgba(255, 255, 255, 0.9);
+  color: #10243c;
+  font-weight: 600;
+  box-shadow: 0 10px 20px rgba(16, 36, 58, 0.08);
+}
+
+.secondary-btn:hover,
+.secondary-btn:focus-visible {
+  border-color: rgba(77, 131, 180, 0.28);
+  background: rgba(247, 250, 252, 1);
+  color: #10243c;
 }
 
 .section-header {
@@ -501,6 +572,41 @@ onUnmounted(() => {
   gap: 8px;
 }
 
+.row-action-btn {
+  min-height: 34px;
+  border-radius: 12px;
+  font-weight: 600;
+  padding-inline: 12px;
+}
+
+.row-action-btn--edit {
+  border-color: rgba(77, 131, 180, 0.26);
+  background: linear-gradient(180deg, rgba(24, 54, 86, 0.96), rgba(35, 74, 113, 0.94));
+  color: #f7fbff;
+  box-shadow: 0 10px 20px rgba(16, 36, 58, 0.16);
+}
+
+.row-action-btn--edit:hover,
+.row-action-btn--edit:focus-visible {
+  border-color: rgba(77, 131, 180, 0.4);
+  background: linear-gradient(180deg, rgba(20, 46, 74, 1), rgba(31, 66, 101, 0.98));
+  color: #ffffff;
+}
+
+.row-action-btn--delete {
+  border-color: rgba(217, 92, 92, 0.2);
+  background: linear-gradient(180deg, rgba(191, 72, 72, 0.96), rgba(170, 58, 58, 0.94));
+  color: #fff8f8;
+  box-shadow: 0 10px 20px rgba(191, 72, 72, 0.18);
+}
+
+.row-action-btn--delete:hover,
+.row-action-btn--delete:focus-visible {
+  border-color: rgba(217, 92, 92, 0.34);
+  background: linear-gradient(180deg, rgba(176, 60, 60, 1), rgba(155, 48, 48, 0.98));
+  color: #ffffff;
+}
+
 .site-link {
   color: #2f6fa8;
   text-decoration: none;
@@ -518,6 +624,24 @@ onUnmounted(() => {
   display: flex;
   justify-content: flex-end;
   gap: 12px;
+}
+
+:deep(.vendor-dialog .el-dialog) {
+  border-radius: 28px;
+  background: rgba(255, 255, 255, 0.98);
+}
+
+:deep(.vendor-dialog .el-dialog__header) {
+  margin-right: 0;
+  padding: 24px 24px 0;
+}
+
+:deep(.vendor-dialog .el-dialog__body) {
+  padding: 20px 24px 8px;
+}
+
+:deep(.vendor-dialog .el-dialog__footer) {
+  padding: 0 24px 24px;
 }
 
 :deep(.el-input__wrapper),

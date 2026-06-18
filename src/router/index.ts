@@ -8,7 +8,7 @@ import Register from "@/views/Register.vue";
 import AddProduct from "@/components/AddProduct.vue";
 import ProductList from "@/components/ProductList.vue";
 import Checkout from "@/components/CheckoutRedesign.vue";
-import Sales from '@/components/SalesRedesign.vue';
+import Sales from '@/components/SalesRecord.vue';
 import Vendors from "@/views/Vendors.vue";
 
 const router = createRouter({

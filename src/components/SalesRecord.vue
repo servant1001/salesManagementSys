@@ -33,7 +33,9 @@
                 </div>
                 <div class="filter-actions">
                     <el-button class="secondary-btn" @click="showPaymentStats">銷售分析</el-button>
-                    <el-button :type="showActions ? 'warning' : 'info'" @click="toggleEditMode">
+                    <el-button
+                        :class="['filter-toolbar-btn', showActions ? 'filter-toolbar-btn--active' : 'filter-toolbar-btn--secondary']"
+                        @click="toggleEditMode">
                         {{ showActions ? "關閉編輯模式" : "開啟編輯模式" }}
                     </el-button>
                 </div>
@@ -109,42 +111,43 @@
                 <el-table-column v-if="showActions" fixed="left" label="操作" width="152" align="center">
                     <template #default="{ row }">
                         <div class="row-action-stack">
-                            <el-button v-if="editingRow !== row" size="small" type="primary" class="row-action-btn"
-                                @click="startEditTime(row)">
+                            <el-button v-if="editingRow !== row" size="small" type="primary"
+                                class="row-action-btn sales-row-btn sales-row-btn--edit" @click="startEditTime(row)">
                                 編輯
                             </el-button>
-                            <el-button v-if="editingRow === row" size="small" type="primary" class="row-action-btn"
-                                @click="saveEditTime(row)">
+                            <el-button v-if="editingRow === row" size="small" type="primary"
+                                class="row-action-btn sales-row-btn sales-row-btn--save" @click="saveEditTime(row)">
                                 儲存
                             </el-button>
-                            <el-button v-if="editingRow === row" size="small" class="row-action-btn"
-                                @click="cancelEditTime">
+                            <el-button v-if="editingRow === row" size="small"
+                                class="row-action-btn sales-row-btn sales-row-btn--cancel" @click="cancelEditTime">
                                 取消
                             </el-button>
-                            <el-button size="small" type="danger" class="row-action-btn" @click="deleteSale(row)">
+                            <el-button size="small" type="danger"
+                                class="row-action-btn sales-row-btn sales-row-btn--delete" @click="deleteSale(row)">
                                 刪除
                             </el-button>
                         </div>
                     </template>
                 </el-table-column>
 
-                <el-table-column prop="timestamp" label="時間" width="210">
+                <el-table-column prop="timestamp" label="日期時間" width="180">
                     <template #default="{ row }">
                         <div v-if="editingRow === row">
                             <el-date-picker v-model="editingTimestamp" type="datetime" format="YYYY-MM-DD HH:mm"
-                                value-format="x" size="small" />
+                                value-format="x" size="small" style="width: 150px;" />
                         </div>
                         <div v-else>{{ formatDate(row.timestamp) }}</div>
                     </template>
                 </el-table-column>
 
-                <el-table-column prop="total" label="總金額" width="140" align="right">
+                <el-table-column prop="total" label="總金額" width="140" align="center">
                     <template #default="{ row }">
                         <span class="amount-value">NT$ {{ formatCurrency(row.total) }}</span>
                     </template>
                 </el-table-column>
 
-                <el-table-column prop="totalProfit" label="總毛利" width="140" align="right">
+                <el-table-column prop="totalProfit" label="總毛利" width="140" align="center">
                     <template #default="{ row }">
                         <span :class="['profit-value', { 'profit-negative': (row.totalProfit ?? 0) < 0 }]">
                             NT$ {{ formatCurrency(row.totalProfit ?? 0) }}
@@ -164,7 +167,7 @@
                     </template>
                 </el-table-column>
 
-                <el-table-column prop="operator" label="操作人員" min-width="120" />
+                <el-table-column prop="operator" label="操作人員" width="120" />
 
                 <el-table-column label="商品明細" width="120" align="center">
                     <template #default="{ row }">
@@ -184,8 +187,7 @@
             </div>
         </section>
 
-        <el-dialog v-model="dialogVisible" width="min(94vw, 1380px)" class="detail-dialog"
-            @close="onDetailDialogClose">
+        <el-dialog v-model="dialogVisible" width="min(94vw, 1380px)" class="detail-dialog" @close="onDetailDialogClose">
             <template #title>
                 <div class="detail-dialog-title">
                     <strong>商品明細</strong>
@@ -202,7 +204,7 @@
                     <div class="detail-summary-item">
                         <span>總毛利</span>
                         <strong :class="{ 'profit-negative': selectedProfit < 0 }">NT$ {{ formatCurrency(selectedProfit)
-                            }}</strong>
+                        }}</strong>
                     </div>
                     <div class="detail-summary-item">
                         <span>操作人員</span>
@@ -211,7 +213,8 @@
                 </div>
 
                 <div class="detail-actions">
-                    <el-button type="primary" size="small" class="detail-toolbar-btn detail-toolbar-btn--primary" @click="addNewDetailItem">新增商品</el-button>
+                    <el-button type="primary" size="small" class="detail-toolbar-btn detail-toolbar-btn--primary"
+                        @click="addNewDetailItem">新增商品</el-button>
                     <el-button size="small" class="detail-toolbar-btn detail-toolbar-btn--secondary"
                         @click="toggleDetailEditMode">
                         {{ showDetailActions ? "關閉編輯模式" : "開啟編輯模式" }}
@@ -220,149 +223,154 @@
             </div>
 
             <div class="detail-table-wrap">
-            <el-table :data="selectedItems" border size="small" class="detail-table" :class="tableThemeClass"
-                :header-cell-style="{ background: 'var(--table-header-bg)', color: 'var(--table-header-text)' }">
-                <el-table-column label="#" width="48" align="center">
-                    <template #default="{ $index }">{{ $index + 1 }}</template>
-                </el-table-column>
+                <el-table :data="selectedItems" border size="small" class="detail-table" :class="tableThemeClass"
+                    :header-cell-style="{ background: 'var(--table-header-bg)', color: 'var(--table-header-text)' }">
+                    <el-table-column label="#" width="48" align="center">
+                        <template #default="{ $index }">{{ $index + 1 }}</template>
+                    </el-table-column>
 
-                <el-table-column v-if="showDetailActions" label="操作" width="108" align="center">
-                    <template #default="{ row }">
-                        <div class="row-action-stack">
-                            <template v-if="editingDetailRow === row">
-                                <el-button size="small" type="primary" class="row-action-btn detail-row-btn detail-row-btn--save"
-                                    @click="saveDetailEdit(row)">
-                                    儲存
-                                </el-button>
-                                <el-button size="small" class="row-action-btn detail-row-btn detail-row-btn--cancel" @click="editingDetailRow = null">
-                                    取消
-                                </el-button>
-                            </template>
-                            <template v-else>
-                                <el-button size="small" type="primary" class="row-action-btn detail-row-btn detail-row-btn--edit"
-                                    @click="editingDetailRow = row">
-                                    編輯
-                                </el-button>
-                                <el-button size="small" type="danger" class="row-action-btn detail-row-btn detail-row-btn--delete"
-                                    @click="deleteDetailItem(row)">
-                                    刪除
-                                </el-button>
-                            </template>
-                        </div>
-                    </template>
-                </el-table-column>
+                    <el-table-column v-if="showDetailActions" label="操作" width="108" align="center">
+                        <template #default="{ row }">
+                            <div class="row-action-stack">
+                                <template v-if="editingDetailRow === row">
+                                    <el-button size="small" type="primary"
+                                        class="row-action-btn detail-row-btn detail-row-btn--save"
+                                        @click="saveDetailEdit(row)">
+                                        儲存
+                                    </el-button>
+                                    <el-button size="small" class="row-action-btn detail-row-btn detail-row-btn--cancel"
+                                        @click="editingDetailRow = null">
+                                        取消
+                                    </el-button>
+                                </template>
+                                <template v-else>
+                                    <el-button size="small" type="primary"
+                                        class="row-action-btn detail-row-btn detail-row-btn--edit"
+                                        @click="editingDetailRow = row">
+                                        編輯
+                                    </el-button>
+                                    <el-button size="small" type="danger"
+                                        class="row-action-btn detail-row-btn detail-row-btn--delete"
+                                        @click="deleteDetailItem(row)">
+                                        刪除
+                                    </el-button>
+                                </template>
+                            </div>
+                        </template>
+                    </el-table-column>
 
-                <el-table-column label="商品圖片" width="120" align="center">
-                    <template #default="{ row }">
-                        <button
-                            type="button"
-                            :class="['product-image-box', 'product-image-box--large', { 'product-image-box--clickable': !!row.imageUrl }]"
-                            @click="row.imageUrl && openDetailImagePreview(row.imageUrl, row.name)"
-                        >
-                            <img v-if="row.imageUrl" :src="row.imageUrl" alt="商品圖片" class="product-image" />
-                            <el-icon v-else class="product-image-fallback">
-                                <Picture />
-                            </el-icon>
-                        </button>
-                    </template>
-                </el-table-column>
+                    <el-table-column label="商品圖片" width="120" align="center">
+                        <template #default="{ row }">
+                            <button type="button"
+                                :class="['product-image-box', 'product-image-box--large', { 'product-image-box--clickable': !!row.imageUrl }]"
+                                @click="row.imageUrl && openDetailImagePreview(row.imageUrl, row.name)">
+                                <img v-if="row.imageUrl" :src="row.imageUrl" alt="商品圖片" class="product-image" />
+                                <el-icon v-else class="product-image-fallback">
+                                    <Picture />
+                                </el-icon>
+                            </button>
+                        </template>
+                    </el-table-column>
 
-                <el-table-column prop="name" label="商品名稱" min-width="180">
-                    <template #default="{ row }">
-                        <div v-if="editingDetailRow === row">
-                            <el-input v-model="row.name" size="small" placeholder="輸入商品名稱" />
-                        </div>
-                        <div v-else>
-                            <a v-if="row.website" :href="row.website" target="_blank" rel="noopener noreferrer"
-                                class="product-link">
-                                {{ row.name }}
-                            </a>
-                            <span v-else>{{ row.name }}</span>
-                        </div>
-                    </template>
-                </el-table-column>
+                    <el-table-column prop="name" label="商品名稱" min-width="180">
+                        <template #default="{ row }">
+                            <div v-if="editingDetailRow === row">
+                                <el-input v-model="row.name" size="small" placeholder="輸入商品名稱" />
+                            </div>
+                            <div v-else>
+                                <a v-if="row.website" :href="row.website" target="_blank" rel="noopener noreferrer"
+                                    class="product-link">
+                                    {{ row.name }}
+                                </a>
+                                <span v-else>{{ row.name }}</span>
+                            </div>
+                        </template>
+                    </el-table-column>
 
-                <el-table-column prop="code" label="商品編號" width="120">
-                    <template #default="{ row }">
-                        <el-input v-if="editingDetailRow === row" v-model="row.code" size="small"
-                            placeholder="輸入商品編號" />
-                        <div v-else>{{ row.code }}</div>
-                    </template>
-                </el-table-column>
+                    <el-table-column prop="code" label="商品編號" width="120">
+                        <template #default="{ row }">
+                            <el-input v-if="editingDetailRow === row" v-model="row.code" size="small"
+                                placeholder="輸入商品編號" />
+                            <div v-else>{{ row.code }}</div>
+                        </template>
+                    </el-table-column>
 
-                <el-table-column prop="gtin" label="GTIN" width="120">
-                    <template #default="{ row }">
-                        <el-input v-if="editingDetailRow === row" v-model="row.gtin" size="small"
-                            placeholder="輸入 GTIN" />
-                        <div v-else>{{ row.gtin }}</div>
-                    </template>
-                </el-table-column>
+                    <el-table-column prop="gtin" label="GTIN" width="120">
+                        <template #default="{ row }">
+                            <el-input v-if="editingDetailRow === row" v-model="row.gtin" size="small"
+                                placeholder="輸入 GTIN" />
+                            <div v-else>{{ row.gtin }}</div>
+                        </template>
+                    </el-table-column>
 
-                <el-table-column prop="sellingPrice" label="售價" width="120">
-                    <template #default="{ row }">
-                        <el-input-number v-if="editingDetailRow === row" v-model="row.sellingPrice" :min="0"
-                            size="small" class="detail-number" />
-                        <div v-else>NT$ {{ formatCurrency(row.sellingPrice) }}</div>
-                    </template>
-                </el-table-column>
+                    <el-table-column prop="sellingPrice" label="售價" width="120">
+                        <template #default="{ row }">
+                            <el-input-number v-if="editingDetailRow === row" v-model="row.sellingPrice" :min="0"
+                                size="small" class="detail-number" />
+                            <div v-else>NT$ {{ formatCurrency(row.sellingPrice) }}</div>
+                        </template>
+                    </el-table-column>
 
-                <el-table-column prop="quantity" label="數量" width="110">
-                    <template #default="{ row }">
-                        <el-input-number v-if="editingDetailRow === row" v-model="row.quantity" :min="0" size="small"
-                            class="detail-number" />
-                        <div v-else>{{ row.quantity }}</div>
-                    </template>
-                </el-table-column>
+                    <el-table-column prop="quantity" label="數量" width="110">
+                        <template #default="{ row }">
+                            <el-input-number v-if="editingDetailRow === row" v-model="row.quantity" :min="0"
+                                size="small" class="detail-number" />
+                            <div v-else>{{ row.quantity }}</div>
+                        </template>
+                    </el-table-column>
 
-                <el-table-column label="小計" width="120">
-                    <template #default="{ row }">NT$ {{ formatCurrency(row.sellingPrice * row.quantity) }}</template>
-                </el-table-column>
+                    <el-table-column label="小計" width="120">
+                        <template #default="{ row }">NT$ {{ formatCurrency(row.sellingPrice * row.quantity)
+                            }}</template>
+                    </el-table-column>
 
-                <el-table-column prop="price" label="定價" width="100">
-                    <template #default="{ row }">NT$ {{ formatCurrency(row.price) }}</template>
-                </el-table-column>
+                    <el-table-column prop="price" label="定價" width="100">
+                        <template #default="{ row }">NT$ {{ formatCurrency(row.price) }}</template>
+                    </el-table-column>
 
-                <el-table-column prop="cost" label="成本" width="120">
-                    <template #default="{ row }">
-                        <el-input-number v-if="editingDetailRow === row" v-model="row.cost" :min="0" size="small"
-                            class="detail-number" />
-                        <div v-else>NT$ {{ formatCurrency(row.cost ?? 0) }}</div>
-                    </template>
-                </el-table-column>
+                    <el-table-column prop="cost" label="成本" width="120">
+                        <template #default="{ row }">
+                            <el-input-number v-if="editingDetailRow === row" v-model="row.cost" :min="0" size="small"
+                                class="detail-number" />
+                            <div v-else>NT$ {{ formatCurrency(row.cost ?? 0) }}</div>
+                        </template>
+                    </el-table-column>
 
-                <el-table-column label="單件毛利" width="120">
-                    <template #default="{ row }">
-                        <span :class="['profit-value', { 'profit-negative': row.sellingPrice - (row.cost ?? 0) < 0 }]">
-                            NT$ {{ formatCurrency(row.sellingPrice - (row.cost ?? 0)) }}
-                        </span>
-                    </template>
-                </el-table-column>
+                    <el-table-column label="單件毛利" width="120">
+                        <template #default="{ row }">
+                            <span
+                                :class="['profit-value', { 'profit-negative': row.sellingPrice - (row.cost ?? 0) < 0 }]">
+                                NT$ {{ formatCurrency(row.sellingPrice - (row.cost ?? 0)) }}
+                            </span>
+                        </template>
+                    </el-table-column>
 
-                <el-table-column label="預估總毛利" width="130">
-                    <template #default="{ row }">
-                        <span
-                            :class="['profit-value', { 'profit-negative': (row.sellingPrice - (row.cost ?? 0)) * row.quantity < 0 }]">
-                            NT$ {{ formatCurrency((row.sellingPrice - (row.cost ?? 0)) * row.quantity) }}
-                        </span>
-                    </template>
-                </el-table-column>
+                    <el-table-column label="預估總毛利" width="130">
+                        <template #default="{ row }">
+                            <span
+                                :class="['profit-value', { 'profit-negative': (row.sellingPrice - (row.cost ?? 0)) * row.quantity < 0 }]">
+                                NT$ {{ formatCurrency((row.sellingPrice - (row.cost ?? 0)) * row.quantity) }}
+                            </span>
+                        </template>
+                    </el-table-column>
 
-                <el-table-column prop="website" label="網站連結" width="180">
-                    <template #default="{ row }">
-                        <el-input v-if="editingDetailRow === row" v-model="row.website" size="small"
-                            placeholder="輸入網站連結" />
-                        <div v-else>
-                            <a v-if="row.website" :href="row.website" target="_blank" rel="noopener noreferrer"
-                                class="site-link">連結</a>
-                            <span v-else>-</span>
-                        </div>
-                    </template>
-                </el-table-column>
-            </el-table>
+                    <el-table-column prop="website" label="網站連結" width="180">
+                        <template #default="{ row }">
+                            <el-input v-if="editingDetailRow === row" v-model="row.website" size="small"
+                                placeholder="輸入網站連結" />
+                            <div v-else>
+                                <a v-if="row.website" :href="row.website" target="_blank" rel="noopener noreferrer"
+                                    class="site-link">連結</a>
+                                <span v-else>-</span>
+                            </div>
+                        </template>
+                    </el-table-column>
+                </el-table>
             </div>
         </el-dialog>
 
-        <el-dialog v-model="detailImagePreviewVisible" width="min(92vw, 760px)" class="image-preview-dialog" append-to-body>
+        <el-dialog v-model="detailImagePreviewVisible" width="min(92vw, 760px)" class="image-preview-dialog"
+            append-to-body>
             <template #title>
                 <div class="image-preview-title">
                     <strong>{{ detailImagePreviewName || "商品圖片" }}</strong>
@@ -371,12 +379,8 @@
             </template>
 
             <div class="image-preview-frame">
-                <img
-                    v-if="detailImagePreviewUrl"
-                    :src="detailImagePreviewUrl"
-                    :alt="detailImagePreviewName || '商品圖片'"
-                    class="image-preview-full"
-                />
+                <img v-if="detailImagePreviewUrl" :src="detailImagePreviewUrl" :alt="detailImagePreviewName || '商品圖片'"
+                    class="image-preview-full" />
             </div>
         </el-dialog>
 
@@ -1534,6 +1538,62 @@ onBeforeUnmount(() => {
     color: var(--heading-color);
 }
 
+.filter-toolbar-btn {
+    min-height: 42px;
+    padding: 0 16px;
+    border-radius: 14px;
+    font-weight: 600;
+    letter-spacing: 0.01em;
+    transition:
+        transform 0.18s ease,
+        box-shadow 0.18s ease,
+        border-color 0.18s ease,
+        background 0.18s ease,
+        color 0.18s ease,
+        filter 0.18s ease;
+}
+
+.filter-toolbar-btn:hover,
+.filter-toolbar-btn:focus-visible {
+    transform: translateY(-1px);
+}
+
+.filter-toolbar-btn--secondary {
+    border: 1px solid rgba(20, 36, 58, 0.1);
+    background: rgba(255, 255, 255, 0.9);
+    color: #10243c;
+    box-shadow: 0 10px 20px rgba(16, 36, 58, 0.08);
+}
+
+.filter-toolbar-btn--secondary:hover,
+.filter-toolbar-btn--secondary:focus-visible {
+    border-color: rgba(77, 131, 180, 0.28);
+    background: rgba(247, 250, 252, 1);
+    color: #10243c;
+}
+
+.filter-toolbar-btn--active {
+    border-color: rgba(235, 181, 106, 0.52);
+    background:
+        radial-gradient(circle at top right, rgba(255, 244, 212, 0.38), transparent 42%),
+        linear-gradient(135deg, #be6825 0%, #df9c45 48%, #f4c87d 100%);
+    color: #10243c;
+    font-weight: 700;
+    box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.34),
+        0 18px 32px rgba(190, 104, 37, 0.24);
+}
+
+.filter-toolbar-btn--active:hover,
+.filter-toolbar-btn--active:focus-visible {
+    border-color: rgba(240, 191, 118, 0.72);
+    color: #10243c;
+    filter: saturate(1.06) brightness(1.02);
+    box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.38),
+        0 22px 36px rgba(190, 104, 37, 0.3);
+}
+
 .table-card {
     padding: 24px;
 }
@@ -1637,6 +1697,68 @@ onBeforeUnmount(() => {
     width: auto;
     min-width: 72px;
     align-self: center;
+}
+
+.sales-row-btn {
+    min-height: 34px;
+    border-radius: 12px;
+    font-weight: 600;
+    letter-spacing: 0.01em;
+    transition:
+        transform 0.18s ease,
+        box-shadow 0.18s ease,
+        border-color 0.18s ease,
+        background 0.18s ease,
+        color 0.18s ease;
+}
+
+.sales-row-btn:hover,
+.sales-row-btn:focus-visible {
+    transform: translateY(-1px);
+}
+
+.sales-row-btn--save,
+.sales-row-btn--edit {
+    border-color: rgba(77, 131, 180, 0.26);
+    background: linear-gradient(180deg, rgba(24, 54, 86, 0.96), rgba(35, 74, 113, 0.94));
+    color: #f7fbff;
+    box-shadow: 0 10px 20px rgba(16, 36, 58, 0.16);
+}
+
+.sales-row-btn--save:hover,
+.sales-row-btn--save:focus-visible,
+.sales-row-btn--edit:hover,
+.sales-row-btn--edit:focus-visible {
+    border-color: rgba(77, 131, 180, 0.4);
+    background: linear-gradient(180deg, rgba(20, 46, 74, 1), rgba(31, 66, 101, 0.98));
+    color: #ffffff;
+}
+
+.sales-row-btn--cancel {
+    border: 1px solid rgba(20, 36, 58, 0.1);
+    background: rgba(255, 255, 255, 0.92);
+    color: #44596f;
+}
+
+.sales-row-btn--cancel:hover,
+.sales-row-btn--cancel:focus-visible {
+    border-color: rgba(129, 147, 168, 0.4);
+    background: rgba(244, 247, 250, 1);
+    color: #203248;
+}
+
+.sales-row-btn--delete {
+    border-color: rgba(217, 92, 92, 0.2);
+    background: linear-gradient(180deg, rgba(191, 72, 72, 0.96), rgba(170, 58, 58, 0.94));
+    color: #fff8f8;
+    box-shadow: 0 10px 20px rgba(191, 72, 72, 0.18);
+}
+
+.sales-row-btn--delete:hover,
+.sales-row-btn--delete:focus-visible {
+    border-color: rgba(217, 92, 92, 0.34);
+    background: linear-gradient(180deg, rgba(176, 60, 60, 1), rgba(155, 48, 48, 0.98));
+    color: #ffffff;
 }
 
 .row-action-stack :deep(.el-button + .el-button),

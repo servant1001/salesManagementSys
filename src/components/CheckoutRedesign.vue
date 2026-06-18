@@ -50,10 +50,10 @@
                         class="manual-quantity"
                         @keyup.enter="addManualItem"
                     />
-                    <el-button type="primary" class="manual-action" @click="addManualItem">
+                    <el-button type="primary" class="manual-action checkout-primary-btn" @click="addManualItem">
                         加入購物車
                     </el-button>
-                    <el-button class="secondary-btn" @click="showAddDialog = true">
+                    <el-button class="secondary-btn checkout-secondary-btn" @click="showAddDialog = true">
                         手動建立商品
                     </el-button>
                 </div>
@@ -102,10 +102,10 @@
                 </div>
 
                 <div class="summary-actions">
-                    <el-button class="secondary-btn" :disabled="cart.length === 0" @click="clearCart">
+                    <el-button class="secondary-btn checkout-secondary-btn" :disabled="cart.length === 0" @click="clearCart">
                         清空購物車
                     </el-button>
-                    <el-button type="success" :disabled="cart.length === 0" @click="confirmCheckout">
+                    <el-button type="success" class="checkout-success-btn" :disabled="cart.length === 0" @click="confirmCheckout">
                         確認結帳
                     </el-button>
                 </div>
@@ -238,10 +238,10 @@
                 <el-table-column label="操作" width="128" align="center">
                     <template #default="{ row, $index }">
                         <div class="row-action-stack">
-                            <el-button type="primary" size="small" class="row-action-btn" @click.stop="toggleEdit(row)">
+                            <el-button type="primary" size="small" class="row-action-btn checkout-row-btn checkout-row-btn--edit" @click.stop="toggleEdit(row)">
                                 {{ row.editing ? "完成" : "編輯" }}
                             </el-button>
-                            <el-button type="danger" size="small" class="row-action-btn" @click.stop="removeItem($index)">
+                            <el-button type="danger" size="small" class="row-action-btn checkout-row-btn checkout-row-btn--delete" @click.stop="removeItem($index)">
                                 刪除
                             </el-button>
                         </div>
@@ -253,7 +253,7 @@
                 <strong>購物車目前是空的</strong>
                 <p>你可以先掃描商品、輸入 GTIN，或手動建立商品後加入購物車。</p>
                 <div class="empty-actions">
-                    <el-button type="primary" @click="showAddDialog = true">手動建立商品</el-button>
+                    <el-button type="primary" class="checkout-primary-btn" @click="showAddDialog = true">手動建立商品</el-button>
                 </div>
             </div>
         </section>
@@ -297,8 +297,8 @@
                 </div>
             </el-form>
             <template #footer>
-                <el-button @click="showAddDialog = false">取消</el-button>
-                <el-button type="primary" @click="confirmAddManualItem">加入購物車</el-button>
+                <el-button class="checkout-secondary-btn" @click="showAddDialog = false">取消</el-button>
+                <el-button type="primary" class="checkout-primary-btn" @click="confirmAddManualItem">加入購物車</el-button>
             </template>
         </el-dialog>
     </div>
@@ -830,6 +830,99 @@ function confirmAddManualItem() {
     color: var(--heading-color);
 }
 
+.checkout-primary-btn,
+.checkout-success-btn,
+.checkout-secondary-btn,
+.checkout-row-btn {
+    transition:
+        transform 0.18s ease,
+        box-shadow 0.18s ease,
+        border-color 0.18s ease,
+        background 0.18s ease,
+        color 0.18s ease;
+}
+
+.checkout-primary-btn:hover,
+.checkout-success-btn:hover,
+.checkout-secondary-btn:hover,
+.checkout-row-btn:hover,
+.checkout-primary-btn:focus-visible,
+.checkout-success-btn:focus-visible,
+.checkout-secondary-btn:focus-visible,
+.checkout-row-btn:focus-visible {
+    transform: translateY(-1px);
+}
+
+.checkout-primary-btn {
+    border-color: rgba(185, 122, 55, 0.38);
+    background:
+        radial-gradient(circle at top right, rgba(214, 164, 107, 0.24), transparent 48%),
+        linear-gradient(180deg, rgba(17, 40, 66, 0.98), rgba(24, 54, 86, 0.96));
+    color: #f7fbff;
+    box-shadow: 0 14px 28px rgba(16, 36, 58, 0.18);
+}
+
+.checkout-primary-btn:hover,
+.checkout-primary-btn:focus-visible {
+    border-color: rgba(214, 164, 107, 0.56);
+    background:
+        radial-gradient(circle at top right, rgba(214, 164, 107, 0.3), transparent 46%),
+        linear-gradient(180deg, rgba(14, 34, 58, 1), rgba(22, 49, 79, 0.98));
+    color: #ffffff;
+    box-shadow: 0 18px 32px rgba(16, 36, 58, 0.22);
+}
+
+.checkout-success-btn {
+    border-color: rgba(235, 181, 106, 0.52);
+    background:
+        radial-gradient(circle at top right, rgba(255, 244, 212, 0.38), transparent 42%),
+        linear-gradient(135deg, #be6825 0%, #df9c45 48%, #f4c87d 100%);
+    color: #10243c;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.34),
+        0 18px 32px rgba(190, 104, 37, 0.3);
+}
+
+.checkout-success-btn:hover,
+.checkout-success-btn:focus-visible {
+    border-color: rgba(240, 191, 118, 0.72);
+    color: #10243c;
+    filter: saturate(1.08) brightness(1.02);
+    box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.38),
+        0 22px 36px rgba(190, 104, 37, 0.36);
+}
+
+.checkout-success-btn:disabled,
+.checkout-success-btn.is-disabled,
+.checkout-success-btn.is-disabled:hover,
+.checkout-success-btn.is-disabled:focus-visible {
+    border-color: rgba(20, 36, 58, 0.1) !important;
+    background:
+        linear-gradient(180deg, rgba(231, 236, 241, 0.96), rgba(219, 226, 233, 0.96)) !important;
+    color: rgba(16, 36, 60, 0.48) !important;
+    box-shadow: none !important;
+    filter: none !important;
+    transform: none !important;
+    cursor: not-allowed;
+}
+
+.checkout-secondary-btn {
+    border-color: rgba(20, 36, 58, 0.1);
+    background: rgba(255, 255, 255, 0.9);
+    color: #10243c;
+    box-shadow: 0 10px 20px rgba(16, 36, 58, 0.08);
+}
+
+.checkout-secondary-btn:hover,
+.checkout-secondary-btn:focus-visible {
+    border-color: rgba(77, 131, 180, 0.28);
+    background: rgba(247, 250, 252, 1);
+    color: #10243c;
+}
+
 .table-card {
     padding: 24px;
 }
@@ -952,6 +1045,41 @@ function confirmAddManualItem() {
 
 .row-action-btn {
     width: 100%;
+}
+
+.checkout-row-btn {
+    min-height: 34px;
+    border-radius: 12px;
+    font-weight: 600;
+    letter-spacing: 0.01em;
+}
+
+.checkout-row-btn--edit {
+    border-color: rgba(77, 131, 180, 0.26);
+    background: linear-gradient(180deg, rgba(24, 54, 86, 0.96), rgba(35, 74, 113, 0.94));
+    color: #f7fbff;
+    box-shadow: 0 10px 20px rgba(16, 36, 58, 0.16);
+}
+
+.checkout-row-btn--edit:hover,
+.checkout-row-btn--edit:focus-visible {
+    border-color: rgba(77, 131, 180, 0.4);
+    background: linear-gradient(180deg, rgba(20, 46, 74, 1), rgba(31, 66, 101, 0.98));
+    color: #ffffff;
+}
+
+.checkout-row-btn--delete {
+    border-color: rgba(217, 92, 92, 0.2);
+    background: linear-gradient(180deg, rgba(191, 72, 72, 0.96), rgba(170, 58, 58, 0.94));
+    color: #fff8f8;
+    box-shadow: 0 10px 20px rgba(191, 72, 72, 0.18);
+}
+
+.checkout-row-btn--delete:hover,
+.checkout-row-btn--delete:focus-visible {
+    border-color: rgba(217, 92, 92, 0.34);
+    background: linear-gradient(180deg, rgba(176, 60, 60, 1), rgba(155, 48, 48, 0.98));
+    color: #ffffff;
 }
 
 .empty-state {

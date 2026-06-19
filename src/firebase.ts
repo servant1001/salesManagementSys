@@ -1,6 +1,5 @@
 // src/firebase.ts
 import { initializeApp } from "firebase/app";
-import { getDatabase, Database } from "firebase/database";
 import { getAnalytics } from "firebase/analytics";
 import type { Analytics } from "firebase/analytics";
 import { getAuth } from "firebase/auth";
@@ -18,5 +17,4 @@ const firebaseConfig = {
 // 初始化 Firebase
 const app = initializeApp(firebaseConfig);
 export const analytics: Analytics = getAnalytics(app);
-export const db: Database = getDatabase(app);
 export const auth = getAuth(app);

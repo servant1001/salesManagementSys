@@ -1,61 +1,18 @@
-# 銷售管理系統 Sales Management System
+# Sales Management System
 
-這是一個以 `Vue 3 + Vite + TypeScript + Element Plus + Firebase` 建置的銷售管理系統，主要用來處理商品管理、廠商管理、結帳作業與銷售紀錄查詢。
-
-目前專案已經整理成一套統一的深藍＋暖金視覺風格，並針對登入頁、首頁、商品列表、廠商列表、結帳頁與銷售紀錄頁做過 UI 優化與行動裝置調整。
+`Sales Management System` 是一套以 `Vue 3 + Vite + TypeScript + Element Plus` 建置的銷售管理系統，整合了商品管理、供應商管理、結帳作業與銷售紀錄查詢。專案目前採用 `Firebase Auth + Supabase` 架構，登入驗證與業務資料已分流，方便後續擴充權限與資料治理。
 
 ## 專案特色
 
-- 使用 Firebase Authentication 管理登入與註冊流程。
-- 使用 Firebase Realtime Database 儲存商品、廠商、銷售紀錄等資料。
-- 支援商品清單管理、批量新增、圖片預覽與條碼產生。
-- 支援結帳作業、掃碼加入購物車、手動加入商品與付款方式記錄。
-- 支援銷售紀錄查詢、日期篩選、毛利統計與銷售明細編輯。
-- 已建立統一 UI 設計規範，方便後續持續擴充。
+- 統一的 AURA 風格 UI / UX
+- 支援桌機與手機版操作
+- 商品列表、供應商列表、結帳列表與銷售紀錄皆維持一致視覺語言
+- 支援商品圖片預覽放大
+- 支援條碼掃描與結帳流程
+- 支援銷售分析圖表
+- 主要資料已改用 Supabase 管理
 
-## 主要功能
-
-### 1. 帳號與登入
-
-- 使用者註冊
-- Email / Password 登入
-- Google 登入
-- Email 驗證
-- 受保護路由控管
-
-### 2. 商品管理
-
-- 新增商品
-- 批量新增商品
-- 商品列表查詢
-- 商品圖片點擊放大預覽
-- 商品 GTIN / 編號管理
-- 條碼產生與下載
-
-### 3. 廠商管理
-
-- 廠商列表瀏覽
-- 廠商資料新增 / 編輯 / 刪除
-- 與商品供應商欄位整合
-
-### 4. 結帳作業
-
-- 掃碼加入購物車
-- 手動輸入 GTIN / 商品編號加入購物車
-- 手動建立商品並加入購物車
-- 付款方式選擇
-- 結帳後自動更新庫存
-- 寫入銷售紀錄
-
-### 5. 銷售紀錄
-
-- 依日期 / 月份查詢
-- 關鍵字搜尋商品名稱
-- 顯示總銷售額、總毛利、筆數
-- 付款方式統計分析
-- 交易明細檢視與編輯
-
-## 技術棧
+## 目前技術架構
 
 ### 前端
 
@@ -65,58 +22,156 @@
 - `Vue Router`
 - `Pinia`
 - `Element Plus`
+- `ECharts`
 
-### 後端服務 / 雲端
+### 驗證與資料層
 
 - `Firebase Authentication`
-- `Firebase Realtime Database`
+- `Supabase`
 - `Firebase Analytics`
 
-### 其他工具
+### 其他套件
 
+- `@supabase/supabase-js`
 - `@zxing/browser`
 - `@zxing/library`
 - `html5-qrcode`
 - `jsbarcode`
 - `axios`
-- `prettier`
 
-## 頁面路由
+## 資料來源現況
 
-目前主要頁面如下：
+目前正式資料來源如下：
+
+- `Firebase Auth`：登入、使用者驗證
+- `Supabase`：`vendors`、`products`、`sales`
+
+目前前台主要 CRUD 已不再依賴 `Firebase Realtime Database`。
+
+## 已搬移到 Supabase 的模組
+
+- 供應商管理 `vendors`
+- 商品列表 `products`
+- 銷售紀錄 `sales`
+
+## 認證方式
+
+本專案保留 Firebase 登入，並透過 Firebase ID Token 讓 Supabase 以 authenticated 身分執行請求。
+
+必要條件：
+
+- Firebase 使用者需具備 custom claim：`role=authenticated`
+- Supabase 需啟用 Third-party Auth 並接受 Firebase JWT
+- Supabase 資料表需配置 RLS
+
+如果遇到以下錯誤：
+
+```text
+No suitable key or wrong key type
+```
+
+請優先檢查：
+
+- Supabase 的 Firebase JWT 驗證設定
+- Firebase claim 是否已寫入
+- 使用者是否已重新登入取得新 token
+
+## 主要功能
+
+### 1. 登入 / 註冊
+
+- Email / Password 登入
+- Google 登入
+- Email 註冊
+- 忘記密碼與驗證流程支援
+
+### 2. 首頁 Dashboard
+
+- 今日訂單
+- 今日營收
+- 今日銷售節奏
+- 快速掌握訂單量與營收狀態
+
+### 3. 供應商管理
+
+- 新增供應商
+- 編輯供應商
+- 刪除供應商
+- 響應式表格顯示
+
+### 4. 商品管理
+
+- 新增商品
+- 批量新增商品
+- 商品編輯 / 儲存 / 刪除
+- 商品圖片預覽放大
+- GTIN、商品編號、名稱等欄位管理
+- 支援網址匯入商品
+
+### 5. 結帳作業
+
+- 商品條碼掃描
+- 手動加入購物車
+- 調整數量
+- 選擇付款方式
+- 確認結帳前檢查付款方式
+- 結帳列表支援商品圖片放大
+
+### 6. 銷售紀錄
+
+- 依日期篩選
+- 查看商品明細
+- 編輯與刪除銷售紀錄
+- 圖表分析視窗
+- 每小時訂單數量趨勢圖
+- 付款方式分析
+
+## 路由頁面
 
 - `/login`：登入頁
 - `/register`：註冊頁
 - `/`：首頁 Dashboard
-- `/add`：新增商品
-- `/products`：商品列表
+- `/products`：商品管理
 - `/checkout`：結帳作業
 - `/sales`：銷售紀錄
-- `/vendors`：廠商列表
+- `/vendors`：供應商管理
 
 ## 專案結構
 
 ```text
 salesManagementSys/
 ├─ public/
+├─ scripts/
 ├─ src/
-│  ├─ assets/              # 全域樣式、圖片、表格主題
-│  ├─ components/          # 功能頁元件與共用元件
+│  ├─ assets/
+│  ├─ components/
 │  │  ├─ AddProduct.vue
 │  │  ├─ Checkout.vue
-│  │  ├─ Checkout.vue
 │  │  ├─ ProductList.vue
-│  │  ├─ Sales.vue
 │  │  ├─ SalesRecord.vue
 │  │  └─ Scanner.vue
-│  ├─ composables/         # 自訂 composables
-│  ├─ layouts/             # 版型，例如主框架與側邊欄
-│  ├─ router/              # 路由設定
-│  ├─ stores/              # Pinia 狀態管理
-│  ├─ utils/               # 工具函式，例如條碼功能
-│  └─ views/               # 頁面層元件
-├─ AGENTS.md               # UI / 開發延續規範
-├─ firebase.json
+│  ├─ composables/
+│  ├─ layouts/
+│  ├─ router/
+│  ├─ services/
+│  │  ├─ products.ts
+│  │  ├─ sales.ts
+│  │  └─ vendors.ts
+│  ├─ stores/
+│  ├─ utils/
+│  ├─ views/
+│  │  ├─ HomeView.vue
+│  │  ├─ Login.vue
+│  │  ├─ Register.vue
+│  │  └─ Vendors.vue
+│  ├─ firebase.ts
+│  ├─ main.ts
+│  └─ supabase.ts
+├─ supabase/
+│  ├─ products_setup.sql
+│  ├─ sales_setup.sql
+│  └─ vendors_setup.sql
+├─ AGENTS.md
 ├─ package.json
 └─ README.md
 ```
@@ -126,7 +181,7 @@ salesManagementSys/
 - `Node.js 20.19.0` 以上，或 `22.12.0` 以上
 - `npm`
 
-可參考 `package.json` 中的 `engines` 設定：
+`package.json` 目前設定：
 
 ```json
 "engines": {
@@ -134,9 +189,37 @@ salesManagementSys/
 }
 ```
 
-## 安裝與啟動
+## 環境變數
 
-### 1. 安裝套件
+請建立 `.env` 或 `.env.local`，至少包含：
+
+```env
+VITE_SUPABASE_URL=your_supabase_url
+VITE_SUPABASE_PUBLISHABLE_KEY=your_supabase_publishable_key
+```
+
+若需執行 Firebase Admin 或 migration 腳本，另外需要：
+
+```env
+SUPABASE_SECRET_KEY=your_supabase_secret_key
+FIREBASE_SERVICE_ACCOUNT_PATH=path_to_service_account_json
+```
+
+也可以改用：
+
+```env
+GOOGLE_APPLICATION_CREDENTIALS=path_to_service_account_json
+```
+
+注意：
+
+- `VITE_` 開頭變數可提供前端使用
+- `SUPABASE_SECRET_KEY` 不可暴露到前端
+- Firebase Service Account 僅供本機腳本或管理用途
+
+## 安裝與執行
+
+### 1. 安裝依賴
 
 ```bash
 npm install
@@ -148,98 +231,129 @@ npm install
 npm run dev
 ```
 
-### 3. 型別檢查與正式版建置
+### 3. 建置正式版本
 
 ```bash
 npm run build
 ```
 
-### 4. 預覽正式版輸出
+### 4. 預覽建置結果
 
 ```bash
 npm run preview
 ```
 
-### 5. 格式化 `src/` 內程式碼
+### 5. 格式化 `src/`
 
 ```bash
 npm run format
 ```
 
-## npm Scripts
+## 常用 npm Scripts
 
-| 指令                 | 說明                        |
-| -------------------- | --------------------------- |
-| `npm run dev`        | 啟動 Vite 開發伺服器        |
-| `npm run build`      | 先做型別檢查，再建置正式版  |
-| `npm run build-only` | 只執行 Vite build           |
-| `npm run preview`    | 預覽建置後內容              |
-| `npm run type-check` | 使用 `vue-tsc` 做型別檢查   |
-| `npm run format`     | 使用 Prettier 格式化 `src/` |
+| 指令 | 說明 |
+| --- | --- |
+| `npm run dev` | 啟動 Vite 開發伺服器 |
+| `npm run build` | 先型別檢查再執行正式建置 |
+| `npm run build-only` | 僅執行 Vite build |
+| `npm run preview` | 預覽建置後結果 |
+| `npm run type-check` | 執行 `vue-tsc` 型別檢查 |
+| `npm run format` | 使用 Prettier 格式化 `src/` |
+| `npm run migrate:vendors` | 搬移 vendors 到 Supabase |
+| `npm run migrate:products` | 搬移 products 到 Supabase |
+| `npm run migrate:sales` | 搬移 sales 到 Supabase |
+| `npm run list:firebase-users` | 列出 Firebase 使用者與 claim |
+| `npm run set:firebase-claim` | 設定單一 Firebase 使用者 claim |
+| `npm run set:firebase-claim-all` | 批次設定 Firebase 使用者 claim |
 
-## Firebase 設定
+## Supabase 相關檔案
 
-目前專案的 Firebase 設定寫在：
+### SQL
+
+- `supabase/vendors_setup.sql`
+- `supabase/products_setup.sql`
+- `supabase/sales_setup.sql`
+
+### Migration Scripts
+
+- `scripts/migrate-vendors-to-supabase.mjs`
+- `scripts/migrate-products-to-supabase.mjs`
+- `scripts/migrate-sales-to-supabase.mjs`
+
+### Firebase Admin Scripts
+
+- `scripts/firebase-admin-common.mjs`
+- `scripts/list-firebase-users.mjs`
+- `scripts/set-firebase-custom-claim.mjs`
+- `scripts/set-firebase-custom-claim-all.mjs`
+
+## 前端 Service 層
+
+目前資料存取集中在：
+
+- `src/services/vendors.ts`
+- `src/services/products.ts`
+- `src/services/sales.ts`
+
+Supabase Client 與 Firebase Token 串接邏輯位於：
+
+- `src/supabase.ts`
+
+Firebase 初始化位於：
 
 - `src/firebase.ts`
 
-目前採用的是直接寫死在程式碼中的設定方式。這種方式在內部專案或開發階段可以運作，但如果之後要公開部署，建議改成：
+## UI / UX 設計基準
 
-- 使用 `.env` / `.env.local` 管理環境變數
-- 將 API key、project id 等資訊從程式碼中抽離
-- 搭配 Firebase Security Rules 做資料權限控管
+本專案目前使用統一的 AURA 視覺方向：
 
-## 目前使用中的重要檔案
+- 深藍灰基底
+- 暖金 / 琥珀色強調 CTA
+- 卡片、表格、Dialog 維持一致風格
+- 手機版與桌機版都要能完整操作
 
-如果要延續目前的 UI 風格與功能設計，建議優先參考這些檔案：
+更完整的設計規範、色碼與按鈕系統請參考：
 
-- `AGENTS.md`
-- `src/assets/main.css`
-- `src/layouts/MainLayout.vue`
-- `src/views/Login.vue`
-- `src/views/Register.vue`
-- `src/views/HomeView.vue`
-- `src/views/Vendors.vue`
-- `src/components/ProductList.vue`
-- `src/components/Checkout.vue`
-- `src/components/SalesRecord.vue`
+- [AGENTS.md](C:/Users/serva/Desktop/salesManagementSys/AGENTS.md)
 
-## UI / UX 設計方向
+## 效能開發原則
 
-目前專案採用以下視覺方向：
+目前頁面已朝以下方向優化：
 
-- 主色調：深藍、暖金、淺灰白卡片
-- 結構：Hero 區塊 + 控制卡片 + 資料卡片 / 表格卡片
-- 元件：圓角卡片、清楚的資訊層級、減少多餘邊框
-- 響應式：桌機與手機都可使用，避免整頁無法捲動或重要區塊被遮住
+- 新增 / 編輯 / 刪除後，優先更新本地 state
+- 避免每次 CRUD 都整表重新抓取
+- 僅在初次載入或切換篩選條件時 full fetch
 
-若未來要新增頁面，建議沿用現有 token、卡片結構與表格設計，不要再回到預設 Element Plus 樣式。
+這項原則特別適用於：
 
-## 已知狀況
+- `ProductList.vue`
+- `Vendors.vue`
+- `SalesRecord.vue`
 
-- 專案目前仍保留部分舊版元件，例如：
-  - `Checkout.vue`
-  - `Sales.vue`
-- 目前路由實際使用的是：
-  - `Checkout.vue`
-  - `SalesRecord.vue`
-- `npm run build` 可正常通過，但 Vite 會提示 chunk 體積較大，屬於目前已知警告。
+## 建議驗證項目
+
+每次調整結構、資料來源或列表邏輯後，建議至少執行：
+
+```bash
+npm run build
+```
+
+並手動確認：
+
+- 登入 / 註冊流程是否正常
+- 左側選單在桌機與手機版是否正常
+- 商品、供應商、結帳、銷售紀錄列表是否可正常捲動
+- 商品圖片是否可放大預覽
+- 結帳前是否正確檢查付款方式
+- Supabase 權限是否正常
 
 ## 後續建議
 
-- 將 Firebase 設定搬到環境變數
-- 清理未再使用的舊版頁面元件
-- 補齊 README 的畫面截圖
-- 加入測試機制
-- 針對大型頁面做更細的元件拆分
-- 規劃角色權限與更完整的資料安全規則
+- 新增模組時，優先沿用現有 AURA UI 規範
+- 新資料功能先補 service 層，再接 Vue 畫面
+- 若要新增資料表，先處理 SQL、RLS、migration，再接前端
+- 若調整按鈕、色碼或表格樣式，記得同步更新 `AGENTS.md`
 
-## 維護提醒
+---
 
-如果你之後會在不同電腦上繼續開發，建議：
-
-1. 先閱讀 `AGENTS.md`
-2. 再閱讀本 README
-3. 優先沿用現有頁面的卡片結構、色彩 token 與 responsive 規則
-
-這樣比較不容易把目前已經整理好的 UI 一致性弄亂。
+如果後續這個專案還會持續往 Supabase 完全遷移，建議把所有資料操作都統一收斂到 `src/services/`，這樣後面維護、除錯與擴充都會輕鬆很多。

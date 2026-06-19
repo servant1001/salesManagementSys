@@ -24,9 +24,11 @@
         <!-- 查詢 + 按鈕區 -->
         <div class="top-bar">
             <div class="filters-group">
-                <el-input v-model="searchQuery" placeholder="搜尋商品名稱或商品編號" clearable class="search-input" />
+                <el-input v-model="searchQuery" placeholder="搜尋商品名稱或商品編號" clearable class="search-input"
+                    @input="handleSearchInput" @clear="handleSearchInput" />
 
-                <el-select v-model="selectedVendor" placeholder="選擇廠商" clearable filterable class="vendor-select">
+                <el-select v-model="selectedVendor" placeholder="選擇廠商" clearable filterable class="vendor-select"
+                    @change="handleVendorChange">
                     <el-option label="全部廠商" :value="null" />
                     <el-option v-for="vendor in vendorList" :key="vendor.vendorId"
                         :label="`${vendor.vendorId} ${vendor.vendorName}`" :value="vendor.vendorId" />
@@ -80,7 +82,8 @@
                 </div>
 
                 <div class="table-meta">
-                    <span>{{ filteredProducts.length }} 筆符合條件</span>
+                    <span>{{ totalProducts }} 筆符合條件</span>
+                    <span>第 {{ currentPage }} / {{ totalPages }} 頁</span>
                     <span v-if="activeProduct">已選取 1 筆</span>
                 </div>
             </div>
@@ -108,11 +111,12 @@
                 </div>
             </transition>
 
-            <el-table :data="pagedProducts" style="width: 100%" border :class="['product-table', tableThemeClass]"
-                :header-cell-style="{ background: `var(--table-header-bg)`, color: `var(--table-header-text)` }"
-                @selection-change="handleSelectionChange" @sort-change="handleSortChange" ref="productTable"
-                row-key="id" highlight-current-row :row-class-name="getRowClassName" @row-click="handleRowClick"
-                @current-change="handleCurrentProductChange">
+            <div :class="['product-table-shell', { 'is-switching': loadingProducts }]">
+                <el-table :data="pageProducts" style="width: 100%" border :class="['product-table', tableThemeClass]"
+                    :header-cell-style="{ background: `var(--table-header-bg)`, color: `var(--table-header-text)` }"
+                    @selection-change="handleSelectionChange" @sort-change="handleSortChange" ref="productTable"
+                    row-key="id" highlight-current-row :row-class-name="getRowClassName" @row-click="handleRowClick"
+                    @current-change="handleCurrentProductChange">
 
                 <!-- checkbox欄位 -->
                 <el-table-column type="selection" width="40" align="center" class-name="selection-column"
@@ -224,15 +228,29 @@
                 <el-table-column prop="updatedBy" label="更新者" min-width="100" />
                 <el-table-column prop="created" label="新增時間" min-width="190" :formatter="formatDate" />
                 <el-table-column prop="updated" label="更新時間" min-width="190" :formatter="formatDate" />
-            </el-table>
+                </el-table>
+
+                <transition name="table-fade">
+                    <div v-if="loadingProducts" class="table-loading-overlay">
+                        <div class="table-loading-panel">
+                            <div class="table-loading-dots">
+                                <span class="table-loading-dot"></span>
+                                <span class="table-loading-dot"></span>
+                                <span class="table-loading-dot"></span>
+                            </div>
+                            <p>載入中</p>
+                        </div>
+                    </div>
+                </transition>
+            </div>
 
             <!-- 分頁 -->
             <el-pagination background layout="prev, pager, next, sizes, total" :total="totalProducts"
-                :page-size="pageSize" :current-page.sync="currentPage" :page-sizes="[10, 20, 50, 100]"
+                :page-size="pageSize" :current-page="currentPage" :page-sizes="[10, 20, 50, 100]"
                 @size-change="handlePageSizeChange" @current-change="handlePageChange" class="pagination-bar">
             </el-pagination>
 
-            <div v-if="!filteredProducts.length" class="empty-state">
+            <div v-if="!pageProducts.length && !loadingProducts" class="empty-state">
                 <strong>目前沒有商品資料</strong>
                 <p>你可以先新增單筆商品，或使用批量新增快速建立商品清單。</p>
                 <div class="empty-actions">
@@ -622,38 +640,29 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from "vue";
 import axios from "axios";
-import { db } from "@/firebase";
-import { ref as dbRef, onValue, update, push, remove, get, child } from "firebase/database";
 import { ElMessage, ElMessageBox } from "element-plus";
 import { Camera, Picture } from "@element-plus/icons-vue";
 import Scanner from "@/components/Scanner.vue";
 import { useThemeStore } from "@/stores/theme";
 import { useAuth } from "@/composables/useAuth";
 import { generateBarcodeImage, downloadBarcode } from '@/utils/barcode'  // 引入剛剛的模組
+import {
+    fetchProductsPage as fetchProductsFromSupabase,
+    insertProduct as insertProductRecord,
+    updateProduct as updateProductRecord,
+    upsertProducts,
+    deleteProductsByIds,
+    checkProductCodeExists as checkProductCodeExistsOnServer,
+    checkProductGtinExists as checkProductGtinExistsOnServer,
+    findExistingProductsByCodesOrGtins,
+    type Product,
+    type UpsertProductInput,
+} from "@/services/products";
+import { fetchVendorsPage as fetchVendorsFromSupabase, type Vendor } from "@/services/vendors";
 
 const themeStore = useThemeStore();
 const tableThemeClass = computed(() => (themeStore.isDarkTheme ? "table-dark" : "table-light"));
 const { user } = useAuth();
-
-interface Product {
-    id: string;
-    gtin: string;
-    code: string;
-    name: string;
-    price: number;
-    sellingPrice: number;
-    cost: number;
-    stock: number;
-    supplierName: string;
-    supplierCode: string;
-    imageUrl?: string;
-    website?: string;
-    note?: string;
-    created: number;
-    updated?: number;
-    createdBy?: string;
-    updatedBy?: string;
-}
 
 interface ImportedVariant {
     id?: number;
@@ -693,6 +702,11 @@ const products = ref<Record<string, Product>>({});
 const editMode = ref(false);
 const searchQuery = ref("");
 const scannerVisible = ref(false);
+const loadingProducts = ref(false);
+const currentPage = ref(1);
+const pageSize = ref(10);
+const totalProducts = ref(0);
+let productSearchDebounceTimer: ReturnType<typeof setTimeout> | null = null;
 
 // 新增商品
 const showAddDialog = ref(false);
@@ -896,38 +910,57 @@ function getCurrentUserDisplayName(): string | undefined {
     return user.value?.displayName ?? undefined;
 }
 
-function fetchProducts() {
-    const productsRef = dbRef(db, "products");
-    onValue(productsRef, (snapshot) => {
-        const data = snapshot.val() || {};
-        const result: Record<string, Product> = {};
-        for (const [id, p] of Object.entries(data)) {
-            const prod = p as Omit<Product, "id">;
-            result[id] = { id, ...prod };
-        }
-        products.value = result;
-    });
+function createProductMap(productList: Product[]) {
+    return productList.reduce<Record<string, Product>>((result, product) => {
+        result[product.id] = product;
+        return result;
+    }, {});
 }
 
-const sortedProductsArray = computed(() => Object.values(products.value).sort((a, b) => b.created - a.created));
-const filteredProducts = computed(() => {
-    let list = sortedProductsArray.value;
+function createProductId() {
+    return globalThis.crypto?.randomUUID?.() ?? `product-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+}
 
-    // 文字搜尋
-    if (searchQuery.value) {
-        const query = searchQuery.value.toLowerCase();
-        list = list.filter(p =>
-            [p.name, p.code].some(f => f?.toLowerCase().includes(query))
-        );
+function upsertLocalProduct(product: Product) {
+    products.value = {
+        ...products.value,
+        [product.id]: product,
+    };
+}
+
+async function fetchProducts() {
+    try {
+        loadingProducts.value = true;
+        const result = await fetchProductsFromSupabase({
+            page: currentPage.value,
+            pageSize: pageSize.value,
+            keyword: searchQuery.value,
+            supplierCode: selectedVendor.value,
+            sortProp: sortState.value.prop || null,
+            sortOrder: sortState.value.order,
+        });
+
+        products.value = createProductMap(result.items);
+        totalProducts.value = result.total;
+
+        const maxPage = Math.max(1, Math.ceil(result.total / pageSize.value));
+        if (currentPage.value > maxPage) {
+            currentPage.value = maxPage;
+            if (result.total > 0) {
+                await fetchProducts();
+            }
+        }
+    } catch (error) {
+        console.error(error);
+        ElMessage.error("載入商品資料失敗");
+        products.value = {};
+        totalProducts.value = 0;
+    } finally {
+        loadingProducts.value = false;
     }
+}
 
-    // 廠商過濾
-    if (selectedVendor.value) {
-        list = list.filter(p => p.supplierCode === selectedVendor.value);
-    }
-
-    return list;
-});
+const pageProducts = computed(() => Object.values(products.value));
 
 const scannerRef = ref<InstanceType<typeof Scanner> | null>(null);
 // 打開掃描框
@@ -940,13 +973,8 @@ function handleScanGTIN(gtin: string) {
     scannerRef.value?.stopScanner();
     scannerVisible.value = false;
     searchQuery.value = gtin;
-
-    const found = Object.values(products.value).find((p) => p.gtin === gtin);
-    if (found) {
-        ElMessage.success(`找到商品：${found.name}`);
-    } else {
-        ElMessage.warning(`查無 GTIN：${gtin}`);
-    }
+    handleSearchInput();
+    ElMessage.success(`已套用 GTIN 搜尋：${gtin}`);
 }
 
 function formatDate(row: Product, column?: any) {
@@ -974,61 +1002,65 @@ async function saveEditProduct() {
         return;
     }
 
-    if (isCopyMode.value) {
-        // 複製模式(新增商品)
-        const gtin = editProduct.value.gtin?.trim();
-        // GTIN & code 必填檢查
-        if (!gtin) {
-            ElMessage.warning("請輸入 GTIN");
-            return;
+    try {
+        if (isCopyMode.value) {
+            // 複製模式(新增商品)
+            const gtin = editProduct.value.gtin?.trim();
+            // GTIN & code 必填檢查
+            if (!gtin) {
+                ElMessage.warning("請輸入 GTIN");
+                return;
+            }
+
+            if (await checkGTINExists(gtin)) {
+                ElMessage.error(`GTIN「${gtin}」已存在，請修改`);
+                return;
+            }
+
+            if (await checkCodeExists(code)) {
+                ElMessage.error(`商品編號「${code}」已存在，請修改`);
+                return;
+            }
+
+            const currentUser = getCurrentUserDisplayName();
+            const productData: UpsertProductInput = {
+                ...editProduct.value,
+                id: createProductId(),
+                gtin,
+                code,
+                created: Date.now(),
+                createdBy: currentUser,
+            };
+
+            await insertProductRecord(productData);
+            currentPage.value = 1;
+            await fetchProducts();
+            ElMessage.success("✅ 商品複製成功");
+        } else {
+            const now = Date.now();
+            const currentUser = getCurrentUserDisplayName();
+            const existingProduct = products.value[editProduct.value.id];
+
+            if (existingProduct && existingProduct.code !== code && await checkCodeExists(code, editProduct.value.id)) {
+                ElMessage.error(`商品編號「${code}」已存在，請修改`);
+                return;
+            }
+
+            const updateData: UpsertProductInput = {
+                ...editProduct.value,
+                code,
+                updated: now,
+                updatedBy: currentUser,
+            };
+
+            const updatedProduct = await updateProductRecord(updateData);
+            upsertLocalProduct(updatedProduct);
+            ElMessage.success("✅ 商品更新成功");
         }
 
-        // GTIN 重複檢查
-        if (await checkGTINExists(gtin)) {
-            ElMessage.error(`GTIN「${gtin}」已存在，請修改`);
-            return;
-        }
-
-        // 商品編號重複檢查
-        if (await checkCodeExists(code)) {
-            ElMessage.error(`商品編號「${code}」已存在，請修改`);
-            return;
-        }
-
-        // 複製模式下 → 當作新增
-        const currentUser = getCurrentUserDisplayName();
-        const productsRef = dbRef(db, "products");
-        const productData = {
-            ...editProduct.value,
-            id: undefined,
-            created: Date.now(),
-            createdBy: currentUser,
-        };
-        const newRef = push(productsRef);
-        const id = newRef.key!;
-        await update(newRef, { ...productData, id });
-        ElMessage.success("✅ 商品複製成功");
-    } else {
-        // 編輯模式(更新商品)
-        const now = Date.now();
-        const currentUser = getCurrentUserDisplayName();
-        const productRef = dbRef(db, `products/${editProduct.value.id}`);
-
-        // 只在編輯了商品編號才檢查重複
-        const snapshot = await get(productRef);
-        const existingProduct = snapshot.val();
-        if (existingProduct.code !== code && await checkCodeExists(code)) {
-            ElMessage.error(`商品編號「${code}」已存在，請修改`);
-            return;
-        }
-
-        const updateData = {
-            ...editProduct.value,
-            updated: now,
-            updatedBy: currentUser,
-        };
-        await update(productRef, updateData);
-        ElMessage.success("✅ 商品更新成功");
+    } catch (error) {
+        console.error(error);
+        ElMessage.error("商品儲存失敗");
     }
 
     showEditDialog.value = false;
@@ -1049,35 +1081,32 @@ function deleteProduct(product: Product) {
             type: "warning",
         }
     )
-        .then(() => {
-            const productRef = dbRef(db, `products/${product.id}`);
-            remove(productRef)
-                .then(() => {
-                    if (activeProductId.value === product.id) {
-                        clearActiveProductSelection();
-                    }
-                    ElMessage.success("刪除成功");
-                })
-                .catch(console.error);
+        .then(async () => {
+            try {
+                await deleteProductsByIds([product.id]);
+                await fetchProducts();
+
+                if (activeProductId.value === product.id) {
+                    clearActiveProductSelection();
+                }
+
+                ElMessage.success("刪除成功");
+            } catch (error) {
+                console.error(error);
+                ElMessage.error("刪除失敗");
+            }
         })
         .catch(() => { });
 }
 
 // 檢查 GTIN 是否已存在（排除特定 ID）
 async function checkGTINExists(gtin: string, excludeId?: string): Promise<boolean> {
-    const productsRef = dbRef(db, "products");
-    const snapshot = await get(productsRef);
-    if (!snapshot.exists()) return false;
-
-    const productsData = snapshot.val() as Record<string, Product>;
-    return Object.values(productsData).some(p => p.gtin === gtin && p.id !== excludeId);
+    return await checkProductGtinExistsOnServer(gtin, excludeId);
 }
 
 // 檢查商品編號是否已存在
-async function checkCodeExists(code: string): Promise<boolean> {
-    const snapshot = await get(dbRef(db, "products"));
-    const products = snapshot.val() || {};
-    return Object.values(products).some((p: any) => p.code === code);
+async function checkCodeExists(code: string, excludeId?: string): Promise<boolean> {
+    return await checkProductCodeExistsOnServer(code, excludeId);
 }
 
 // 新增商品（必填驗證 + 編號檢查）
@@ -1106,12 +1135,7 @@ async function submitAddProduct() {
 }
 
 async function checkProductCodeExists(code: string): Promise<boolean> {
-    const productsRef = dbRef(db, "products");
-    const snapshot = await get(productsRef);
-    if (!snapshot.exists()) return false;
-
-    const productsData = snapshot.val() as Record<string, Product>;
-    return Object.values(productsData).some((p) => p.code === code);
+    return checkCodeExists(code);
 }
 
 const isCopyMode = ref(false);
@@ -1132,27 +1156,30 @@ function copyProduct(product: Product) {
     showEditDialog.value = true;
 }
 
-function addProduct() {
-    const currentUser = getCurrentUserDisplayName();
-    const productsRef = dbRef(db, "products");
-    const productData = { ...newProduct.value, created: Date.now(), createdBy: currentUser };
-    const newRef = push(productsRef);
-    const id = newRef.key!;
-    update(newRef, { ...productData, id })
-        .then(() => {
-            showAddDialog.value = false;
-            newProduct.value = createEmptyProduct();
-        })
-        .catch(console.error);
-}
+async function addProduct() {
+    try {
+        const currentUser = getCurrentUserDisplayName();
+        const productData: UpsertProductInput = {
+            ...newProduct.value,
+            id: createProductId(),
+            gtin: newProduct.value.gtin.trim(),
+            code: newProduct.value.code.trim(),
+            name: newProduct.value.name.trim(),
+            created: Date.now(),
+            createdBy: currentUser,
+        };
 
-interface Vendor {
-    vendorId: string;
-    vendorName: string;
-    createdBy?: string;
-    updatedBy?: string;
-    createdAt?: number;
-    updatedAt?: number;
+        await insertProductRecord(productData);
+        currentPage.value = 1;
+        await fetchProducts();
+
+        showAddDialog.value = false;
+        newProduct.value = createEmptyProduct();
+        ElMessage.success("商品新增成功");
+    } catch (error) {
+        console.error(error);
+        ElMessage.error("商品新增失敗");
+    }
 }
 
 // 篩選後的結果
@@ -1196,16 +1223,12 @@ async function findVendorByCode(arg?: string) {
         return;
     }
 
-    const vendorsRef = dbRef(db);
-    const snapshot = await get(child(vendorsRef, "vendors"));
-
-    if (!snapshot.exists()) {
+    if (!vendorList.value.length) {
         ElMessage.error("目前沒有任何廠商資料");
         return;
     }
 
-    const vendors = snapshot.val() as Record<string, Vendor>; // ✅ 明確型別
-    const matched = Object.values(vendors).find(
+    const matched = vendorList.value.find(
         (v) => v.vendorId?.toLowerCase() === code.toLowerCase()
     );
 
@@ -1331,15 +1354,12 @@ async function findVendorByCodeBatch() {
         return;
     }
 
-    const vendorsRef = dbRef(db);
-    const snapshot = await get(child(vendorsRef, "vendors"));
-    if (!snapshot.exists()) {
+    if (!vendorList.value.length) {
         ElMessage.error("目前沒有任何廠商資料");
         return;
     }
 
-    const vendors = snapshot.val() as Record<string, Vendor>;
-    const matched = Object.values(vendors).find(
+    const matched = vendorList.value.find(
         (v) => v.vendorId?.toLowerCase() === code.toLowerCase()
     );
 
@@ -1365,14 +1385,7 @@ async function submitBatchProducts() {
         }
 
         const currentUser = getCurrentUserDisplayName();
-        const productsRef = dbRef(db, "products");
         const now = Date.now();
-
-        // 先抓現有商品資料以檢查重複
-        const snapshot = await get(productsRef);
-        const existingProducts = snapshot.exists() ? (snapshot.val() as Record<string, Product>) : {};
-        const existingCodes = new Set(Object.values(existingProducts).map(p => p.code));
-        const existingGTINs = new Set(Object.values(existingProducts).map(p => p.gtin));
 
         // 先逐筆檢查必填欄位，避免提交時默默略過不完整資料
         const incompleteRows = batchList.value
@@ -1397,12 +1410,16 @@ async function submitBatchProducts() {
         // 找出重複的編號或 GTIN
         const duplicateCodes: string[] = [];
         const duplicateGTINs: string[] = [];
+        const existingMatches = await findExistingProductsByCodesOrGtins(
+            batchList.value.map((item) => item.code),
+            batchList.value.map((item) => item.gtin)
+        );
         for (const item of batchList.value) {
-            const code = item.code.trim();
-            const gtin = item.gtin.trim();
+            const code = item.code.trim().toLowerCase();
+            const gtin = item.gtin.trim().toLowerCase();
 
-            if (existingCodes.has(code)) duplicateCodes.push(code);
-            if (existingGTINs.has(gtin)) duplicateGTINs.push(gtin);
+            if (existingMatches.codes.has(code)) duplicateCodes.push(code);
+            if (existingMatches.gtins.has(gtin)) duplicateGTINs.push(gtin);
         }
 
         // 🚫 若有重複，不送出
@@ -1415,15 +1432,12 @@ async function submitBatchProducts() {
             return;
         }
 
-        // 組合資料
-        const updates: Record<string, Product> = {};
-        for (const item of batchList.value) {
-            const newRef = push(productsRef);
-            const id = newRef.key!;
-            updates[id] = {
+        const productInputs: UpsertProductInput[] = batchList.value.map((item) => {
+            const id = createProductId();
+            return {
                 id,
                 code: item.code.trim(),
-                gtin: item.gtin.trim(),           // 新增 GTIN
+                gtin: item.gtin.trim(),
                 name: item.name.trim(),
                 price: batchBase.value.price,
                 sellingPrice: batchBase.value.sellingPrice,
@@ -1437,10 +1451,12 @@ async function submitBatchProducts() {
                 created: now,
                 createdBy: currentUser,
             };
-        }
+        });
 
         try {
-            await update(productsRef, updates);
+            await upsertProducts(productInputs);
+            currentPage.value = 1;
+            await fetchProducts();
             ElMessage.success(`成功新增 ${batchList.value.length} 筆商品`);
             showBatchDialog.value = false;
             batchList.value = [];
@@ -1532,12 +1548,9 @@ function deleteSelectedProducts() {
     )
         .then(async () => {
             try {
-                const updates: Record<string, null> = {};
-                selectedProducts.value.forEach((p) => {
-                    if (p.id) updates[p.id] = null; // Firebase 刪除
-                });
-
-                await update(dbRef(db, "products"), updates);
+                const ids = selectedProducts.value.map((product) => product.id).filter(Boolean);
+                await deleteProductsByIds(ids);
+                await fetchProducts();
                 ElMessage.success("已刪除選中的商品");
                 selectedProducts.value = [];
                 // 清除表格勾選
@@ -1550,25 +1563,18 @@ function deleteSelectedProducts() {
         .catch(() => { });
 }
 
-// 分頁控制
-const currentPage = ref(1);
-const pageSize = ref(10); // 每頁顯示數量，可修改
-const totalProducts = computed(() => filteredProducts.value.length);
-
-// 計算分頁後要顯示的資料
-const pagedProducts = computed(() => {
-    const start = (currentPage.value - 1) * pageSize.value;
-    return sortedFilteredProducts.value.slice(start, start + pageSize.value);
-});
+const totalPages = computed(() => Math.max(1, Math.ceil(totalProducts.value / pageSize.value)));
 
 // 分頁事件
 function handlePageChange(page: number) {
     currentPage.value = page;
+    void fetchProducts();
 }
 
 function handlePageSizeChange(size: number) {
     pageSize.value = size;
-    currentPage.value = 1; // 重新回到第1頁
+    currentPage.value = 1;
+    void fetchProducts();
 }
 
 // 排序狀態
@@ -1580,54 +1586,49 @@ const sortState = ref<{ prop: string; order: 'ascending' | 'descending' | null }
 // 排序事件處理
 function handleSortChange({ prop, order }: any) {
     sortState.value = { prop, order };
+    currentPage.value = 1;
+    void fetchProducts();
 }
-
-// 排序後資料
-const sortedFilteredProducts = computed(() => {
-    const list = [...filteredProducts.value];
-    const { prop, order } = sortState.value;
-
-    if (!prop || !order) return list;
-
-    return list.sort((a, b) => {
-        const key = prop as keyof Product;   // ✅ 斷言
-        const aVal = a[key] ?? '';
-        const bVal = b[key] ?? '';
-
-        if (typeof aVal === 'number' && typeof bVal === 'number') {
-            return order === 'ascending' ? aVal - bVal : bVal - aVal;
-        }
-
-        return order === 'ascending'
-            ? String(aVal).localeCompare(String(bVal))
-            : String(bVal).localeCompare(String(aVal));
-    });
-});
 
 const selectedVendor = ref<string | null>(null); // 選擇的廠商編號
 const vendorList = ref<Vendor[]>([]); // 廠商列表
 
 // 取得廠商列表
 async function fetchVendors() {
-    const vendorsRef = dbRef(db, "vendors");
-    const snapshot = await get(vendorsRef);
-    if (snapshot.exists()) {
-        const data = snapshot.val() as Record<string, Vendor>;
-        vendorList.value = Object.values(data);
+    try {
+        const result = await fetchVendorsFromSupabase({
+            page: 1,
+            pageSize: 1000,
+            country: "all",
+        });
+        vendorList.value = result.items;
         // 同步更新篩選用的清單
         filteredVendors.value = vendorList.value;
-    } else {
+    } catch (error) {
+        console.error(error);
         vendorList.value = [];
         filteredVendors.value = [];
+        ElMessage.error("載入廠商資料失敗");
     }
 }
 
-watch(selectedVendor, () => {
-    // 每次切換廠商，排序重置為商品編號由小到大
-    sortState.value = { prop: "code", order: "ascending" };
-});
+function handleSearchInput() {
+    if (productSearchDebounceTimer) {
+        clearTimeout(productSearchDebounceTimer);
+    }
 
-watch(pagedProducts, (rows) => {
+    productSearchDebounceTimer = setTimeout(() => {
+        currentPage.value = 1;
+        void fetchProducts();
+    }, 300);
+}
+
+function handleVendorChange() {
+    currentPage.value = 1;
+    void fetchProducts();
+}
+
+watch(pageProducts, (rows) => {
     if (!activeProductId.value) return;
 
     const stillVisible = rows.some((row) => row.id === activeProductId.value);
@@ -1682,9 +1683,8 @@ function openImagePreview(product: { imageUrl?: string; name?: string }) {
 }
 
 // 在 onMounted 中呼叫
-onMounted(() => {
-    fetchProducts();
-    fetchVendors();
+onMounted(async () => {
+    await Promise.all([fetchProducts(), fetchVendors()]);
 });
 </script>
 
@@ -2166,6 +2166,87 @@ onMounted(() => {
     padding: 24px;
 }
 
+.product-table-shell {
+    position: relative;
+    transition:
+        opacity 0.26s ease,
+        transform 0.26s ease,
+        filter 0.26s ease;
+}
+
+.product-table-shell.is-switching :deep(.product-table) {
+    opacity: 0.58;
+    transform: translateY(8px) scale(0.995);
+    filter: saturate(0.88);
+}
+
+.table-loading-overlay {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    border-radius: 20px;
+    background:
+        linear-gradient(135deg, rgba(10, 24, 41, 0.18), rgba(17, 40, 66, 0.12)),
+        radial-gradient(circle at top, rgba(214, 164, 107, 0.12), transparent 34%);
+    backdrop-filter: blur(8px);
+    pointer-events: none;
+}
+
+.table-loading-panel {
+    display: inline-flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    padding: 14px 18px;
+    border: 1px solid rgba(214, 164, 107, 0.24);
+    border-radius: 18px;
+    background: rgba(12, 28, 46, 0.72);
+    box-shadow: 0 18px 34px rgba(9, 22, 37, 0.2);
+}
+
+.table-loading-panel p {
+    margin: 0;
+    color: #eef4fb;
+    font-size: 0.92rem;
+    letter-spacing: 0.08em;
+}
+
+.table-loading-dots {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.table-loading-dot {
+    width: 9px;
+    height: 9px;
+    border-radius: 999px;
+    background: linear-gradient(180deg, #f0c998, #d6a46b);
+    box-shadow: 0 0 0 4px rgba(214, 164, 107, 0.12);
+    animation: productLoadingPulse 1.05s ease-in-out infinite;
+}
+
+.table-loading-dot:nth-child(2) {
+    animation-delay: 0.14s;
+}
+
+.table-loading-dot:nth-child(3) {
+    animation-delay: 0.28s;
+}
+
+.table-fade-enter-active,
+.table-fade-leave-active {
+    transition: opacity 0.22s ease;
+}
+
+.table-fade-enter-from,
+.table-fade-leave-to {
+    opacity: 0;
+}
+
 .table-header {
     display: flex;
     align-items: center;
@@ -2334,6 +2415,34 @@ onMounted(() => {
     display: flex;
     justify-content: flex-end;
     margin-top: 20px;
+}
+
+.pagination-bar :deep(.el-pagination) {
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 8px;
+}
+
+.pagination-bar :deep(.btn-prev),
+.pagination-bar :deep(.btn-next),
+.pagination-bar :deep(.el-pager li) {
+    transition:
+        transform 0.18s ease,
+        background-color 0.18s ease,
+        color 0.18s ease,
+        box-shadow 0.18s ease;
+}
+
+.pagination-bar :deep(.btn-prev:hover),
+.pagination-bar :deep(.btn-next:hover),
+.pagination-bar :deep(.el-pager li:hover) {
+    transform: translateY(-1px);
+}
+
+.pagination-bar :deep(.el-pager li.is-active) {
+    background: linear-gradient(180deg, rgba(190, 104, 37, 0.98), rgba(223, 156, 69, 0.94));
+    color: #10243c;
+    box-shadow: 0 10px 18px rgba(190, 104, 37, 0.22);
 }
 
 .empty-state,
@@ -2772,6 +2881,23 @@ onMounted(() => {
 
     .pagination-bar {
         justify-content: center;
+    }
+
+    .pagination-bar :deep(.el-pagination) {
+        justify-content: center;
+    }
+}
+
+@keyframes productLoadingPulse {
+    0%,
+    100% {
+        transform: translateY(0) scale(0.92);
+        opacity: 0.56;
+    }
+
+    50% {
+        transform: translateY(-4px) scale(1);
+        opacity: 1;
     }
 }
 </style>

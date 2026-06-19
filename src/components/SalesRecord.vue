@@ -504,12 +504,11 @@
 <script setup lang="ts">
 import * as echarts from "echarts";
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from "vue";
-import { db } from "@/firebase";
-import { child, endAt, get, orderByChild, query, ref as dbRef, remove, startAt, update } from "firebase/database";
 import { ElMessage, ElMessageBox } from "element-plus";
 import { Picture } from "@element-plus/icons-vue";
 import { useAuth } from "@/composables/useAuth";
 import { useThemeStore } from "@/stores/theme";
+import { deleteSaleById, fetchSalesInRange, updateSale } from "@/services/sales";
 
 const { user } = useAuth();
 const themeStore = useThemeStore();
@@ -601,6 +600,22 @@ let salesDistributionChart: ReturnType<typeof echarts.init> | null = null;
 let profitComparisonChart: ReturnType<typeof echarts.init> | null = null;
 let hourlyOrdersChart: ReturnType<typeof echarts.init> | null = null;
 
+function getSaleById(id?: string | null) {
+    if (!id) return null;
+    return sales.value.find((sale) => sale.id === id) ?? null;
+}
+
+function upsertLocalSale(nextSale: Sale) {
+    sales.value = [nextSale, ...sales.value.filter((sale) => sale.id !== nextSale.id)]
+        .sort((a, b) => b.timestamp - a.timestamp);
+    filterSales();
+}
+
+function removeLocalSale(id: string) {
+    sales.value = sales.value.filter((sale) => sale.id !== id);
+    filterSales();
+}
+
 function formatCurrency(value: number) {
     return Number(value || 0).toLocaleString("zh-TW", { maximumFractionDigits: 0 });
 }
@@ -649,9 +664,20 @@ async function saveEditTime(row: Sale) {
         newTotalProfit = itemProfitSum - Math.round(row.total * 0.02);
     }
 
-    await update(dbRef(db, `sales/${row.id}`), {
-        timestamp: editingTimestamp.value,
-        paymentMethod: row.paymentMethod || null,
+    await updateSale({
+        id: row.id,
+        timestamp: editingTimestamp.value ?? row.timestamp,
+        total: row.total,
+        totalProfit: newTotalProfit,
+        items: row.items,
+        operator: row.operator,
+        paymentMethod: row.paymentMethod || "",
+        updater: `${user.value?.displayName || ""}(${getDeviceInfoShort()})`,
+    });
+
+    upsertLocalSale({
+        ...row,
+        timestamp: editingTimestamp.value ?? row.timestamp,
         totalProfit: newTotalProfit,
         updater: `${user.value?.displayName || ""}(${getDeviceInfoShort()})`,
     });
@@ -659,7 +685,6 @@ async function saveEditTime(row: Sale) {
     ElMessage.success("銷售紀錄已更新。");
     editingRow.value = null;
     editingTimestamp.value = null;
-    await loadSalesByDate(selectedDate.value);
 }
 
 async function deleteSale(sale: Sale) {
@@ -671,9 +696,9 @@ async function deleteSale(sale: Sale) {
         });
 
         if (sale.id) {
-            await remove(child(dbRef(db), `sales/${sale.id}`));
+            await deleteSaleById(sale.id);
+            removeLocalSale(sale.id);
             ElMessage.success("刪除成功。");
-            await loadSalesByDate(selectedDate.value);
         } else {
             ElMessage.error("找不到這筆紀錄的 ID。");
         }
@@ -745,18 +770,7 @@ async function loadSalesByDate(date: string | null) {
         endTime = new Date(y, m, 0, 23, 59, 59, 999).getTime();
     }
 
-    const salesRef = child(dbRef(db), "sales");
-    const salesQuery = query(salesRef, orderByChild("timestamp"), startAt(startTime), endAt(endTime));
-    const snapshot = await get(salesQuery);
-
-    if (snapshot.exists()) {
-        const data = snapshot.val();
-        sales.value = Object.entries(data)
-            .map(([key, val]) => ({ id: key, ...(val as Sale) }))
-            .sort((a, b) => b.timestamp - a.timestamp);
-    } else {
-        sales.value = [];
-    }
+    sales.value = await fetchSalesInRange(startTime, endTime);
 
     filterSales();
 }
@@ -1194,8 +1208,26 @@ async function saveDetailEdit(item: SaleItem) {
     const newTotal = selectedItems.value.reduce((sum, i) => sum + i.sellingPrice * i.quantity, 0);
     const newProfit = selectedItems.value.reduce((sum, i) => sum + ((i.sellingPrice - (i.cost ?? 0)) * i.quantity), 0);
 
-    await update(dbRef(db, `sales/${currentEditingSaleId}`), {
+    const currentSale = getSaleById(currentEditingSaleId);
+    if (!currentSale) {
+        ElMessage.error("找不到對應的銷售紀錄");
+        return;
+    }
+
+    await updateSale({
+        id: currentEditingSaleId,
+        timestamp: currentSale.timestamp,
+        total: newTotal,
+        totalProfit: newProfit,
         items: selectedItems.value,
+        operator: currentSale.operator,
+        paymentMethod: currentSale.paymentMethod || "",
+        updater: `${user.value?.displayName || ""}(${getDeviceInfoShort()})`,
+    });
+
+    upsertLocalSale({
+        ...currentSale,
+        items: selectedItems.value.map((entry) => ({ ...entry })),
         total: newTotal,
         totalProfit: newProfit,
         updater: `${user.value?.displayName || ""}(${getDeviceInfoShort()})`,
@@ -1203,7 +1235,6 @@ async function saveDetailEdit(item: SaleItem) {
 
     selectedTotal.value = newTotal;
     selectedProfit.value = newProfit;
-    await loadSalesByDate(selectedDate.value);
 
     ElMessage.success("商品明細已更新。");
     editingDetailRow.value = null;
@@ -1220,7 +1251,7 @@ function deleteDetailItem(row: SaleItem) {
             if (index !== -1) {
                 selectedItems.value.splice(index, 1);
                 ElMessage.success("商品明細已刪除。");
-                updateDetailItemsInFirebase();
+                updateDetailItems();
             }
         })
         .catch(() => {
@@ -1228,21 +1259,34 @@ function deleteDetailItem(row: SaleItem) {
         });
 }
 
-async function updateDetailItemsInFirebase() {
+async function updateDetailItems() {
     const saleId = currentEditingSaleId;
     if (!saleId) return;
+
+    const currentSale = getSaleById(saleId);
+    if (!currentSale) return;
 
     const total = selectedItems.value.reduce((sum, item) => sum + item.sellingPrice * item.quantity, 0);
     const totalProfit = selectedItems.value.reduce((sum, item) => sum + ((item.sellingPrice - (item.cost ?? 0)) * item.quantity), 0);
 
-    await update(dbRef(db, `sales/${saleId}`), {
+    await updateSale({
+        id: saleId,
+        timestamp: currentSale.timestamp,
+        total,
+        totalProfit,
         items: selectedItems.value,
+        operator: currentSale.operator,
+        paymentMethod: currentSale.paymentMethod || "",
+        updater: `${user.value?.displayName || ""}(${getDeviceInfoShort()})`,
+    });
+
+    upsertLocalSale({
+        ...currentSale,
+        items: selectedItems.value.map((entry) => ({ ...entry })),
         total,
         totalProfit,
         updater: `${user.value?.displayName || ""}(${getDeviceInfoShort()})`,
     });
-
-    await loadSalesByDate(selectedDate.value);
 }
 
 function onDetailDialogClose() {

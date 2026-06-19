@@ -1,4 +1,4 @@
-<template>
+﻿<template>
     <div class="checkout-page">
         <section class="checkout-hero">
             <div class="hero-copy">
@@ -38,18 +38,10 @@
                 </div>
 
                 <div class="manual-entry">
-                    <el-input
-                        v-model="manualGtin"
-                        placeholder="輸入商品編號或 GTIN"
-                        class="manual-input"
-                        @keyup.enter="addManualItem"
-                    />
-                    <el-input-number
-                        v-model.number="manualQuantity"
-                        :min="1"
-                        class="manual-quantity"
-                        @keyup.enter="addManualItem"
-                    />
+                    <el-input v-model="manualGtin" placeholder="輸入商品編號或 GTIN" class="manual-input"
+                        @keyup.enter="addManualItem" />
+                    <el-input-number v-model.number="manualQuantity" :min="1" class="manual-quantity"
+                        @keyup.enter="addManualItem" />
                     <el-button type="primary" class="manual-action checkout-primary-btn" @click="addManualItem">
                         加入購物車
                     </el-button>
@@ -86,12 +78,8 @@
                 <div class="payment-panel">
                     <label class="payment-label">付款方式</label>
                     <el-select v-model="selectedPayment" placeholder="選擇付款方式" class="payment-select">
-                        <el-option
-                            v-for="method in paymentOptions"
-                            :key="method.value"
-                            :label="method.label"
-                            :value="method.value"
-                        />
+                        <el-option v-for="method in paymentOptions" :key="method.value" :label="method.label"
+                            :value="method.value" />
                     </el-select>
                     <p v-if="showPaymentError" class="payment-error">
                         請先選擇付款方式後再確認結帳。
@@ -102,10 +90,12 @@
                 </div>
 
                 <div class="summary-actions">
-                    <el-button class="secondary-btn checkout-secondary-btn" :disabled="cart.length === 0" @click="clearCart">
+                    <el-button class="secondary-btn checkout-secondary-btn" :disabled="cart.length === 0"
+                        @click="clearCart">
                         清空購物車
                     </el-button>
-                    <el-button type="success" class="checkout-success-btn" :disabled="cart.length === 0" @click="confirmCheckout">
+                    <el-button type="success" class="checkout-success-btn" :disabled="cart.length === 0"
+                        @click="confirmCheckout">
                         確認結帳
                     </el-button>
                 </div>
@@ -116,7 +106,7 @@
             <div class="table-header">
                 <div>
                     <span class="section-eyebrow">CART</span>
-                    <h3>購物車商品</h3>
+                    <h3>購物車明細</h3>
                 </div>
 
                 <div class="table-meta">
@@ -126,14 +116,8 @@
                 </div>
             </div>
 
-            <el-table
-                v-if="cart.length"
-                :data="cart"
-                border
-                class="checkout-table"
-                :class="tableThemeClass"
-                :header-cell-style="{ background: 'var(--table-header-bg)', color: 'var(--table-header-text)' }"
-            >
+            <el-table v-if="cart.length" :data="cart" border class="checkout-table" :class="tableThemeClass"
+                :header-cell-style="{ background: 'var(--table-header-bg)', color: 'var(--table-header-text)' }">
                 <el-table-column class-name="no-padding-cell" label="#" width="38" align="center">
                     <template #default="{ $index }">
                         <span class="index-text">{{ $index + 1 }}</span>
@@ -142,17 +126,13 @@
 
                 <el-table-column class-name="no-padding-cell" label="商品圖片" width="96" align="center">
                     <template #default="{ row }">
-                        <button
-                            type="button"
-                            :class="[
-                                'product-image-box',
-                                'product-image-button',
-                                { 'product-image-box--clickable': !!row.imageUrl }
-                            ]"
-                            :disabled="!row.imageUrl"
-                            :aria-label="row.imageUrl ? `放大查看 ${row.name || '商品圖片'}` : '此商品沒有圖片'"
-                            @click="openImagePreview(row)"
-                        >
+                        <button type="button" :class="[
+                            'product-image-box',
+                            'product-image-button',
+                            { 'product-image-box--clickable': !!row.imageUrl }
+                        ]" :disabled="!row.imageUrl"
+                            :aria-label="row.imageUrl ? `放大檢視 ${row.name || '商品圖片'}` : '沒有可預覽圖片'"
+                            @click="openImagePreview(row)">
                             <img v-if="row.imageUrl" :src="row.imageUrl" alt="商品圖片" class="product-image" />
                             <el-icon v-else class="product-image-fallback">
                                 <Picture />
@@ -163,26 +143,16 @@
 
                 <el-table-column label="數量" width="110" align="center">
                     <template #default="{ row }">
-                        <el-input-number
-                            v-if="row.editing"
-                            v-model.number="row.quantity"
-                            size="small"
-                            :min="1"
-                            class="cart-qty-input"
-                        />
+                        <el-input-number v-if="row.editing" v-model.number="row.quantity" size="small" :min="1"
+                            class="cart-qty-input" />
                         <span v-else class="qty-badge">{{ row.quantity }}</span>
                     </template>
                 </el-table-column>
 
                 <el-table-column prop="name" label="商品名稱" min-width="220">
                     <template #default="{ row }">
-                        <a
-                            v-if="row.website"
-                            :href="row.website"
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            class="product-link"
-                        >
+                        <a v-if="row.website" :href="row.website" target="_blank" rel="noopener noreferrer"
+                            class="product-link">
                             {{ row.name }}
                         </a>
                         <span v-else>{{ row.name }}</span>
@@ -194,13 +164,8 @@
 
                 <el-table-column label="售價" width="110" align="center">
                     <template #default="{ row }">
-                        <el-input-number
-                            v-if="row.editing"
-                            v-model.number="row.sellingPrice"
-                            size="small"
-                            :min="0"
-                            class="price-input"
-                        />
+                        <el-input-number v-if="row.editing" v-model.number="row.sellingPrice" size="small" :min="0"
+                            class="price-input" />
                         <span v-else>NT$ {{ formatCurrency(row.sellingPrice) }}</span>
                     </template>
                 </el-table-column>
@@ -232,13 +197,8 @@
 
                 <el-table-column prop="website" label="網站" width="90" align="center">
                     <template #default="{ row }">
-                        <a
-                            v-if="row.website"
-                            :href="row.website"
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            class="site-link"
-                        >
+                        <a v-if="row.website" :href="row.website" target="_blank" rel="noopener noreferrer"
+                            class="site-link">
                             前往
                         </a>
                         <span v-else>-</span>
@@ -248,10 +208,14 @@
                 <el-table-column label="操作" width="128" align="center">
                     <template #default="{ row, $index }">
                         <div class="row-action-stack">
-                            <el-button type="primary" size="small" class="row-action-btn checkout-row-btn checkout-row-btn--edit" @click.stop="toggleEdit(row)">
+                            <el-button type="primary" size="small"
+                                class="row-action-btn checkout-row-btn checkout-row-btn--edit"
+                                @click.stop="toggleEdit(row)">
                                 {{ row.editing ? "完成" : "編輯" }}
                             </el-button>
-                            <el-button type="danger" size="small" class="row-action-btn checkout-row-btn checkout-row-btn--delete" @click.stop="removeItem($index)">
+                            <el-button type="danger" size="small"
+                                class="row-action-btn checkout-row-btn checkout-row-btn--delete"
+                                @click.stop="removeItem($index)">
                                 刪除
                             </el-button>
                         </div>
@@ -263,7 +227,8 @@
                 <strong>購物車目前是空的</strong>
                 <p>你可以先掃描商品、輸入 GTIN，或手動建立商品後加入購物車。</p>
                 <div class="empty-actions">
-                    <el-button type="primary" class="checkout-primary-btn" @click="showAddDialog = true">手動建立商品</el-button>
+                    <el-button type="primary" class="checkout-primary-btn"
+                        @click="showAddDialog = true">手動建立商品</el-button>
                 </div>
             </div>
         </section>
@@ -312,13 +277,8 @@
             </template>
         </el-dialog>
 
-        <el-dialog
-            v-model="showImagePreviewDialog"
-            title="商品圖片預覽"
-            width="min(92vw, 760px)"
-            center
-            class="image-preview-modal"
-        >
+        <el-dialog v-model="showImagePreviewDialog" title="商品圖片預覽" width="min(92vw, 760px)" center
+            class="image-preview-modal">
             <div v-if="previewImageUrl" class="image-preview-dialog">
                 <img :src="previewImageUrl" :alt="previewImageName || '商品圖片預覽'" class="image-preview-full" />
                 <p v-if="previewImageName" class="image-preview-caption">{{ previewImageName }}</p>
@@ -331,14 +291,19 @@
 </template>
 
 <script setup lang="ts">
-import { computed, reactive, ref, watch } from "vue";
+import { computed, onMounted, reactive, ref, watch } from "vue";
 import Scanner from "@/components/Scanner.vue";
 import { Picture } from "@element-plus/icons-vue";
 import { ElMessage } from "element-plus";
-import { db } from "@/firebase";
-import { child, get, push, ref as dbRef, set, update } from "firebase/database";
 import { useAuth } from "@/composables/useAuth";
 import { useThemeStore } from "@/stores/theme";
+import {
+    fetchProducts as fetchProductsFromSupabase,
+    upsertProducts,
+    type Product,
+    type UpsertProductInput,
+} from "@/services/products";
+import { insertSale, type SaleItem as SalesServiceItem } from "@/services/sales";
 
 const { user } = useAuth();
 const themeStore = useThemeStore();
@@ -360,20 +325,6 @@ interface CartItem {
     editing?: boolean;
 }
 
-interface Product {
-    gtin: string;
-    code: string;
-    name: string;
-    price: number;
-    sellingPrice?: number;
-    cost: number;
-    supplierName?: string;
-    supplierCode?: string;
-    imageUrl?: string;
-    website?: string;
-    stock?: number;
-}
-
 const paymentOptions = [
     { label: "現金", value: "cash" },
     { label: "信用卡", value: "credit_card" },
@@ -382,6 +333,7 @@ const paymentOptions = [
 ];
 
 const cart = ref<CartItem[]>([]);
+const products = ref<Record<string, Product>>({});
 const selectedPayment = ref("");
 const showPaymentError = ref(false);
 const manualGtin = ref("");
@@ -420,7 +372,7 @@ const totalProfitPreview = computed(() => {
 });
 
 const paymentLabel = computed(() => {
-    return paymentOptions.find((option) => option.value === selectedPayment.value)?.label ?? "尚未選擇";
+    return paymentOptions.find((option) => option.value === selectedPayment.value)?.label ?? "未選擇付款";
 });
 
 watch(selectedPayment, () => {
@@ -437,24 +389,60 @@ function needHandlingFee(paymentMethod?: string) {
     return ["credit_card", "line_pay", "px_pay"].includes(paymentMethod || "");
 }
 
-async function handleScan(scannedGtin: string, quantity = 1) {
-    const dbRoot = dbRef(db);
-    const snapshot = await get(child(dbRoot, "products"));
+function createProductMap(productList: Product[]) {
+    return productList.reduce<Record<string, Product>>((result, product) => {
+        result[product.id] = product;
+        return result;
+    }, {});
+}
 
-    if (!snapshot.exists()) {
-        ElMessage({ message: "商品資料不存在。", type: "warning", duration: 1500 });
+function getAllProducts() {
+    return Object.values(products.value);
+}
+
+function findProductByScanCode(scanCode: string) {
+    const normalized = scanCode.trim();
+    return getAllProducts().find(
+        (product) => product.gtin === normalized || product.code === normalized
+    );
+}
+
+async function loadProducts() {
+    try {
+        const productList = await fetchProductsFromSupabase();
+        products.value = createProductMap(productList);
+        return productList;
+    } catch (error) {
+        console.error(error);
+        ElMessage.error("載入商品資料失敗");
+        return [];
+    }
+}
+
+async function ensureProductsLoaded() {
+    if (getAllProducts().length) {
+        return getAllProducts();
+    }
+
+    return await loadProducts();
+}
+
+async function handleScan(scannedGtin: string, quantity = 1) {
+    const productList = await ensureProductsLoaded();
+
+    if (!productList.length) {
+        ElMessage({ message: "目前沒有商品資料", type: "warning", duration: 1500 });
         return;
     }
 
-    const productsData = snapshot.val() as Record<string, Product>;
-    const productEntry = Object.entries(productsData).find(([, data]) => data.gtin === scannedGtin || data.code === scannedGtin);
+    const product = findProductByScanCode(scannedGtin);
 
-    if (!productEntry) {
+    if (!product) {
         ElMessage({ message: `找不到商品：${scannedGtin}`, type: "warning", duration: 1500 });
         return;
     }
 
-    const [barcode, product] = productEntry;
+    const barcode = product.id;
     const existingItem = cart.value.find((item) => item.barcode === barcode);
 
     if (existingItem) {
@@ -490,7 +478,7 @@ async function addManualItem() {
     const quantity = manualQuantity.value;
 
     if (!scannedGtin || quantity <= 0) {
-        ElMessage.warning("請輸入商品編號或 GTIN，並確認數量大於 0。");
+        ElMessage.warning("請輸入商品條碼或 GTIN，且數量必須大於 0");
         return;
     }
 
@@ -506,7 +494,7 @@ function removeItem(index: number) {
 function clearCart() {
     cart.value.splice(0, cart.value.length);
     ElMessage({
-        message: "購物車已全部清空",
+        message: "已清空購物車",
         type: "info",
         duration: 1000,
     });
@@ -531,75 +519,88 @@ async function confirmCheckout() {
 
     if (!selectedPayment.value) {
         showPaymentError.value = true;
-        ElMessage.warning("請先選擇付款方式。");
+        ElMessage.warning("請先選擇付款方式");
         return;
     }
 
     showPaymentError.value = false;
 
-    const salesRef = dbRef(db, "sales");
-    const productsRef = dbRef(db, "products");
-    const snapshot = await get(productsRef);
-
-    if (!snapshot.exists()) {
-        ElMessage({ message: "商品資料不存在。", type: "warning" });
+    const productList = await ensureProductsLoaded();
+    if (!productList.length) {
+        ElMessage({ message: "目前沒有商品資料", type: "warning" });
         return;
     }
 
-    const productsData = snapshot.val() as Record<string, Product & { stock?: number }>;
-    const updates: Record<string, number> = {};
+    const productUpdates: UpsertProductInput[] = [];
+    const now = Date.now();
+    const operator = user.value?.displayName || user.value?.email || "";
 
     for (const item of cart.value) {
-        const productEntry = Object.entries(productsData).find(
-            ([id, data]) => id === item.barcode || data.code === item.barcode
-        );
+        const product =
+            products.value[item.barcode] ??
+            getAllProducts().find((entry) => entry.code === item.code || entry.gtin === item.gtin);
 
-        if (!productEntry) continue;
+        if (!product) continue;
 
-        const [id, data] = productEntry;
-        const currentStock = data.stock ?? 0;
+        const currentStock = product.stock ?? 0;
         const newStock = Math.max(currentStock - item.quantity, 0);
-        updates[`${id}/stock`] = newStock;
-        updates[`${id}/updated`] = Date.now();
+
+        productUpdates.push({
+            ...product,
+            gtin: product.gtin ?? "",
+            sellingPrice: product.sellingPrice ?? product.price ?? 0,
+            stock: newStock,
+            updated: now,
+            updatedBy: operator,
+        });
     }
 
-    const newSaleRef = push(salesRef);
-    const saleData = {
-        timestamp: Date.now(),
-        operator: user.value?.displayName || user.value?.email || "",
-        paymentMethod: selectedPayment.value,
-        items: cart.value.map((item) => ({
-            barcode: item.barcode,
-            gtin: item.gtin,
-            code: item.code,
-            name: item.name,
-            price: item.price,
-            sellingPrice: item.sellingPrice,
-            cost: item.cost,
-            supplierName: item.supplierName,
-            supplierCode: item.supplierCode,
-            imageUrl: item.imageUrl,
-            website: item.website || "",
-            quantity: item.quantity,
-            estimatedProfit: item.sellingPrice - item.cost,
-        })),
-        total: total.value,
-        totalProfit: totalProfitPreview.value,
-    };
+    const saleId =
+        globalThis.crypto?.randomUUID?.() ?? `sale-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+
+    const saleItems: SalesServiceItem[] = cart.value.map((item) => ({
+        barcode: item.barcode,
+        gtin: item.gtin,
+        code: item.code,
+        name: item.name,
+        price: item.price,
+        sellingPrice: item.sellingPrice,
+        cost: item.cost,
+        supplierName: item.supplierName,
+        supplierCode: item.supplierCode,
+        imageUrl: item.imageUrl,
+        website: item.website || "",
+        quantity: item.quantity,
+        estimatedProfit: item.sellingPrice - item.cost,
+    }));
 
     try {
-        await Promise.all([
-            update(productsRef, updates),
-            set(newSaleRef, saleData),
-        ]);
+        const tasks: Promise<unknown>[] = [
+            insertSale({
+                id: saleId,
+                timestamp: now,
+                operator,
+                paymentMethod: selectedPayment.value,
+                items: saleItems,
+                total: total.value,
+                totalProfit: totalProfitPreview.value,
+            }),
+        ];
 
-        ElMessage({ message: "結帳完成，庫存已更新。", type: "success", duration: 1500 });
+        if (productUpdates.length) {
+            tasks.push(upsertProducts(productUpdates));
+        }
+
+        await Promise.all(tasks);
+        await loadProducts();
+
+        ElMessage({ message: "結帳成功，庫存已更新", type: "success", duration: 1500 });
         cart.value.splice(0, cart.value.length);
         selectedPayment.value = "";
         showPaymentError.value = false;
     } catch (error) {
         console.error(error);
-        ElMessage({ message: "結帳失敗，請稍後再試。", type: "error", duration: 1500 });
+        ElMessage({ message: "結帳失敗，請稍後再試", type: "error", duration: 1500 });
     }
 }
 
@@ -621,7 +622,7 @@ function resetManualItem() {
 
 function confirmAddManualItem() {
     if (!manualItem.name.trim() || manualItem.quantity <= 0) {
-        ElMessage.warning("請至少輸入商品名稱與有效數量。");
+        ElMessage.warning("請先輸入商品名稱，並確認數量大於 0");
         return;
     }
 
@@ -641,10 +642,14 @@ function confirmAddManualItem() {
         editing: false,
     });
 
-    ElMessage.success("商品已手動加入購物車。");
+    ElMessage.success("商品已加入購物車");
     showAddDialog.value = false;
     resetManualItem();
 }
+
+onMounted(async () => {
+    await loadProducts();
+});
 </script>
 
 <style scoped>
@@ -772,7 +777,7 @@ function confirmAddManualItem() {
     align-items: stretch;
 }
 
-.manual-entry > * {
+.manual-entry>* {
     min-width: 0;
 }
 
@@ -1117,7 +1122,7 @@ function confirmAddManualItem() {
 }
 
 .product-image-box--clickable::after {
-    content: "放大";
+    content: "?曉之";
     position: absolute;
     right: 8px;
     bottom: 8px;
@@ -1368,6 +1373,7 @@ function confirmAddManualItem() {
 }
 
 @media (max-width: 768px) {
+
     .checkout-hero,
     .control-card,
     .table-card {

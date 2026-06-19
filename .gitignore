@@ -31,3 +31,5 @@ coverage
 
 firebase-debug.log
 .firebaserc.local
+firebase-service-account*.json
+*.service-account.json

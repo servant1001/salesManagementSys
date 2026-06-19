@@ -5,12 +5,12 @@
         <span class="page-eyebrow">VENDOR DIRECTORY</span>
         <h1>供應商管理</h1>
         <p>
-          集中維護供應商資料、聯絡方式、網站與備註資訊，讓進貨管理、商品建檔與日常查詢保持一致節奏。
+          集中整理供應商編號、名稱、聯絡方式與備註資訊，讓進貨、商品維護與後續查詢都更快速。
         </p>
       </div>
       <div class="hero-badge">
-        <strong>{{ filteredVendors.length }}</strong>
-        <span>目前供應商筆數</span>
+        <strong>{{ totalVendors }}</strong>
+        <span>符合條件的供應商</span>
       </div>
     </section>
 
@@ -18,16 +18,17 @@
       <div class="control-bar">
         <el-input
           v-model="searchKeyword"
-          placeholder="搜尋供應商名稱或供應商編號"
+          placeholder="搜尋供應商名稱或編號"
           clearable
-          @input="filterVendors"
+          @input="handleSearchInput"
+          @clear="handleSearchInput"
           class="search-input"
         />
 
         <el-select
           v-model="countryFilter"
           placeholder="選擇地區"
-          @change="filterVendors"
+          @change="handleCountryChange"
           class="country-select"
         >
           <el-option label="全部地區" value="all" />
@@ -40,7 +41,7 @@
             新增供應商
           </el-button>
           <el-button class="secondary-btn" @click="toggleEditMode">
-            {{ showActions ? "關閉操作模式" : "開啟操作模式" }}
+            {{ showActions ? '關閉操作模式' : '開啟操作模式' }}
           </el-button>
         </div>
       </div>
@@ -50,13 +51,17 @@
       <div class="section-header">
         <div>
           <span class="section-eyebrow">LIST</span>
-          <h2>供應商清單</h2>
+          <h2>供應商列表</h2>
+        </div>
+        <div class="table-meta">
+          <span>共 {{ totalVendors }} 筆</span>
+          <span>第 {{ currentPage }} / {{ totalPages }} 頁</span>
         </div>
       </div>
 
-      <div ref="tableScrollRef" class="table-scroll">
+      <div ref="tableScrollRef" :class="['table-scroll', { 'is-switching': loading }]">
         <el-table
-          :data="filteredVendors"
+          :data="vendors"
           border
           :class="['vendor-table', tableThemeClass]"
           style="width: 100%"
@@ -90,7 +95,7 @@
 
           <el-table-column prop="vendorId" label="供應商編號" sortable min-width="120" />
           <el-table-column prop="vendorName" label="供應商名稱" min-width="180" />
-          <el-table-column prop="contact" label="聯絡資訊" min-width="150" />
+          <el-table-column prop="contact" label="聯絡方式" min-width="150" />
           <el-table-column prop="website" label="網站" min-width="180">
             <template #default="{ row }">
               <a
@@ -107,7 +112,7 @@
           </el-table-column>
           <el-table-column prop="note" label="備註" min-width="180">
             <template #default="{ row }">
-              <span>{{ row.note || "無備註" }}</span>
+              <span>{{ row.note || '無備註' }}</span>
             </template>
           </el-table-column>
           <el-table-column prop="createdBy" label="建立者" min-width="120" />
@@ -119,6 +124,32 @@
             <template #default="{ row }">{{ formatDate(row.updatedAt) }}</template>
           </el-table-column>
         </el-table>
+
+        <transition name="table-fade">
+          <div v-if="loading" class="table-loading-overlay">
+            <div class="table-loading-panel">
+              <div class="table-loading-dots">
+                <span class="table-loading-dot"></span>
+                <span class="table-loading-dot"></span>
+                <span class="table-loading-dot"></span>
+              </div>
+              <p>載入中</p>
+            </div>
+          </div>
+        </transition>
+      </div>
+
+      <div class="table-pagination">
+        <el-pagination
+          background
+          layout="prev, pager, next, sizes, total"
+          :current-page="currentPage"
+          :page-size="pageSize"
+          :page-sizes="[10, 20, 50, 100]"
+          :total="totalVendors"
+          @current-change="handlePageChange"
+          @size-change="handlePageSizeChange"
+        />
       </div>
     </section>
 
@@ -136,14 +167,14 @@
         <el-form-item label="供應商名稱" required>
           <el-input v-model="form.vendorName" placeholder="請輸入供應商名稱" />
         </el-form-item>
-        <el-form-item label="聯絡資訊">
-          <el-input v-model="form.contact" placeholder="請輸入聯絡人、電話或 Email" />
+        <el-form-item label="聯絡方式">
+          <el-input v-model="form.contact" placeholder="請輸入電話、Email 或聯絡資訊" />
         </el-form-item>
         <el-form-item label="網站">
           <el-input v-model="form.website" placeholder="https://example.com" />
         </el-form-item>
         <el-form-item label="備註">
-          <el-input v-model="form.note" type="textarea" :rows="4" placeholder="補充說明或合作備註..." />
+          <el-input v-model="form.note" type="textarea" :rows="4" placeholder="輸入補充說明" />
         </el-form-item>
       </el-form>
 
@@ -158,32 +189,23 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, onMounted, onUnmounted, nextTick } from 'vue'
-import { db } from '@/firebase'
-import { ref as dbRef, get, child, push, set, update, remove } from 'firebase/database'
-import { ElMessageBox, ElMessage } from 'element-plus'
+import { computed, nextTick, onMounted, onUnmounted, ref } from 'vue'
+import { ElMessage, ElMessageBox } from 'element-plus'
 import { useAuth } from '@/composables/useAuth'
 import { useThemeStore } from '@/stores/theme'
+import {
+  deleteVendorById,
+  fetchVendorsPage,
+  insertVendor,
+  updateVendor as updateVendorRecord,
+  type Vendor,
+} from '@/services/vendors'
 
 const { user } = useAuth()
 const themeStore = useThemeStore()
 const tableThemeClass = computed(() => (themeStore.isDarkTheme ? 'table-dark' : 'table-light'))
 
-interface Vendor {
-  id?: string
-  vendorId: string
-  vendorName: string
-  contact?: string
-  website?: string
-  note?: string
-  createdBy: string
-  updatedBy: string
-  createdAt: number
-  updatedAt: number
-}
-
 const vendors = ref<Vendor[]>([])
-const filteredVendors = ref<Vendor[]>([])
 const searchKeyword = ref('')
 const countryFilter = ref<'all' | 'TW' | 'CN'>('all')
 const dialogVisible = ref(false)
@@ -193,35 +215,49 @@ const form = ref<Partial<Vendor>>({})
 const showActions = ref(false)
 const tableScrollRef = ref<HTMLElement | null>(null)
 const tableHeight = ref(320)
+const loading = ref(false)
+const currentPage = ref(1)
+const pageSize = ref(10)
+const totalVendors = ref(0)
+
 let tableResizeObserver: ResizeObserver | null = null
+let searchDebounceTimer: ReturnType<typeof setTimeout> | null = null
+
+const totalPages = computed(() => Math.max(1, Math.ceil(totalVendors.value / pageSize.value)))
 
 function formatDate(ts: number) {
   return new Date(ts).toLocaleString()
 }
 
 async function loadVendors() {
-  const snapshot = await get(child(dbRef(db), 'vendors'))
+  try {
+    loading.value = true
 
-  if (snapshot.exists()) {
-    const data = snapshot.val()
+    const result = await fetchVendorsPage({
+      page: currentPage.value,
+      pageSize: pageSize.value,
+      keyword: searchKeyword.value,
+      country: countryFilter.value,
+    })
 
-    vendors.value = Object.entries(data)
-      .map(([id, value]: [string, any]) => ({
-        id,
-        ...value,
-      }))
-      .sort((a, b) => {
-        const idA = isNaN(Number(a.vendorId)) ? a.vendorId : Number(a.vendorId)
-        const idB = isNaN(Number(b.vendorId)) ? b.vendorId : Number(b.vendorId)
-        return idA > idB ? 1 : idA < idB ? -1 : 0
-      })
+    vendors.value = result.items
+    totalVendors.value = result.total
 
-    filterVendors()
-    return
+    const maxPage = Math.max(1, Math.ceil(result.total / pageSize.value))
+    if (currentPage.value > maxPage) {
+      currentPage.value = maxPage
+      if (result.total > 0) {
+        await loadVendors()
+      }
+    }
+  } catch (error: any) {
+    console.error(error)
+    vendors.value = []
+    totalVendors.value = 0
+    ElMessage.error(error?.message || '讀取供應商資料失敗')
+  } finally {
+    loading.value = false
   }
-
-  vendors.value = []
-  filteredVendors.value = []
 }
 
 function updateTableHeight() {
@@ -232,22 +268,34 @@ function updateTableHeight() {
   tableHeight.value = availableHeight > 0 ? availableHeight : fallbackHeight
 }
 
-function filterVendors() {
-  filteredVendors.value = vendors.value.filter((vendor) => {
-    const query = searchKeyword.value.trim().toLowerCase()
-    const matchesKeyword = query
-      ? vendor.vendorName.toLowerCase().includes(query) || vendor.vendorId.toLowerCase().includes(query)
-      : true
+function queueReloadFromFirstPage() {
+  currentPage.value = 1
+  void loadVendors()
+}
 
-    const matchesCountry =
-      countryFilter.value === 'all'
-        ? true
-        : countryFilter.value === 'TW'
-          ? vendor.vendorId.startsWith('TW')
-          : vendor.vendorId.startsWith('CN')
+function handleSearchInput() {
+  if (searchDebounceTimer) {
+    clearTimeout(searchDebounceTimer)
+  }
 
-    return matchesKeyword && matchesCountry
-  })
+  searchDebounceTimer = setTimeout(() => {
+    queueReloadFromFirstPage()
+  }, 300)
+}
+
+function handleCountryChange() {
+  queueReloadFromFirstPage()
+}
+
+function handlePageChange(page: number) {
+  currentPage.value = page
+  void loadVendors()
+}
+
+function handlePageSizeChange(size: number) {
+  pageSize.value = size
+  currentPage.value = 1
+  void loadVendors()
 }
 
 function toggleEditMode() {
@@ -274,65 +322,95 @@ function openDialog(vendor?: Vendor) {
 
 async function saveVendor() {
   if (!form.value.vendorId || !form.value.vendorName) {
-    ElMessage.warning('請先輸入供應商編號與供應商名稱。')
+    ElMessage.warning('請先輸入供應商編號與供應商名稱')
     return
   }
 
   const timestamp = Date.now()
   const currentUser = user.value?.displayName || user.value?.email || 'system'
+  const nextVendorKey = dialogMode.value === 'add' ? globalThis.crypto.randomUUID() : form.value.id
 
-  if (dialogMode.value === 'add') {
-    const newRef = push(child(dbRef(db), 'vendors'))
-    await set(newRef, {
-      vendorId: form.value.vendorId,
-      vendorName: form.value.vendorName,
-      contact: form.value.contact || '',
-      website: form.value.website || '',
-      note: form.value.note || '',
-      createdBy: currentUser,
-      updatedBy: currentUser,
-      createdAt: timestamp,
-      updatedAt: timestamp,
-    })
-  } else if (dialogMode.value === 'edit' && form.value.id) {
-    await update(child(dbRef(db), `vendors/${form.value.id}`), {
-      vendorId: form.value.vendorId,
-      vendorName: form.value.vendorName,
-      contact: form.value.contact || '',
-      website: form.value.website || '',
-      note: form.value.note || '',
-      updatedBy: currentUser,
-      updatedAt: timestamp,
-    })
+  if (!nextVendorKey) {
+    ElMessage.error('供應商資料缺少識別 ID')
+    return
   }
 
-  dialogVisible.value = false
-  ElMessage.success(dialogMode.value === 'add' ? '供應商已新增。' : '供應商資料已更新。')
-  await loadVendors()
+  try {
+    if (dialogMode.value === 'add') {
+      await insertVendor({
+        id: nextVendorKey,
+        firebaseId: nextVendorKey,
+        vendorId: form.value.vendorId,
+        vendorName: form.value.vendorName,
+        contact: form.value.contact || '',
+        website: form.value.website || '',
+        note: form.value.note || '',
+        createdBy: currentUser,
+        updatedBy: currentUser,
+        createdAt: timestamp,
+        updatedAt: timestamp,
+      })
+
+      currentPage.value = 1
+      await loadVendors()
+    } else if (dialogMode.value === 'edit' && form.value.id) {
+      const existingVendor = vendors.value.find((vendor) => vendor.id === form.value.id)
+      const updatedVendor = await updateVendorRecord({
+        id: form.value.id,
+        firebaseId: form.value.id,
+        vendorId: form.value.vendorId,
+        vendorName: form.value.vendorName,
+        contact: form.value.contact || '',
+        website: form.value.website || '',
+        note: form.value.note || '',
+        createdBy: existingVendor?.createdBy || currentUser,
+        updatedBy: currentUser,
+        createdAt: existingVendor?.createdAt || timestamp,
+        updatedAt: timestamp,
+      })
+
+      const index = vendors.value.findIndex((vendor) => vendor.id === updatedVendor.id)
+      if (index >= 0) {
+        const nextItems = [...vendors.value]
+        nextItems.splice(index, 1, updatedVendor)
+        vendors.value = nextItems
+      } else {
+        await loadVendors()
+      }
+    }
+
+    dialogVisible.value = false
+    ElMessage.success(dialogMode.value === 'add' ? '供應商新增成功' : '供應商更新成功')
+  } catch (error: any) {
+    console.error(error)
+    ElMessage.error(error?.message || '儲存供應商失敗')
+  }
 }
 
 async function deleteVendor(id?: string) {
   if (!id) return
 
   try {
-    await ElMessageBox.confirm(
-      '確認要刪除此供應商資料嗎？此操作無法復原。',
-      '刪除確認',
-      {
-        confirmButtonText: '確認刪除',
-        cancelButtonText: '取消',
-        type: 'warning',
-        draggable: true,
-        autofocus: false,
-        lockScroll: true,
-      },
-    )
+    await ElMessageBox.confirm('確認要刪除這筆供應商資料嗎？刪除後將無法復原。', '刪除確認', {
+      confirmButtonText: '確認刪除',
+      cancelButtonText: '取消',
+      type: 'warning',
+      draggable: true,
+      autofocus: false,
+      lockScroll: true,
+    })
 
-    await remove(child(dbRef(db), `vendors/${id}`))
+    await deleteVendorById(id)
     await loadVendors()
-    ElMessage.success('供應商資料已刪除。')
-  } catch {
-    ElMessage.info('已取消刪除。')
+    ElMessage.success('供應商刪除成功')
+  } catch (error: any) {
+    if (error === 'cancel' || error === 'close' || error?.message === 'cancel') {
+      ElMessage.info('已取消刪除')
+      return
+    }
+
+    console.error(error)
+    ElMessage.error(error?.message || '刪除供應商失敗')
   }
 }
 
@@ -353,6 +431,10 @@ onMounted(async () => {
 onUnmounted(() => {
   window.removeEventListener('resize', updateTableHeight)
   tableResizeObserver?.disconnect()
+
+  if (searchDebounceTimer) {
+    clearTimeout(searchDebounceTimer)
+  }
 })
 </script>
 
@@ -538,6 +620,7 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 16px;
   margin-bottom: 18px;
 }
 
@@ -546,6 +629,15 @@ onUnmounted(() => {
   color: var(--heading-color);
   font-size: 1.45rem;
   font-weight: 700;
+}
+
+.table-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 16px;
+  justify-content: flex-end;
+  color: var(--muted-text);
+  font-size: 0.92rem;
 }
 
 .vendor-table {
@@ -642,11 +734,123 @@ onUnmounted(() => {
 }
 
 .table-scroll {
+  position: relative;
   width: 100%;
   flex: 1;
   min-height: 0;
   overflow-x: auto;
   overflow-y: hidden;
+  transition:
+    opacity 0.26s ease,
+    transform 0.26s ease,
+    filter 0.26s ease;
+}
+
+.table-scroll.is-switching :deep(.vendor-table) {
+  opacity: 0.58;
+  transform: translateY(8px) scale(0.995);
+  filter: saturate(0.88);
+}
+
+.table-loading-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  border-radius: 20px;
+  background:
+    linear-gradient(135deg, rgba(10, 24, 41, 0.18), rgba(17, 40, 66, 0.12)),
+    radial-gradient(circle at top, rgba(214, 164, 107, 0.12), transparent 34%);
+  backdrop-filter: blur(8px);
+  pointer-events: none;
+}
+
+.table-loading-panel {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 18px;
+  border: 1px solid rgba(214, 164, 107, 0.24);
+  border-radius: 18px;
+  background: rgba(12, 28, 46, 0.72);
+  box-shadow: 0 18px 34px rgba(9, 22, 37, 0.2);
+}
+
+.table-loading-panel p {
+  margin: 0;
+  color: #eef4fb;
+  font-size: 0.92rem;
+  letter-spacing: 0.08em;
+}
+
+.table-loading-dots {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.table-loading-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 999px;
+  background: linear-gradient(180deg, #f0c998, #d6a46b);
+  box-shadow: 0 0 0 4px rgba(214, 164, 107, 0.12);
+  animation: vendorLoadingPulse 1.05s ease-in-out infinite;
+}
+
+.table-loading-dot:nth-child(2) {
+  animation-delay: 0.14s;
+}
+
+.table-loading-dot:nth-child(3) {
+  animation-delay: 0.28s;
+}
+
+.table-fade-enter-active,
+.table-fade-leave-active {
+  transition: opacity 0.22s ease;
+}
+
+.table-fade-enter-from,
+.table-fade-leave-to {
+  opacity: 0;
+}
+
+.table-pagination {
+  display: flex;
+  justify-content: flex-end;
+  padding-top: 18px;
+}
+
+.table-pagination :deep(.el-pagination) {
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.table-pagination :deep(.btn-prev),
+.table-pagination :deep(.btn-next),
+.table-pagination :deep(.el-pager li) {
+  transition:
+    transform 0.18s ease,
+    background-color 0.18s ease,
+    color 0.18s ease,
+    box-shadow 0.18s ease;
+}
+
+.table-pagination :deep(.btn-prev:hover),
+.table-pagination :deep(.btn-next:hover),
+.table-pagination :deep(.el-pager li:hover) {
+  transform: translateY(-1px);
+}
+
+.table-pagination :deep(.el-pager li.is-active) {
+  background: linear-gradient(180deg, rgba(190, 104, 37, 0.98), rgba(223, 156, 69, 0.94));
+  color: #10243c;
+  box-shadow: 0 10px 18px rgba(190, 104, 37, 0.22);
 }
 
 .row-actions {
@@ -766,6 +970,11 @@ onUnmounted(() => {
     margin-left: 0;
     justify-content: flex-start;
   }
+
+  .section-header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
 }
 
 @media (max-width: 768px) {
@@ -831,6 +1040,14 @@ onUnmounted(() => {
   .section-header {
     margin-bottom: 12px;
   }
+
+  .table-pagination {
+    justify-content: center;
+  }
+
+  .table-pagination :deep(.el-pagination) {
+    justify-content: center;
+  }
 }
 
 @media (max-width: 640px) {
@@ -840,6 +1057,19 @@ onUnmounted(() => {
 
   .country-select {
     flex-basis: auto;
+  }
+}
+
+@keyframes vendorLoadingPulse {
+  0%,
+  100% {
+    transform: translateY(0) scale(0.92);
+    opacity: 0.56;
+  }
+
+  50% {
+    transform: translateY(-4px) scale(1);
+    opacity: 1;
   }
 }
 </style>

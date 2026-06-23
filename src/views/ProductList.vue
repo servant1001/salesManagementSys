@@ -49,7 +49,7 @@
                 <div class="button-group">
                     <el-button type="primary" class="product-secondary-btn"
                         @click="openProductImportDialog">網址匯入商品</el-button>
-                    <el-button type="success" class="product-primary-btn" @click="showAddDialog = true">
+                    <el-button type="success" class="product-primary-btn" @click="openAddDialog">
                         新增商品
                     </el-button>
                     <el-button type="warning" class="product-accent-btn" @click="showBatchDialog = true">
@@ -256,7 +256,7 @@
                 <div class="empty-actions">
                     <el-button type="primary" class="product-secondary-btn"
                         @click="openProductImportDialog">網址匯入商品</el-button>
-                    <el-button type="primary" class="product-primary-btn" @click="showAddDialog = true">新增商品</el-button>
+                    <el-button type="primary" class="product-primary-btn" @click="openAddDialog">新增商品</el-button>
                     <el-button type="warning" class="product-accent-btn"
                         @click="showBatchDialog = true">批量新增</el-button>
                 </div>
@@ -264,88 +264,23 @@
         </section>
 
         <!-- 新增商品對話框 -->
-        <el-dialog title="新增商品" v-model="showAddDialog" :width="'90%'" class="add-product-dialog">
-            <el-form :model="newProduct" :rules="rules" ref="addForm" label-width="120px">
-                <el-form-item label="GTIN" prop="gtin">
-                    <div class="gtin-row">
-                        <el-input v-model="newProduct.gtin" placeholder="請輸入 GTIN" />
-                        <!-- 🔹 按鈕群組 -->
-                        <div class="gtin-actions">
-                            <el-button type="primary" class="product-accent-btn product-inline-btn"
-                                @click="startScanNewProduct">
-                                掃描
-                            </el-button>
-                            <el-button type="success" class="product-primary-btn product-inline-btn"
-                                @click="syncGtinToCode">
-                                同步編號
-                            </el-button>
-                        </div>
-                    </div>
-                </el-form-item>
-
-                <el-form-item label="商品名稱" prop="name">
-                    <el-input v-model="newProduct.name" />
-                </el-form-item>
-
-                <el-form-item label="商品編號" prop="code">
-                    <el-input v-model="newProduct.code" placeholder="例如：A001 或條碼號" />
-                </el-form-item>
-
-                <el-form-item label="定價" prop="price">
-                    <el-input type="number" min="0" v-model.number="newProduct.price" />
-                </el-form-item>
-
-                <el-form-item label="售價" prop="sellingPrice">
-                    <el-input type="number" min="0" v-model.number="newProduct.sellingPrice" />
-                </el-form-item>
-
-                <el-form-item label="成本" prop="cost">
-                    <el-input type="number" min="0" v-model.number="newProduct.cost" />
-                </el-form-item>
-
-                <el-form-item label="庫存" prop="stock">
-                    <el-input-number :min="0" v-model.number="newProduct.stock" />
-                </el-form-item>
-
-                <el-form-item label="廠商名稱" prop="supplierName">
-                    <el-input v-model="newProduct.supplierName" disabled />
-                </el-form-item>
-
-                <el-form-item label="廠商編號" prop="supplierCode">
-                    <el-select v-model="newProduct.supplierCode" placeholder="請輸入或選擇廠商" filterable clearable
-                        :filter-method="filterVendors" @change="findVendorByCode('add')" style="max-width: 250px;">
-                        <el-option v-for="vendor in filteredVendors" :key="vendor.vendorId"
-                            :label="`${vendor.vendorId} - ${vendor.vendorName}`" :value="vendor.vendorId" />
-                    </el-select>
-                </el-form-item>
-
-                <el-form-item label="商品圖片網址">
-                    <div style="display: flex; flex-direction: column; gap: 10px; width: 250px;">
-                        <!-- 輸入框 -->
-                        <el-input v-model="newProduct.imageUrl" placeholder="請輸入圖片網址" style="width: 100%;"></el-input>
-
-                        <!-- 圖片預覽 -->
-                        <img v-if="newProduct.imageUrl" :src="newProduct.imageUrl" alt="預覽"
-                            style="width: 100%; height: 150px; object-fit: contain; border-radius: 6px; border: 1px solid #ccc;" />
-                    </div>
-                </el-form-item>
-
-                <!-- 🆕 網站 -->
-                <el-form-item label="網站">
-                    <el-input v-model="newProduct.website" placeholder="請輸入網站連結 (例如：https://example.com)" />
-                </el-form-item>
-
-                <!-- 🆕 備註 -->
-                <el-form-item label="備註">
-                    <el-input v-model="newProduct.note" placeholder="請輸入備註" type="textarea" rows="2" />
-                </el-form-item>
-            </el-form>
-
-            <template #footer>
-                <el-button class="product-secondary-btn" @click="showAddDialog = false">取消</el-button>
-                <el-button type="primary" class="product-primary-btn" @click="submitAddProduct">新增</el-button>
-            </template>
-        </el-dialog>
+        <ProductFormDialog
+            ref="addProductDialogRef"
+            :visible="showAddDialog"
+            title="新增商品"
+            submit-text="新增"
+            :product="newProduct"
+            :rules="rules"
+            :filtered-vendors="filteredVendors"
+            :show-gtin-actions="true"
+            dialog-class="add-product-dialog"
+            @update:visible="showAddDialog = $event"
+            @submit="submitAddProduct"
+            @scan-gtin="startScanNewProduct"
+            @sync-gtin-to-code="syncGtinToCode"
+            @vendor-filter="filterVendors"
+            @supplier-change="findVendorByCode('add')"
+        />
 
         <!-- 網址匯入商品彈窗 -->
         <el-dialog v-model="showProductImportDialog" title="網址匯入商品" width="600px" class="product-import-dialog">
@@ -377,234 +312,43 @@
         </el-dialog>
 
         <!-- 編輯商品彈窗 -->
-        <el-dialog :title="isCopyMode ? '複製商品' : '編輯商品'" v-model="showEditDialog" :width="'90%'"
-            class="edit-product-dialog">
-            <el-form v-if="editProduct" :model="editProduct" label-width="120px">
-                <el-form-item label="GTIN" prop="gtin"
-                    :rules="[{ required: true, message: '請輸入 GTIN', trigger: 'blur' }]">
-                    <div style="display: flex; gap: 10px;">
-                        <el-input v-model="editProduct.gtin" placeholder="請輸入 GTIN"
-                            :disabled="!isCopyMode ? true : false" />
-                    </div>
-                </el-form-item>
-
-                <el-form-item label="商品名稱">
-                    <el-input v-model="editProduct.name" />
-                </el-form-item>
-
-                <el-form-item label="商品編號">
-                    <el-input v-model="editProduct.code" />
-                </el-form-item>
-
-                <el-form-item label="定價">
-                    <el-input type="number" min="0" v-model.number="editProduct.price" />
-                </el-form-item>
-
-                <el-form-item label="售價" prop="sellingPrice">
-                    <el-input type="number" min="0" v-model.number="editProduct.sellingPrice" />
-                </el-form-item>
-
-                <el-form-item label="成本">
-                    <el-input type="number" min="0" v-model.number="editProduct.cost" />
-                </el-form-item>
-
-                <el-form-item label="庫存">
-                    <el-input-number :min="0" v-model.number="editProduct.stock" />
-                </el-form-item>
-
-                <el-form-item label="廠商名稱">
-                    <el-input v-model="editProduct.supplierName" disabled />
-                </el-form-item>
-
-                <el-form-item label="廠商編號" prop="supplierCode">
-                    <el-select v-model="editProduct.supplierCode" placeholder="請輸入或選擇廠商" filterable clearable
-                        :filter-method="filterVendors" @change="findVendorByCode('edit')" style="max-width: 250px;">
-                        <el-option v-for="vendor in filteredVendors" :key="vendor.vendorId"
-                            :label="`${vendor.vendorId} - ${vendor.vendorName}`" :value="vendor.vendorId" />
-                    </el-select>
-                </el-form-item>
-
-                <el-form-item label="商品圖片網址">
-                    <div style="display: flex; flex-direction: column; gap: 10px; width: 250px;">
-                        <!-- 輸入框 -->
-                        <el-input v-model="editProduct.imageUrl" placeholder="請輸入圖片網址" style="width: 100%;"></el-input>
-
-                        <!-- 圖片預覽 -->
-                        <img v-if="editProduct.imageUrl" :src="editProduct.imageUrl" alt="預覽"
-                            style="width: 100%; height: 150px; object-fit: contain; border-radius: 6px; border: 1px solid #ccc;" />
-                    </div>
-                </el-form-item>
-
-                <el-form-item label="網站">
-                    <el-input v-model="editProduct.website" placeholder="請輸入網站連結" />
-                </el-form-item>
-
-                <el-form-item label="備註">
-                    <el-input v-model="editProduct.note" type="textarea" rows="2" />
-                </el-form-item>
-            </el-form>
-
-            <template #footer>
-                <el-button class="product-secondary-btn" @click="showEditDialog = false">取消</el-button>
-                <el-button type="primary" class="product-primary-btn" @click="saveEditProduct">保存</el-button>
-            </template>
-        </el-dialog>
+        <ProductFormDialog
+            v-if="editProduct"
+            ref="editProductDialogRef"
+            :visible="showEditDialog"
+            :title="isCopyMode ? '複製商品' : '編輯商品'"
+            submit-text="保存"
+            :product="editProduct"
+            :rules="rules"
+            :filtered-vendors="filteredVendors"
+            :gtin-disabled="!isCopyMode"
+            dialog-class="edit-product-dialog"
+            @update:visible="showEditDialog = $event"
+            @submit="saveEditProduct"
+            @vendor-filter="filterVendors"
+            @supplier-change="findVendorByCode('edit')"
+        />
 
         <!-- 🧩 批量新增商品彈窗 -->
-        <el-dialog title="批量新增商品" v-model="showBatchDialog" :width="'90%'" class="batch-add-dialog">
-            <el-form :model="batchBase" :rules="batchRules" ref="batchForm" label-width="120px"
-                style="margin-bottom: 20px;">
-                <el-form-item label="定價" prop="price">
-                    <div class="stock-field">
-                        <el-input type="number" min="0" v-model.number="batchBase.price" />
-                        <el-button type="primary" size="small" class="product-secondary-btn product-sync-btn"
-                            @click="syncBatchField('price')">
-                            定價同步
-                        </el-button>
-                    </div>
-                </el-form-item>
-
-                <el-form-item label="售價" prop="sellingPrice">
-                    <div class="stock-field">
-                        <el-input type="number" min="0" v-model.number="batchBase.sellingPrice" />
-                        <el-button type="primary" size="small" class="product-secondary-btn product-sync-btn"
-                            @click="syncBatchField('sellingPrice')">
-                            售價同步
-                        </el-button>
-                    </div>
-                </el-form-item>
-
-                <el-form-item label="成本" prop="cost">
-                    <div class="stock-field">
-                        <el-input type="number" min="0" v-model.number="batchBase.cost" />
-                        <el-button type="primary" size="small" class="product-secondary-btn product-sync-btn"
-                            @click="syncBatchField('cost')">
-                            成本同步
-                        </el-button>
-                    </div>
-                </el-form-item>
-
-                <el-form-item label="庫存" prop="stock" class="stock-item">
-                    <div class="stock-field">
-                        <el-input-number style="width: 120px;" :min="0" v-model.number="batchBase.stock" />
-                        <el-button style="width: 120px;" type="primary" size="small"
-                            class="product-secondary-btn product-sync-btn" @click="syncBatchField('stock')">
-                            庫存同步
-                        </el-button>
-                    </div>
-                </el-form-item>
-
-                <el-form-item label="廠商名稱">
-                    <el-input v-model="batchBase.supplierName" disabled />
-                </el-form-item>
-
-                <el-form-item label="廠商編號" prop="supplierCode">
-                    <el-select v-model="batchBase.supplierCode" placeholder="請輸入或選擇廠商" filterable clearable
-                        :filter-method="filterVendors" @change="findVendorByCodeBatch" style="max-width: 250px;">
-                        <el-option v-for="vendor in filteredVendors" :key="vendor.vendorId"
-                            :label="`${vendor.vendorId} - ${vendor.vendorName}`" :value="vendor.vendorId" />
-                    </el-select>
-                </el-form-item>
-
-                <el-form-item label="網站">
-                    <el-input v-model="batchBase.website" placeholder="請輸入網站連結" />
-                </el-form-item>
-
-                <el-form-item label="備註">
-                    <el-input v-model="batchBase.note" type="textarea" rows="2" />
-                </el-form-item>
-            </el-form>
-
-            <h4 style="margin-bottom: 10px;">商品清單</h4>
-            <div style="margin-bottom: 10px; display: flex; justify-content: flex-end;">
-                <el-button type="danger" class="product-danger-btn" @click="clearAllBatchRows">全部清空</el-button>
-                <el-button type="primary" class="product-primary-btn" @click="addBatchRow">新增一列</el-button>
-            </div>
-
-            <el-table :data="batchList" border style="width: 100%">
-                <el-table-column type="index" label="#" width="50" />
-
-                <!-- GTIN 欄位 -->
-                <el-table-column prop="gtin" label="GTIN" width="350">
-                    <template #default="{ row }">
-                        <div style="display: flex; align-items: center; gap: 6px;">
-                            <el-input v-model="row.gtin" placeholder="請輸入 GTIN" @input="onGtinChange(row)"
-                                style="flex: 1;" />
-                            <el-button type="primary" size="small" class="product-accent-btn product-inline-btn"
-                                @click="startScanGTIN(row)">掃描</el-button>
-                            <el-checkbox v-model="row.useGtinAsCode" @change="onUseGtinAsCodeChange(row)">
-                                同步編號
-                            </el-checkbox>
-                        </div>
-                    </template>
-                </el-table-column>
-
-                <!-- 商品名稱 -->
-                <el-table-column prop="name" label="商品名稱" width="200">
-                    <template #default="{ row }">
-                        <el-input v-model="row.name" placeholder="商品名稱" />
-                    </template>
-                </el-table-column>
-
-                <!-- 商品編號 -->
-                <el-table-column prop="code" label="商品編號" width="180">
-                    <template #default="{ row }">
-                        <el-input v-model="row.code" placeholder="商品編號" :disabled="row.useGtinAsCode" />
-                    </template>
-                </el-table-column>
-
-                <el-table-column prop="price" label="定價" width="130">
-                    <template #default="{ row }">
-                        <el-input-number style="width: 110px" v-model.number="row.price" :min="0" />
-                    </template>
-                </el-table-column>
-
-                <el-table-column prop="sellingPrice" label="售價" width="130">
-                    <template #default="{ row }">
-                        <el-input-number style="width: 110px" v-model.number="row.sellingPrice" :min="0" />
-                    </template>
-                </el-table-column>
-
-                <el-table-column prop="cost" label="成本" width="130">
-                    <template #default="{ row }">
-                        <el-input-number style="width: 110px" v-model.number="row.cost" :min="0" />
-                    </template>
-                </el-table-column>
-
-                <el-table-column prop="stock" label="庫存" width="130">
-                    <template #default="{ row }">
-                        <el-input-number style="width: 100px" v-model.number="row.stock" :min="0" />
-                    </template>
-                </el-table-column>
-
-                <!-- 商品圖片欄位 -->
-                <el-table-column prop="imageUrl" label="商品圖片" width="220">
-                    <template #default="{ row }">
-                        <div style="display: flex; align-items: center; gap: 10px;">
-                            <!-- 輸入框 -->
-                            <el-input v-model="row.imageUrl" placeholder="請輸入圖片網址" style="flex: 1;" />
-
-                            <!-- 圖片預覽 -->
-                            <img v-if="row.imageUrl" :src="row.imageUrl" alt="預覽"
-                                style="width: 60px; height: 60px; object-fit: cover; border-radius: 6px; border: 1px solid #ccc;" />
-                        </div>
-                    </template>
-                </el-table-column>
-
-                <!-- 操作 -->
-                <el-table-column label="操作">
-                    <template #default="{ $index }">
-                        <el-button type="danger" size="small" class="product-danger-btn product-inline-btn"
-                            @click="removeBatchRow($index)">刪除</el-button>
-                    </template>
-                </el-table-column>
-            </el-table>
-
-            <template #footer>
-                <el-button class="product-secondary-btn" @click="showBatchDialog = false">取消</el-button>
-                <el-button type="primary" class="product-primary-btn" @click="submitBatchProducts">提交</el-button>
-            </template>
-        </el-dialog>
+        <BatchProductDialog
+            ref="batchDialogRef"
+            :visible="showBatchDialog"
+            :batch-base="batchBase"
+            :batch-list="batchList"
+            :filtered-vendors="filteredVendors"
+            :rules="batchRules"
+            @update:visible="showBatchDialog = $event"
+            @submit="submitBatchProducts"
+            @sync-field="syncBatchField"
+            @vendor-filter="filterVendors"
+            @supplier-change="findVendorByCodeBatch"
+            @clear-rows="clearAllBatchRows"
+            @add-row="addBatchRow"
+            @remove-row="removeBatchRow"
+            @scan-row="startScanGTIN"
+            @gtin-change="onGtinChange"
+            @toggle-use-gtin-as-code="onUseGtinAsCodeChange"
+        />
 
 
         <!-- 掃描器彈窗 -->
@@ -643,6 +387,8 @@ import axios from "axios";
 import { ElMessage, ElMessageBox } from "element-plus";
 import { Camera, Picture } from "@element-plus/icons-vue";
 import Scanner from "@/components/Scanner.vue";
+import ProductFormDialog from "@/components/ProductFormDialog.vue";
+import BatchProductDialog from "@/components/BatchProductDialog.vue";
 import { useThemeStore } from "@/stores/theme";
 import { useAuth } from "@/composables/useAuth";
 import { generateBarcodeImage, downloadBarcode } from '@/utils/barcode'  // 引入剛剛的模組
@@ -711,7 +457,8 @@ let productSearchDebounceTimer: ReturnType<typeof setTimeout> | null = null;
 // 新增商品
 const showAddDialog = ref(false);
 const showScannerDialog = ref(false);
-const addForm = ref<any>(null);
+const addProductDialogRef = ref<InstanceType<typeof ProductFormDialog> | null>(null);
+const editProductDialogRef = ref<InstanceType<typeof ProductFormDialog> | null>(null);
 
 const createEmptyProduct = (): Omit<Product, "id" | "createdBy" | "updatedBy"> => ({
     gtin: "",
@@ -740,6 +487,11 @@ function openProductImportDialog() {
     productImportSource.value = "sheep100love";
     productImportUrl.value = "";
     showProductImportDialog.value = true;
+}
+
+function openAddDialog() {
+    newProduct.value = createEmptyProduct();
+    showAddDialog.value = true;
 }
 
 function matchesImportSource(url: string, source: "campus" | "sheep100love") {
@@ -1111,27 +863,26 @@ async function checkCodeExists(code: string, excludeId?: string): Promise<boolea
 
 // 新增商品（必填驗證 + 編號檢查）
 async function submitAddProduct() {
-    addForm.value.validate(async (valid: boolean) => {
-        if (!valid) {
-            ElMessage.warning("請完整填寫所有欄位");
-            return;
-        }
+    const valid = await addProductDialogRef.value?.validate?.();
+    if (!valid) {
+        ElMessage.warning("請完整填寫所有欄位");
+        return;
+    }
 
-        // 🔍 檢查 GTIN 是否重複
-        if (await checkGTINExists(newProduct.value.gtin)) {
-            ElMessage.error(`GTIN「${newProduct.value.gtin}」已存在，請修改後再新增`);
-            return;
-        }
+    // 🔍 檢查 GTIN 是否重複
+    if (await checkGTINExists(newProduct.value.gtin)) {
+        ElMessage.error(`GTIN「${newProduct.value.gtin}」已存在，請修改後再新增`);
+        return;
+    }
 
-        // 🔍 檢查商品編號是否重複
-        const codeExists = await checkProductCodeExists(newProduct.value.code);
-        if (codeExists) {
-            ElMessage.error(`商品編號「${newProduct.value.code}」已存在，請修改後再新增`);
-            return;
-        }
+    // 🔍 檢查商品編號是否重複
+    const codeExists = await checkProductCodeExists(newProduct.value.code);
+    if (codeExists) {
+        ElMessage.error(`商品編號「${newProduct.value.code}」已存在，請修改後再新增`);
+        return;
+    }
 
-        addProduct();
-    });
+    addProduct();
 }
 
 async function checkProductCodeExists(code: string): Promise<boolean> {
@@ -1251,6 +1002,7 @@ async function findVendorByCode(arg?: string) {
 
 // 🧩 批量新增商品
 const showBatchDialog = ref(false);
+const batchDialogRef = ref<InstanceType<typeof BatchProductDialog> | null>(null);
 
 const createEmptyBatchBase = () => ({
     price: 0,
@@ -1265,8 +1017,6 @@ const createEmptyBatchBase = () => ({
 
 const batchBase = ref(createEmptyBatchBase());
 const batchList = ref<BatchProductRow[]>([]);
-
-const batchForm = ref<any>(null);
 
 const batchRules = {
     price: [{ required: true, message: "請輸入定價", trigger: "blur" }],
@@ -1373,108 +1123,104 @@ async function findVendorByCodeBatch() {
 }
 
 async function submitBatchProducts() {
-    batchForm.value.validate(async (valid: boolean) => {
-        if (!valid) {
-            ElMessage.warning("請完整填寫批量新增的基本欄位");
-            return;
-        }
+    const valid = await batchDialogRef.value?.validate?.();
+    if (!valid) {
+        ElMessage.warning("請完整填寫批量新增的基本欄位");
+        return;
+    }
 
-        if (!batchList.value.length) {
-            ElMessage.warning("請至少新增一筆商品");
-            return;
-        }
+    if (!batchList.value.length) {
+        ElMessage.warning("請至少新增一筆商品");
+        return;
+    }
 
-        const currentUser = getCurrentUserDisplayName();
-        const now = Date.now();
+    const currentUser = getCurrentUserDisplayName();
+    const now = Date.now();
 
-        // 先逐筆檢查必填欄位，避免提交時默默略過不完整資料
-        const incompleteRows = batchList.value
-            .map((item, index) => {
-                const missingFields: string[] = [];
+    const incompleteRows = batchList.value
+        .map((item, index) => {
+            const missingFields: string[] = [];
 
-                if (!item.gtin?.trim()) missingFields.push("GTIN");
-                if (!item.code?.trim()) missingFields.push("商品編號");
-                if (!item.name?.trim()) missingFields.push("商品名稱");
+            if (!item.gtin?.trim()) missingFields.push("GTIN");
+            if (!item.code?.trim()) missingFields.push("商品編號");
+            if (!item.name?.trim()) missingFields.push("商品名稱");
 
-                if (!missingFields.length) return null;
+            if (!missingFields.length) return null;
 
-                return `第 ${index + 1} 筆：${missingFields.join("、")}`;
-            })
-            .filter((row): row is string => Boolean(row));
+            return `第 ${index + 1} 筆：${missingFields.join("、")}`;
+        })
+        .filter((row): row is string => Boolean(row));
 
-        if (incompleteRows.length > 0) {
-            ElMessage.error(`以下商品資料未填完整，請補齊後再提交：${incompleteRows.join("；")}`);
-            return;
-        }
+    if (incompleteRows.length > 0) {
+        ElMessage.error(`以下商品資料未填完整，請補齊後再提交：${incompleteRows.join("；")}`);
+        return;
+    }
 
-        // 找出重複的編號或 GTIN
-        const duplicateCodes: string[] = [];
-        const duplicateGTINs: string[] = [];
-        const existingMatches = await findExistingProductsByCodesOrGtins(
-            batchList.value.map((item) => item.code),
-            batchList.value.map((item) => item.gtin)
-        );
-        for (const item of batchList.value) {
-            const code = item.code.trim().toLowerCase();
-            const gtin = item.gtin.trim().toLowerCase();
+    const duplicateCodes: string[] = [];
+    const duplicateGTINs: string[] = [];
+    const existingMatches = await findExistingProductsByCodesOrGtins(
+        batchList.value.map((item) => item.code),
+        batchList.value.map((item) => item.gtin)
+    );
+    for (const item of batchList.value) {
+        const code = item.code.trim().toLowerCase();
+        const gtin = item.gtin.trim().toLowerCase();
 
-            if (existingMatches.codes.has(code)) duplicateCodes.push(code);
-            if (existingMatches.gtins.has(gtin)) duplicateGTINs.push(gtin);
-        }
+        if (existingMatches.codes.has(code)) duplicateCodes.push(code);
+        if (existingMatches.gtins.has(gtin)) duplicateGTINs.push(gtin);
+    }
 
-        // 🚫 若有重複，不送出
-        if (duplicateCodes.length > 0) {
-            ElMessage.error(`以下商品編號已存在，請修改後再提交：${duplicateCodes.join(", ")}`);
-            return;
-        }
-        if (duplicateGTINs.length > 0) {
-            ElMessage.error(`以下 GTIN 已存在，請修改後再提交：${duplicateGTINs.join(", ")}`);
-            return;
-        }
+    if (duplicateCodes.length > 0) {
+        ElMessage.error(`以下商品編號已存在，請修改後再提交：${duplicateCodes.join(", ")}`);
+        return;
+    }
+    if (duplicateGTINs.length > 0) {
+        ElMessage.error(`以下 GTIN 已存在，請修改後再提交：${duplicateGTINs.join(", ")}`);
+        return;
+    }
 
-        const productInputs: UpsertProductInput[] = batchList.value.map((item) => {
-            const id = createProductId();
-            return {
-                id,
-                code: item.code.trim(),
-                gtin: item.gtin.trim(),
-                name: item.name.trim(),
-                price: batchBase.value.price,
-                sellingPrice: batchBase.value.sellingPrice,
-                cost: batchBase.value.cost,
-                stock: item.stock,
-                supplierName: batchBase.value.supplierName,
-                supplierCode: batchBase.value.supplierCode,
-                imageUrl: item.imageUrl,
-                website: batchBase.value.website,
-                note: batchBase.value.note,
-                created: now,
-                createdBy: currentUser,
-            };
-        });
-
-        try {
-            await upsertProducts(productInputs);
-            currentPage.value = 1;
-            await fetchProducts();
-            ElMessage.success(`成功新增 ${batchList.value.length} 筆商品`);
-            showBatchDialog.value = false;
-            batchList.value = [];
-            batchBase.value = {
-                price: 0,
-                sellingPrice: 0,
-                cost: 0,
-                stock: 0,
-                supplierName: "",
-                supplierCode: "",
-                website: "",
-                note: "",
-            };
-        } catch (err) {
-            console.error(err);
-            ElMessage.error("批量新增失敗");
-        }
+    const productInputs: UpsertProductInput[] = batchList.value.map((item) => {
+        const id = createProductId();
+        return {
+            id,
+            code: item.code.trim(),
+            gtin: item.gtin.trim(),
+            name: item.name.trim(),
+            price: batchBase.value.price,
+            sellingPrice: batchBase.value.sellingPrice,
+            cost: batchBase.value.cost,
+            stock: item.stock,
+            supplierName: batchBase.value.supplierName,
+            supplierCode: batchBase.value.supplierCode,
+            imageUrl: item.imageUrl,
+            website: batchBase.value.website,
+            note: batchBase.value.note,
+            created: now,
+            createdBy: currentUser,
+        };
     });
+
+    try {
+        await upsertProducts(productInputs);
+        currentPage.value = 1;
+        await fetchProducts();
+        ElMessage.success(`成功新增 ${batchList.value.length} 筆商品`);
+        showBatchDialog.value = false;
+        batchList.value = [];
+        batchBase.value = {
+            price: 0,
+            sellingPrice: 0,
+            cost: 0,
+            stock: 0,
+            supplierName: "",
+            supplierCode: "",
+            website: "",
+            note: "",
+        };
+    } catch (err) {
+        console.error(err);
+        ElMessage.error("批量新增失敗");
+    }
 }
 
 // 用於存放已勾選的商品
@@ -1983,7 +1729,7 @@ onMounted(async () => {
     min-height: 36px;
     border-radius: 12px;
     font-weight: 600;
-    padding-inline: 12px;
+    padding-inline: 14px;
 }
 
 .product-inline-btn,
@@ -1992,8 +1738,30 @@ onMounted(async () => {
     box-shadow: 0 8px 18px rgba(16, 36, 58, 0.1);
 }
 
+.product-inline-btn {
+    background-clip: padding-box;
+}
+
 .product-sync-btn {
     min-width: 108px;
+    border-color: rgba(77, 131, 180, 0.2);
+    background:
+        linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(242, 247, 252, 0.94));
+    color: #17324f;
+    box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.75),
+        0 10px 22px rgba(16, 36, 58, 0.1);
+}
+
+.product-sync-btn:hover,
+.product-sync-btn:focus-visible {
+    border-color: rgba(77, 131, 180, 0.34);
+    background:
+        linear-gradient(180deg, rgba(255, 255, 255, 1), rgba(236, 244, 251, 0.98));
+    color: #10243c;
+    box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.8),
+        0 14px 26px rgba(16, 36, 58, 0.14);
 }
 
 .product-table-btn {

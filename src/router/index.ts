@@ -6,9 +6,9 @@ import MainLayout from "@/layouts/MainLayout.vue";
 import Login from "@/views/Login.vue";
 import Register from "@/views/Register.vue";
 import AddProduct from "@/components/AddProduct.vue";
-import ProductList from "@/components/ProductList.vue";
-import Checkout from "@/components/Checkout.vue";
-import Sales from '@/components/SalesRecord.vue';
+import ProductList from "@/views/ProductList.vue";
+import Checkout from "@/views/Checkout.vue";
+import Sales from '@/views/SalesRecord.vue';
 import Vendors from "@/views/Vendors.vue";
 
 const router = createRouter({

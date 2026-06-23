@@ -275,14 +275,99 @@ defineExpose({
 
 .batch-toolbar-btn {
     min-width: 112px;
+    min-height: 44px;
+    border-radius: 14px;
+    font-weight: 700;
+    letter-spacing: 0.01em;
+}
+
+.batch-dialog-toolbar .product-danger-btn.batch-toolbar-btn {
+    border-color: rgba(211, 100, 91, 0.32);
+    background:
+        radial-gradient(circle at top right, rgba(255, 225, 218, 0.24), transparent 48%),
+        linear-gradient(180deg, #b94a46 0%, #a53f3c 100%);
+    color: #fff8f7;
+    box-shadow: 0 16px 30px rgba(185, 74, 70, 0.2);
+}
+
+.batch-dialog-toolbar .product-danger-btn.batch-toolbar-btn:hover,
+.batch-dialog-toolbar .product-danger-btn.batch-toolbar-btn:focus-visible {
+    border-color: rgba(224, 128, 118, 0.46);
+    box-shadow: 0 20px 34px rgba(185, 74, 70, 0.24);
+}
+
+.batch-dialog-toolbar .product-primary-btn.batch-toolbar-btn {
+    border-color: rgba(38, 76, 115, 0.36);
+    background:
+        radial-gradient(circle at top right, rgba(243, 208, 147, 0.24), transparent 46%),
+        linear-gradient(180deg, #143250 0%, #1d4a72 100%);
+    color: #f8fbff;
+    box-shadow: 0 18px 32px rgba(16, 36, 58, 0.2);
+}
+
+.batch-dialog-toolbar .product-primary-btn.batch-toolbar-btn:hover,
+.batch-dialog-toolbar .product-primary-btn.batch-toolbar-btn:focus-visible {
+    border-color: rgba(231, 188, 116, 0.54);
+    box-shadow: 0 22px 36px rgba(16, 36, 58, 0.24);
 }
 
 .batch-sync-btn {
     min-width: 124px;
+    min-height: 38px;
+    border-radius: 12px;
+    border-color: rgba(94, 129, 166, 0.28);
+    background:
+        linear-gradient(180deg, rgba(250, 252, 255, 0.98), rgba(236, 243, 250, 0.95));
+    color: #21415f;
+    font-weight: 700;
+    box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.85),
+        0 10px 20px rgba(16, 36, 58, 0.08);
+}
+
+.batch-sync-btn:hover,
+.batch-sync-btn:focus-visible {
+    border-color: rgba(94, 129, 166, 0.44);
+    background:
+        linear-gradient(180deg, rgba(255, 255, 255, 1), rgba(232, 241, 249, 1));
+    color: #17324f;
+    box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.92),
+        0 14px 24px rgba(16, 36, 58, 0.12);
 }
 
 .batch-row-btn {
     min-width: 86px;
+    border-radius: 12px;
+    font-weight: 700;
+}
+
+.product-accent-btn.batch-row-btn {
+    border-color: rgba(228, 172, 92, 0.4);
+    background:
+        radial-gradient(circle at top right, rgba(255, 242, 208, 0.42), transparent 46%),
+        linear-gradient(135deg, #c47435 0%, #dd9648 56%, #efc979 100%);
+    color: #10243c;
+    box-shadow: 0 12px 22px rgba(196, 116, 53, 0.18);
+}
+
+.product-accent-btn.batch-row-btn:hover,
+.product-accent-btn.batch-row-btn:focus-visible {
+    border-color: rgba(240, 194, 120, 0.66);
+    box-shadow: 0 16px 28px rgba(196, 116, 53, 0.24);
+}
+
+.product-danger-btn.batch-row-btn {
+    border-color: rgba(211, 100, 91, 0.26);
+    background: linear-gradient(180deg, #bc5550 0%, #a54440 100%);
+    color: #fff8f7;
+    box-shadow: 0 12px 22px rgba(188, 85, 80, 0.16);
+}
+
+.product-danger-btn.batch-row-btn:hover,
+.product-danger-btn.batch-row-btn:focus-visible {
+    border-color: rgba(224, 128, 118, 0.42);
+    box-shadow: 0 16px 28px rgba(188, 85, 80, 0.22);
 }
 
 .product-dialog-footer {
@@ -295,10 +380,44 @@ defineExpose({
 
 .dialog-footer-btn {
     min-width: 112px;
+    min-height: 46px;
+    border-radius: 15px;
+    font-weight: 700;
 }
 
 .dialog-footer-btn--primary {
     min-width: 136px;
+    border-color: rgba(38, 76, 115, 0.38);
+    background:
+        radial-gradient(circle at top right, rgba(241, 202, 138, 0.24), transparent 44%),
+        linear-gradient(180deg, #143250 0%, #1d4a72 100%);
+    color: #f8fbff;
+    box-shadow: 0 18px 32px rgba(16, 36, 58, 0.2);
+}
+
+.dialog-footer-btn--primary:hover,
+.dialog-footer-btn--primary:focus-visible {
+    border-color: rgba(231, 188, 116, 0.54);
+    box-shadow: 0 22px 36px rgba(16, 36, 58, 0.24);
+}
+
+.product-dialog-footer .product-secondary-btn.dialog-footer-btn {
+    border-color: rgba(20, 36, 58, 0.12);
+    background:
+        linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(243, 247, 251, 0.96));
+    color: #18324d;
+    box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.86),
+        0 12px 22px rgba(16, 36, 58, 0.08);
+}
+
+.product-dialog-footer .product-secondary-btn.dialog-footer-btn:hover,
+.product-dialog-footer .product-secondary-btn.dialog-footer-btn:focus-visible {
+    border-color: rgba(77, 131, 180, 0.3);
+    color: #10243c;
+    box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.92),
+        0 16px 28px rgba(16, 36, 58, 0.12);
 }
 
 @media (max-width: 640px) {

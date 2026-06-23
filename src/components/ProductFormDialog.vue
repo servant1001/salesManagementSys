@@ -209,14 +209,85 @@ defineExpose({
 
 .dialog-action-btn {
     min-width: 110px;
+    min-height: 40px;
+    border-radius: 13px;
+    font-weight: 700;
+    box-shadow: 0 12px 24px rgba(16, 36, 58, 0.14);
+}
+
+.gtin-actions .dialog-action-btn:first-child {
+    border-color: rgba(228, 172, 92, 0.42);
+    background:
+        radial-gradient(circle at top right, rgba(255, 243, 214, 0.45), transparent 45%),
+        linear-gradient(135deg, #bf6e2f 0%, #dd9645 52%, #f1c778 100%);
+    color: #10243c;
+}
+
+.gtin-actions .dialog-action-btn:first-child:hover,
+.gtin-actions .dialog-action-btn:first-child:focus-visible {
+    border-color: rgba(241, 195, 120, 0.7);
+    box-shadow: 0 16px 30px rgba(191, 110, 47, 0.24);
+    filter: brightness(1.02) saturate(1.04);
+}
+
+.gtin-actions .dialog-action-btn:last-child {
+    border-color: rgba(37, 75, 112, 0.34);
+    background:
+        radial-gradient(circle at top right, rgba(214, 231, 247, 0.24), transparent 42%),
+        linear-gradient(180deg, #13314f 0%, #1c486f 100%);
+    color: #f6fbff;
+}
+
+.gtin-actions .dialog-action-btn:last-child:hover,
+.gtin-actions .dialog-action-btn:last-child:focus-visible {
+    border-color: rgba(84, 140, 190, 0.52);
+    box-shadow: 0 16px 30px rgba(19, 49, 79, 0.24);
 }
 
 .dialog-footer-btn {
     min-width: 112px;
+    min-height: 46px;
+    border-radius: 15px;
+    font-weight: 700;
+    letter-spacing: 0.01em;
 }
 
 .dialog-footer-btn--primary {
     min-width: 136px;
+    border-color: rgba(37, 75, 112, 0.36);
+    background:
+        radial-gradient(circle at top right, rgba(237, 199, 132, 0.26), transparent 46%),
+        linear-gradient(180deg, #13314f 0%, #1b4469 100%);
+    color: #f9fcff;
+    box-shadow: 0 18px 32px rgba(16, 36, 58, 0.2);
+}
+
+.dialog-footer-btn--primary:hover,
+.dialog-footer-btn--primary:focus-visible {
+    border-color: rgba(224, 180, 108, 0.56);
+    background:
+        radial-gradient(circle at top right, rgba(245, 212, 154, 0.3), transparent 44%),
+        linear-gradient(180deg, #102a44 0%, #173a5b 100%);
+    box-shadow: 0 22px 36px rgba(16, 36, 58, 0.24);
+}
+
+.product-dialog-footer .product-secondary-btn.dialog-footer-btn {
+    border-color: rgba(20, 36, 58, 0.12);
+    background:
+        linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(243, 247, 251, 0.96));
+    color: #18324d;
+    box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.86),
+        0 12px 22px rgba(16, 36, 58, 0.08);
+}
+
+.product-dialog-footer .product-secondary-btn.dialog-footer-btn:hover,
+.product-dialog-footer .product-secondary-btn.dialog-footer-btn:focus-visible {
+    border-color: rgba(77, 131, 180, 0.3);
+    color: #10243c;
+    box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.92),
+        0 16px 28px rgba(16, 36, 58, 0.12);
 }
 
 @media (max-width: 640px) {
